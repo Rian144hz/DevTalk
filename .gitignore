@@ -5,3 +5,6 @@ dist/
 test-results/
 .superpowers/
 .impeccable/questions/
+test-results/
+playwright-report/
+.impeccable/review/

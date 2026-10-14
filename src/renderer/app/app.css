@@ -1,0 +1,19 @@
+/* App shell: sidebar rail + page. */
+.app { display: grid; grid-template-columns: var(--rail-width) minmax(0, 1fr); min-height: 100vh; }
+.rail { background: var(--bg-rail); border-right: 1px solid var(--rule); padding: var(--s5) var(--s3); display: flex; flex-direction: column; gap: var(--s1); position: sticky; top: 0; height: 100vh; }
+.brand { display: flex; align-items: center; gap: var(--s2); font-weight: 700; padding: var(--s1) var(--s3) var(--s4); }
+.brand .icon { color: var(--pencil); }
+.jump { display: flex; align-items: center; justify-content: space-between; width: 100%; background: transparent; border: 1px solid var(--rule); border-radius: var(--r-control); padding: 7px var(--s3); color: var(--ink-3); font-size: var(--text-sm); margin-bottom: var(--s3); text-align: left; }
+.jump:hover { border-color: var(--rule-strong); color: var(--ink-2); }
+.nav { display: flex; flex-direction: column; gap: 2px; list-style: none; padding: 0; }
+.nav a { display: flex; align-items: center; gap: var(--s3); padding: 7px var(--s3); border-radius: var(--r-control); color: var(--ink-2); text-decoration: none; font-size: var(--text-md); }
+.nav a:hover { background: var(--sheet); color: var(--ink); }
+.nav a[aria-current="page"] { background: var(--sheet); color: var(--ink); font-weight: 600; }
+.nav .count { margin-left: auto; font: var(--text-xs) var(--font-mono); color: var(--ink-2); }
+.nav .later { margin-left: auto; font-size: var(--text-xs); color: var(--ink-3); }
+.rail-foot { margin-top: auto; padding: var(--s3); font-size: var(--text-xs); color: var(--ink-3); overflow-wrap: anywhere; }
+.rail-model { display: block; font-family: var(--font-mono); }
+.page { padding: var(--s10) var(--s14) var(--s14); min-width: 0; }
+.page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--s6); margin-bottom: var(--s8); }
+.lede { color: var(--ink-2); margin-top: var(--s1); }
+@media (max-width: 1040px) { .page { padding-inline: var(--s8); } }

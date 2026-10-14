@@ -12,7 +12,7 @@ const DEFAULT_PROFILE = {
   explanationLanguage: 'Portuguese',
   provider: DEFAULT_PROVIDER,
   model: DEFAULT_MODELS[DEFAULT_PROVIDER],
-  theme: 'system',
+  theme: 'dark',
 } as const;
 
 const SAMPLE_ANSWER =

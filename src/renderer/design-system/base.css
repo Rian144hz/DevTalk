@@ -1,0 +1,25 @@
+/* Base element styles and the browser surfaces (selection, focus, scrollbars). */
+* { box-sizing: border-box; margin: 0; }
+html, body, #root { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: var(--text-base) / var(--leading) var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--pencil-wash); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-control); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--rule-strong); border-radius: 10px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-track { background: transparent; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: var(--pencil); text-underline-offset: 3px; }
+h1 { font-size: var(--text-2xl); line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: var(--text-lg); line-height: 1.3; font-weight: 600; }
+h3 { font-size: var(--text-md); line-height: 1.4; font-weight: 600; }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--ink-3); }
+.small { font-size: var(--text-sm); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.icon { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }

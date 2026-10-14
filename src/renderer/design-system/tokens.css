@@ -1,0 +1,92 @@
+/* DevTalk design tokens (Galley Proof). The single source for colour, type, space, radii and motion. */
+
+:root {
+  color-scheme: dark;
+
+  /* Neutrals (dark, default) */
+  --bg: #16181d;          /* app ground */
+  --bg-rail: #121419;     /* sidebar */
+  --sheet: #20232b;       /* raised galley sheet */
+  --sheet-hover: #262a33;
+  --rule: #2b2f39;        /* 1px rules */
+  --rule-strong: #3a3f4b;
+  --ink: #e8e6e1;
+  --ink-2: #b4b9c5;
+  --ink-3: #8c93a3;
+
+  /* The coach's voice: proof marks, margin notes, primary action */
+  --pencil: #7fb2e5;
+  --pencil-ink: #0d1622;  /* text on a pencil fill */
+  --pencil-wash: rgb(127 178 229 / 0.12);
+
+  /* Diff marks — edits, not grades */
+  --del: #d99aa8;
+  --del-wash: rgb(217 154 168 / 0.12);
+  --ins: #8cc5a2;
+  --ins-wash: rgb(140 197 162 / 0.12);
+
+  /* State */
+  --warn: #e0b26a;
+  --focus: #9cc6f0;
+
+  /* Type */
+  --font-ui: "Public Sans Variable", "Public Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  --text-xs: 0.75rem;   /* 12 */
+  --text-sm: 0.8125rem; /* 13 */
+  --text-md: 0.875rem;  /* 14 */
+  --text-base: 0.9375rem; /* 15 */
+  --text-lg: 1.0625rem; /* 17 */
+  --text-xl: 1.25rem;   /* 20 */
+  --text-2xl: 1.625rem; /* 26 */
+  --leading: 1.6;
+  --leading-galley: 1.85;
+  --measure: 68ch;
+
+  /* Space (4px base) */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px;
+  --s6: 24px; --s8: 32px; --s10: 40px; --s14: 56px;
+
+  /* Radii */
+  --r-chip: 4px;
+  --r-control: 6px;
+  --r-sheet: 10px;
+
+  /* Elevation: only floating layers (palette, menus) */
+  --shadow-float: 0 12px 32px -8px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.35);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --dur-press: 120ms;
+  --dur-ui: 180ms;
+  --dur-panel: 240ms;
+
+  --rail-width: 232px;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #eef0f3;
+  --bg-rail: #e6e9ee;
+  --sheet: #ffffff;
+  --sheet-hover: #f6f7f9;
+  --rule: #d5d9e0;
+  --rule-strong: #bcc2cc;
+  --ink: #1b1e24;
+  --ink-2: #454b57;
+  --ink-3: #5c6370;
+  --pencil: #2c66a8;
+  --pencil-ink: #ffffff;
+  --pencil-wash: rgb(44 102 168 / 0.09);
+  --del: #a23e58;
+  --del-wash: rgb(162 62 88 / 0.08);
+  --ins: #2d7a4e;
+  --ins-wash: rgb(45 122 78 / 0.09);
+  --warn: #8a5a00;
+  --focus: #2c66a8;
+  --shadow-float: 0 12px 32px -8px rgb(20 24 32 / 0.22), 0 2px 6px rgb(20 24 32 / 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-press: 0ms; --dur-ui: 0ms; --dur-panel: 0ms; }
+}
