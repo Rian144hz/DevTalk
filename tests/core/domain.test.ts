@@ -1,5 +1,5 @@
-import { CHALLENGE_CATEGORIES, EXPRESSION_TYPES, MISTAKE_CATEGORIES } from '../../src/core/domain/categories';
-import { countSentences, normalizeExpression } from '../../src/core/domain/text';
+import { CHALLENGE_CATEGORIES, EXPRESSION_TYPE_LABELS, EXPRESSION_TYPES, MISTAKE_CATEGORIES, MISTAKE_LABELS } from '../../src/core/domain/categories';
+import { countSentences, normalizeExpression, splitSentences } from '../../src/core/domain/text';
 
 test('normalizeExpression lowercases, collapses spaces, trims edge punctuation', () => {
   expect(normalizeExpression('  Push Back   on ')).toBe('push back on');
@@ -23,4 +23,20 @@ test('category lists are exactly the spec values', () => {
   ]);
   expect(CHALLENGE_CATEGORIES).toEqual(['daily_update', 'code_review', 'bug_explanation', 'tech_interview']);
   expect(EXPRESSION_TYPES).toEqual(['chunk', 'phrasal_verb', 'collocation']);
+});
+
+test('splitSentences keeps abbreviations and versions inside a sentence and covers the text', () => {
+  const t = 'We use e.g. Redis v1.2. It works!';
+  const spans = splitSentences(t);
+  expect(spans.map((s) => t.slice(s.start, s.end).trim())).toEqual(['We use e.g. Redis v1.2.', 'It works!']);
+  expect(spans.map((s) => t.slice(s.start, s.end)).join('')).toBe(t);
+  expect(splitSentences('   ')).toEqual([]);
+  expect(splitSentences('no end')).toEqual([{ start: 0, end: 6 }]);
+});
+
+test('labels for categories and expression types', () => {
+  expect(MISTAKE_LABELS.subject_verb_agreement).toBe('subject–verb agreement');
+  expect(MISTAKE_LABELS.off_task).toBe('off topic');
+  expect(MISTAKE_LABELS.verb_tense).toBe('verb tense');
+  expect(EXPRESSION_TYPE_LABELS.phrasal_verb).toBe('phrasal verb');
 });
