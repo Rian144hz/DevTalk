@@ -66,8 +66,26 @@ language sql stable security definer set search_path = public as $$
   )
 $$;
 
-revoke execute on function public.is_moderator(), public.is_blocked_between(uuid, uuid) from public, anon;
-grant execute on function public.is_moderator(), public.is_blocked_between(uuid, uuid) to authenticated;
+-- is_blocked_between takes arbitrary ids: internal only. is_moderator answers about the caller.
+revoke execute on function public.is_blocked_between(uuid, uuid) from public, anon, authenticated;
+revoke execute on function public.is_moderator() from public, anon;
+grant execute on function public.is_moderator() to authenticated;
+
+-- Blocked pairs never see each other.
+create or replace function public.can_see_profile(target uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select public.viewer_is_member() and public.is_active(target) and not public.is_blocked_between(auth.uid(), target)
+$$;
+
+-- The moderation actions about the caller (warnings, suspensions), for their own data export.
+create or replace function public.my_moderation_actions()
+returns table (action text, reason text, until timestamptz, created_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select a.action, a.reason, a.until, a.created_at from public.moderation_actions a
+  where a.target = auth.uid() order by a.created_at desc
+$$;
+revoke execute on function public.my_moderation_actions() from public, anon;
+grant execute on function public.my_moderation_actions() to authenticated;
 
 -- At most 20 reports per person in any 24 hours.
 create or replace function public.limit_reports() returns trigger
@@ -144,41 +162,40 @@ grant update (read_at) on public.notices to authenticated;
 create policy blocks_select on public.blocks for select to authenticated
   using (blocker = (select auth.uid()));
 create policy blocks_insert on public.blocks for insert to authenticated
-  with check (blocker = (select auth.uid()));
+  with check (blocker = (select auth.uid()) and (select public.viewer_is_member()));
 create policy blocks_delete on public.blocks for delete to authenticated
   using (blocker = (select auth.uid()));
 
 create policy reports_select on public.reports for select to authenticated
-  using (reporter = (select auth.uid()) or public.is_moderator());
+  using (reporter = (select auth.uid()) or (select public.is_moderator()));
 create policy reports_insert on public.reports for insert to authenticated
   with check (
     reporter = (select auth.uid())
     and reported is not null
     and reported <> (select auth.uid())
-    and public.is_active((select auth.uid()))
+    and (select public.viewer_is_member())
   );
 create policy reports_update on public.reports for update to authenticated
-  using (public.is_moderator()) with check (public.is_moderator());
+  using ((select public.is_moderator()) and (select public.viewer_is_active()))
+  with check ((select public.is_moderator()) and (select public.viewer_is_active()));
 
 create policy moderation_actions_select on public.moderation_actions for select to authenticated
-  using (public.is_moderator());
+  using ((select public.is_moderator()));
+-- Moderators act only while active, and never on themselves.
 create policy moderation_actions_insert on public.moderation_actions for insert to authenticated
-  with check (public.is_moderator() and moderator = (select auth.uid()));
+  with check (
+    (select public.is_moderator())
+    and (select public.viewer_is_active())
+    and moderator = (select auth.uid())
+    and target <> (select auth.uid())
+  );
 
 create policy notices_select on public.notices for select to authenticated
   using (user_id = (select auth.uid()));
 create policy notices_update on public.notices for update to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 
--- Profiles: blocked pairs never see each other; moderators see everyone.
+-- Profiles: moderators see everyone; others as can_see_profile says.
 drop policy profiles_select on public.profiles;
 create policy profiles_select on public.profiles for select to authenticated
-  using (
-    id = (select auth.uid())
-    or public.is_moderator()
-    or (
-      public.is_active((select auth.uid()))
-      and public.is_active(id)
-      and not public.is_blocked_between((select auth.uid()), id)
-    )
-  );
+  using (id = (select auth.uid()) or (select public.is_moderator()) or public.can_see_profile(id));

@@ -49,7 +49,8 @@ create table public.consents (
   primary key (user_id, document, version)
 );
 
--- Security-definer helpers: they read past RLS, so policies can call them without recursion.
+-- Internal helpers (security definer: they read past RLS, so policies can use them without recursion).
+-- They take arbitrary user ids, so nobody may call them through the API; only the caller-only wrappers below are exposed.
 create or replace function public.is_active(uid uuid) returns boolean
 language sql stable security definer set search_path = public as $$
   select not exists (
@@ -62,8 +63,44 @@ language sql stable security definer set search_path = public as $$
   select count(distinct c.document) = 4 from public.consents c where c.user_id = uid
 $$;
 
-revoke execute on function public.is_active(uuid), public.has_accepted_documents(uuid) from public, anon;
-grant execute on function public.is_active(uuid), public.has_accepted_documents(uuid) to authenticated;
+revoke execute on function public.is_active(uuid), public.has_accepted_documents(uuid) from public, anon, authenticated;
+
+-- Caller-only wrappers: each answers a question about the signed-in person, never about someone else.
+create or replace function public.viewer_is_active() returns boolean
+language sql stable security definer set search_path = public as $$
+  select auth.uid() is not null and public.is_active(auth.uid())
+$$;
+
+create or replace function public.viewer_has_accepted() returns boolean
+language sql stable security definer set search_path = public as $$
+  select auth.uid() is not null and public.has_accepted_documents(auth.uid())
+$$;
+
+-- A member: signed in, not suspended, and has accepted the documents and the 18+ attestation.
+create or replace function public.viewer_is_member() returns boolean
+language sql stable security definer set search_path = public as $$
+  select auth.uid() is not null and public.is_active(auth.uid()) and public.has_accepted_documents(auth.uid())
+$$;
+
+-- Whether the caller may see someone else's profile (0002 adds blocks).
+create or replace function public.can_see_profile(target uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select public.viewer_is_member() and public.is_active(target)
+$$;
+
+-- The caller's own suspension end while it lasts, else null. suspended_until is not readable as a column.
+create or replace function public.my_suspension() returns timestamptz
+language sql stable security definer set search_path = public as $$
+  select p.suspended_until from public.profiles p
+  where p.id = auth.uid() and p.suspended_until is not null and p.suspended_until > now()
+$$;
+
+revoke execute on function public.viewer_is_active(), public.viewer_has_accepted(), public.viewer_is_member(),
+  public.can_see_profile(uuid), public.my_suspension() from public, anon;
+grant execute on function public.viewer_is_active(), public.viewer_has_accepted(), public.viewer_is_member(),
+  public.can_see_profile(uuid), public.my_suspension() to authenticated;
+-- Used by check constraints, which run with the caller's rights.
+grant execute on function public.stack_tags_ok(text[]), public.availability_ok(jsonb) to authenticated;
 
 create or replace function public.touch_updated_at() returns trigger
 language plpgsql set search_path = public as $$
@@ -76,12 +113,13 @@ $$;
 create trigger profiles_touch before update on public.profiles
   for each row execute function public.touch_updated_at();
 
--- Grants. Owners never get `suspended_until`, `created_at` or `updated_at`: column grants keep them server-side.
+-- Grants. Nobody reads `suspended_until` (own value via my_suspension()) and owners never write it, nor the timestamps.
 alter table public.profiles enable row level security;
 alter table public.consents enable row level security;
 
 revoke all on public.profiles, public.consents from anon, authenticated;
-grant select on public.profiles to authenticated;
+grant select (id, display_name, native_language, level, timezone, area, stack, availability, bio, avatar_path, created_at, updated_at)
+  on public.profiles to authenticated;
 grant insert (id, display_name, native_language, level, timezone, area, stack, availability, bio, avatar_path)
   on public.profiles to authenticated;
 grant update (id, display_name, native_language, level, timezone, area, stack, availability, bio, avatar_path)
@@ -89,16 +127,16 @@ grant update (id, display_name, native_language, level, timezone, area, stack, a
 grant select on public.consents to authenticated;
 grant insert (user_id, document, version) on public.consents to authenticated;
 
--- Profiles: you see yourself; other active people see you while you are active.
+-- Profiles: you see yourself; other members see you while you are active.
 create policy profiles_select on public.profiles for select to authenticated
-  using (id = (select auth.uid()) or (public.is_active((select auth.uid())) and public.is_active(id)));
+  using (id = (select auth.uid()) or public.can_see_profile(id));
 
 -- Nothing is written to a profile before the documents and the 18+ attestation are accepted.
 create policy profiles_insert on public.profiles for insert to authenticated
-  with check (id = (select auth.uid()) and public.has_accepted_documents(id));
+  with check (id = (select auth.uid()) and (select public.viewer_has_accepted()));
 
 create policy profiles_update on public.profiles for update to authenticated
-  using (id = (select auth.uid()) and public.is_active(id))
+  using (id = (select auth.uid()) and (select public.viewer_is_active()))
   with check (id = (select auth.uid()));
 
 create policy consents_select on public.consents for select to authenticated

@@ -55,7 +55,8 @@ create table public.consents (
   primary key (user_id, document, version)
 );
 
--- Security-definer helpers: they read past RLS, so policies can call them without recursion.
+-- Internal helpers (security definer: they read past RLS, so policies can use them without recursion).
+-- They take arbitrary user ids, so nobody may call them through the API; only the caller-only wrappers below are exposed.
 create or replace function public.is_active(uid uuid) returns boolean
 language sql stable security definer set search_path = public as $$
   select not exists (
@@ -68,8 +69,44 @@ language sql stable security definer set search_path = public as $$
   select count(distinct c.document) = 4 from public.consents c where c.user_id = uid
 $$;
 
-revoke execute on function public.is_active(uuid), public.has_accepted_documents(uuid) from public, anon;
-grant execute on function public.is_active(uuid), public.has_accepted_documents(uuid) to authenticated;
+revoke execute on function public.is_active(uuid), public.has_accepted_documents(uuid) from public, anon, authenticated;
+
+-- Caller-only wrappers: each answers a question about the signed-in person, never about someone else.
+create or replace function public.viewer_is_active() returns boolean
+language sql stable security definer set search_path = public as $$
+  select auth.uid() is not null and public.is_active(auth.uid())
+$$;
+
+create or replace function public.viewer_has_accepted() returns boolean
+language sql stable security definer set search_path = public as $$
+  select auth.uid() is not null and public.has_accepted_documents(auth.uid())
+$$;
+
+-- A member: signed in, not suspended, and has accepted the documents and the 18+ attestation.
+create or replace function public.viewer_is_member() returns boolean
+language sql stable security definer set search_path = public as $$
+  select auth.uid() is not null and public.is_active(auth.uid()) and public.has_accepted_documents(auth.uid())
+$$;
+
+-- Whether the caller may see someone else's profile (0002 adds blocks).
+create or replace function public.can_see_profile(target uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select public.viewer_is_member() and public.is_active(target)
+$$;
+
+-- The caller's own suspension end while it lasts, else null. suspended_until is not readable as a column.
+create or replace function public.my_suspension() returns timestamptz
+language sql stable security definer set search_path = public as $$
+  select p.suspended_until from public.profiles p
+  where p.id = auth.uid() and p.suspended_until is not null and p.suspended_until > now()
+$$;
+
+revoke execute on function public.viewer_is_active(), public.viewer_has_accepted(), public.viewer_is_member(),
+  public.can_see_profile(uuid), public.my_suspension() from public, anon;
+grant execute on function public.viewer_is_active(), public.viewer_has_accepted(), public.viewer_is_member(),
+  public.can_see_profile(uuid), public.my_suspension() to authenticated;
+-- Used by check constraints, which run with the caller's rights.
+grant execute on function public.stack_tags_ok(text[]), public.availability_ok(jsonb) to authenticated;
 
 create or replace function public.touch_updated_at() returns trigger
 language plpgsql set search_path = public as $$
@@ -82,12 +119,13 @@ $$;
 create trigger profiles_touch before update on public.profiles
   for each row execute function public.touch_updated_at();
 
--- Grants. Owners never get `suspended_until`, `created_at` or `updated_at`: column grants keep them server-side.
+-- Grants. Nobody reads `suspended_until` (own value via my_suspension()) and owners never write it, nor the timestamps.
 alter table public.profiles enable row level security;
 alter table public.consents enable row level security;
 
 revoke all on public.profiles, public.consents from anon, authenticated;
-grant select on public.profiles to authenticated;
+grant select (id, display_name, native_language, level, timezone, area, stack, availability, bio, avatar_path, created_at, updated_at)
+  on public.profiles to authenticated;
 grant insert (id, display_name, native_language, level, timezone, area, stack, availability, bio, avatar_path)
   on public.profiles to authenticated;
 grant update (id, display_name, native_language, level, timezone, area, stack, availability, bio, avatar_path)
@@ -95,16 +133,16 @@ grant update (id, display_name, native_language, level, timezone, area, stack, a
 grant select on public.consents to authenticated;
 grant insert (user_id, document, version) on public.consents to authenticated;
 
--- Profiles: you see yourself; other active people see you while you are active.
+-- Profiles: you see yourself; other members see you while you are active.
 create policy profiles_select on public.profiles for select to authenticated
-  using (id = (select auth.uid()) or (public.is_active((select auth.uid())) and public.is_active(id)));
+  using (id = (select auth.uid()) or public.can_see_profile(id));
 
 -- Nothing is written to a profile before the documents and the 18+ attestation are accepted.
 create policy profiles_insert on public.profiles for insert to authenticated
-  with check (id = (select auth.uid()) and public.has_accepted_documents(id));
+  with check (id = (select auth.uid()) and (select public.viewer_has_accepted()));
 
 create policy profiles_update on public.profiles for update to authenticated
-  using (id = (select auth.uid()) and public.is_active(id))
+  using (id = (select auth.uid()) and (select public.viewer_is_active()))
   with check (id = (select auth.uid()));
 
 create policy consents_select on public.consents for select to authenticated
@@ -183,8 +221,26 @@ language sql stable security definer set search_path = public as $$
   )
 $$;
 
-revoke execute on function public.is_moderator(), public.is_blocked_between(uuid, uuid) from public, anon;
-grant execute on function public.is_moderator(), public.is_blocked_between(uuid, uuid) to authenticated;
+-- is_blocked_between takes arbitrary ids: internal only. is_moderator answers about the caller.
+revoke execute on function public.is_blocked_between(uuid, uuid) from public, anon, authenticated;
+revoke execute on function public.is_moderator() from public, anon;
+grant execute on function public.is_moderator() to authenticated;
+
+-- Blocked pairs never see each other.
+create or replace function public.can_see_profile(target uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select public.viewer_is_member() and public.is_active(target) and not public.is_blocked_between(auth.uid(), target)
+$$;
+
+-- The moderation actions about the caller (warnings, suspensions), for their own data export.
+create or replace function public.my_moderation_actions()
+returns table (action text, reason text, until timestamptz, created_at timestamptz)
+language sql stable security definer set search_path = public as $$
+  select a.action, a.reason, a.until, a.created_at from public.moderation_actions a
+  where a.target = auth.uid() order by a.created_at desc
+$$;
+revoke execute on function public.my_moderation_actions() from public, anon;
+grant execute on function public.my_moderation_actions() to authenticated;
 
 -- At most 20 reports per person in any 24 hours.
 create or replace function public.limit_reports() returns trigger
@@ -261,44 +317,43 @@ grant update (read_at) on public.notices to authenticated;
 create policy blocks_select on public.blocks for select to authenticated
   using (blocker = (select auth.uid()));
 create policy blocks_insert on public.blocks for insert to authenticated
-  with check (blocker = (select auth.uid()));
+  with check (blocker = (select auth.uid()) and (select public.viewer_is_member()));
 create policy blocks_delete on public.blocks for delete to authenticated
   using (blocker = (select auth.uid()));
 
 create policy reports_select on public.reports for select to authenticated
-  using (reporter = (select auth.uid()) or public.is_moderator());
+  using (reporter = (select auth.uid()) or (select public.is_moderator()));
 create policy reports_insert on public.reports for insert to authenticated
   with check (
     reporter = (select auth.uid())
     and reported is not null
     and reported <> (select auth.uid())
-    and public.is_active((select auth.uid()))
+    and (select public.viewer_is_member())
   );
 create policy reports_update on public.reports for update to authenticated
-  using (public.is_moderator()) with check (public.is_moderator());
+  using ((select public.is_moderator()) and (select public.viewer_is_active()))
+  with check ((select public.is_moderator()) and (select public.viewer_is_active()));
 
 create policy moderation_actions_select on public.moderation_actions for select to authenticated
-  using (public.is_moderator());
+  using ((select public.is_moderator()));
+-- Moderators act only while active, and never on themselves.
 create policy moderation_actions_insert on public.moderation_actions for insert to authenticated
-  with check (public.is_moderator() and moderator = (select auth.uid()));
+  with check (
+    (select public.is_moderator())
+    and (select public.viewer_is_active())
+    and moderator = (select auth.uid())
+    and target <> (select auth.uid())
+  );
 
 create policy notices_select on public.notices for select to authenticated
   using (user_id = (select auth.uid()));
 create policy notices_update on public.notices for update to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 
--- Profiles: blocked pairs never see each other; moderators see everyone.
+-- Profiles: moderators see everyone; others as can_see_profile says.
 drop policy profiles_select on public.profiles;
 create policy profiles_select on public.profiles for select to authenticated
-  using (
-    id = (select auth.uid())
-    or public.is_moderator()
-    or (
-      public.is_active((select auth.uid()))
-      and public.is_active(id)
-      and not public.is_blocked_between((select auth.uid()), id)
-    )
-  );
+  using (id = (select auth.uid()) or (select public.is_moderator()) or public.can_see_profile(id));
 
 -- ===== 0003_storage.sql =====
 
@@ -309,24 +364,25 @@ values ('avatars', 'avatars', false, 204800, array['image/webp'])
 on conflict (id) do update
   set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
--- Who may read an avatar: an active signed-in person, unless the owner is suspended or the two have blocked
--- each other. Moderators see every avatar.
+-- Who may read an avatar: its owner always; otherwise a member (active, documents accepted), unless the owner
+-- is suspended or the two have blocked each other. Moderators see every avatar.
 create or replace function public.can_see_avatar(object_name text) returns boolean
 language plpgsql stable security definer set search_path = public as $$
 declare
   me uuid := auth.uid();
   owner_id uuid;
 begin
-  if me is null or not public.is_active(me) then
-    return false;
-  end if;
-  if object_name !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/avatar\.webp$' then
+  if me is null or object_name !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/avatar\.webp$' then
     return false;
   end if;
   owner_id := split_part(object_name, '/', 1)::uuid;
-  return owner_id = me
-    or public.is_moderator()
-    or (public.is_active(owner_id) and not public.is_blocked_between(me, owner_id));
+  if owner_id = me then
+    return true;
+  end if;
+  if not public.viewer_is_member() then
+    return false;
+  end if;
+  return public.is_moderator() or (public.is_active(owner_id) and not public.is_blocked_between(me, owner_id));
 end
 $$;
 
@@ -340,7 +396,7 @@ create policy avatars_insert on storage.objects for insert to authenticated
   with check (
     bucket_id = 'avatars'
     and (storage.foldername(name))[1] = (select auth.uid())::text
-    and public.is_active((select auth.uid()))
+    and (select public.viewer_is_member())
   );
 
 create policy avatars_update on storage.objects for update to authenticated
@@ -348,7 +404,7 @@ create policy avatars_update on storage.objects for update to authenticated
   with check (
     bucket_id = 'avatars'
     and (storage.foldername(name))[1] = (select auth.uid())::text
-    and public.is_active((select auth.uid()))
+    and (select public.viewer_is_member())
   );
 
 create policy avatars_delete on storage.objects for delete to authenticated
