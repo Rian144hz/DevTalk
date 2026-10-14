@@ -6,7 +6,8 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 /** "in 10 min", "tomorrow", "in 4 days" — when a review comes due. */
 export function formatDueIn(from: Date, to: Date): string {
   const ms = to.getTime() - from.getTime();
-  if (ms < MIN) return 'now';
+  if (ms <= 0) return 'now';
+  if (ms < MIN) return 'in 1 min';
   if (ms < HOUR) return `in ${Math.round(ms / MIN)} min`;
   if (ms < DAY) return `in ${Math.round(ms / HOUR)} h`;
   const days = Math.round(ms / DAY);

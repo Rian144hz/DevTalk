@@ -100,7 +100,7 @@ export function SettingsScreen({ profile }: { profile: StoredProfile }) {
 
       <section aria-labelledby="set-coach">
         <h2 id="set-coach">Coach</h2>
-        <Segmented label="Coach" value={provider} options={PROVIDER_OPTIONS}
+        <Segmented label="Provider" value={provider} options={PROVIDER_OPTIONS}
           onChange={(p) => void setSettings({ provider: p, model: DEFAULT_MODELS[p] })} />
         <div className="settings-field">
           <TextField label="Model" value={model} onChange={(e) => setModel(e.target.value)} spellCheck={false}

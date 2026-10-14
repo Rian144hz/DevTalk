@@ -20,7 +20,7 @@ test('removing the key updates the key status', async ({ page }) => {
 });
 
 test('switching the coach to Claude resets the model and updates the sidebar', async ({ page }) => {
-  await page.getByRole('radiogroup', { name: 'Coach' }).getByRole('radio', { name: 'Claude' }).click();
+  await page.getByRole('radiogroup', { name: 'Provider' }).getByRole('radio', { name: 'Claude' }).click();
   await expect(page.getByLabel('Model')).toHaveValue('claude-opus-5-5');
   await expect(page.getByText('Coach: Anthropic Claude')).toBeVisible();
 });
