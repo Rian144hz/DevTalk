@@ -1,8 +1,11 @@
-import { STACK_ALIASES, STACK_ICONS } from './stack-icons.generated';
+import { STACK_ALIASES, STACK_ALIAS_LABELS, STACK_ICONS } from './stack-icons.generated';
 
 export interface StackIcon {
+  /** The logo's own name (Simple Icons title). */
   title: string;
   path: string;
+  /** What the profile shows: the technology the person means. */
+  label: string;
 }
 
 const norm = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
@@ -16,11 +19,13 @@ for (const [alias, slug] of Object.entries(STACK_ALIASES)) LOOKUP.set(norm(alias
 
 /** The logo for a stack tag (by name, slug or common alias), or null when there is none. */
 export function stackIconFor(tag: string): StackIcon | null {
-  const slug = LOOKUP.get(norm(tag));
-  return slug ? (STACK_ICONS[slug] ?? null) : null;
+  const key = norm(tag);
+  const slug = LOOKUP.get(key);
+  const icon = slug ? STACK_ICONS[slug] : undefined;
+  return icon ? { ...icon, label: STACK_ALIAS_LABELS[key] ?? icon.title } : null;
 }
 
 /** Display names offered while typing a stack tag. */
-export const KNOWN_STACKS: string[] = [...new Set(Object.values(STACK_ICONS).map((i) => i.title))].sort((a, b) =>
-  a.localeCompare(b, 'en', { sensitivity: 'base' }),
-);
+export const KNOWN_STACKS: string[] = [
+  ...new Set([...Object.values(STACK_ICONS).map((i) => i.title), ...Object.values(STACK_ALIAS_LABELS)]),
+].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));

@@ -1,6 +1,6 @@
 import { stackIconFor } from '../lib/stack-icons';
 
-/** A technology on a profile: its logo in the text colour (when known) and its name. */
+/** A technology on a profile: its name, decorated with its logo in the text colour when one is known. */
 export function StackTag({ tag }: { tag: string }) {
   const icon = stackIconFor(tag);
   return (
@@ -10,7 +10,7 @@ export function StackTag({ tag }: { tag: string }) {
           <path d={icon.path} />
         </svg>
       )}
-      <span>{icon ? icon.title : tag}</span>
+      <span>{icon ? icon.label : tag}</span>
     </span>
   );
 }

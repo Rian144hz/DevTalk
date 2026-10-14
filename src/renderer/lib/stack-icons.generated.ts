@@ -660,3 +660,15 @@ export const STACK_ALIASES: Record<string, string> = {
   "junit": "junit5",
   "pyspark": "apachespark"
 };
+
+/** Labels for aliases that name a related technology rather than the logo's own. */
+export const STACK_ALIAS_LABELS: Record<string, string> = {
+  "java": "Java",
+  "react native": "React Native",
+  "c#": "C#",
+  "csharp": "C#",
+  "shell": "Shell",
+  "bash": "Bash",
+  "pyspark": "PySpark",
+  "junit": "JUnit"
+};

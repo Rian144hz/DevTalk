@@ -5,7 +5,7 @@ test('common stacks resolve by name, slug or alias, ignoring case and spaces', (
   expect(stackIconFor('Python')?.title).toBe('Python');
   expect(stackIconFor('  python ')?.title).toBe('Python');
   expect(stackIconFor('c++')?.title).toBe('C++');
-  expect(stackIconFor('React  Native')?.title).toBe('React');
+  expect(stackIconFor('React  Native')?.label).toBe('React Native');
   expect(stackIconFor('node')?.title).toBe('Node.js');
   expect(stackIconFor('postgres')?.title).toBe('PostgreSQL');
 });
@@ -25,5 +25,16 @@ test('only the curated icons are bundled', () => {
 test('known stacks are display names for autocomplete', () => {
   expect(KNOWN_STACKS).toContain('Python');
   expect(KNOWN_STACKS).toContain('TypeScript');
+  expect(KNOWN_STACKS).toContain('Java');
   expect(new Set(KNOWN_STACKS).size).toBe(KNOWN_STACKS.length);
+});
+
+test('the label is what the person means, the logo is only decoration', () => {
+  expect(stackIconFor('java')).toMatchObject({ title: 'OpenJDK', label: 'Java' });
+  expect(stackIconFor('React Native')).toMatchObject({ title: 'React', label: 'React Native' });
+  expect(stackIconFor('c#')?.label).toBe('C#');
+  expect(stackIconFor('shell')?.label).toBe('Shell');
+  expect(stackIconFor('react')?.label).toBe('React');
+  expect(stackIconFor('js')?.label).toBe('JavaScript');
+  expect(stackIconFor('python')?.label).toBe('Python');
 });
