@@ -4,11 +4,11 @@ import type { SocialStatus } from '../../shared/ipc-contract';
 import { useAppData } from '../app/AppData';
 import { Button, EmptyState, Notice, Skeleton, TextField } from '../design-system';
 import { AppErrorException, api, unwrap } from '../lib/api';
+import { secondsUntilResend } from '../lib/resend';
 import { setReturnTo } from '../lib/returnTo';
 import { LEGAL_TITLES, type LegalDoc } from './LegalScreen';
 import { ProfileForm, type PhotoChange } from './ProfileForm';
 
-const RESEND_AFTER_MS = 60_000;
 const message = (e: unknown) => (e instanceof AppErrorException ? e.message : 'Something went wrong. Try again.');
 
 /** Survives a visit to a legal document and back. */
@@ -140,7 +140,7 @@ export function JoinScreen() {
     'Read and accept the community rules.',
     'Tell other developers who you are.',
   ];
-  const resendIn = Math.max(0, Math.ceil((draft.sentAt + RESEND_AFTER_MS - now) / 1000));
+  const resendIn = secondsUntilResend(draft.sentAt, now);
   const allTicked = ticks.terms && ticks.privacy && ticks.conduct && ticks.age;
   const docRow = (doc: LegalDoc, key: 'terms' | 'privacy' | 'conduct') => (
     <li className="consent-row" key={doc}>

@@ -1,6 +1,7 @@
 // Captures every screen in both themes and two window sizes into .impeccable/review/ for inspection.
 import type { Page } from '@playwright/test';
-import { answerOnce, expect, onboard, SAMPLE_ANSWER, test } from './fixtures';
+import { join } from 'node:path';
+import { answerOnce, expect, joinCommunity, onboard, SAMPLE_ANSWER, test } from './fixtures';
 
 const OUT = '.impeccable/review';
 const SIZES = [[1440, 900], [960, 640]] as const;
@@ -124,4 +125,89 @@ test('long content does not overflow at 960 px', async ({ page }) => {
   await page.evaluate(() => { location.hash = '#/progress'; });
   await page.getByRole('heading', { level: 1, name: 'Progress' }).waitFor();
   await noOverflow();
+});
+
+test.describe('community', () => {
+  test.use({ social: '1' });
+
+  test('join, people, edit profile and account', async ({ page }) => {
+    test.setTimeout(240_000);
+    await onboard(page);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      await go(page, '#/people', 'People');
+      await page.getByRole('button', { name: /Join the community|Edit profile/ }).waitFor();
+      if (await page.getByRole('button', { name: 'Join the community' }).count()) {
+        await shoot(page, 'people-signed-out', theme);
+        await page.getByRole('button', { name: 'Join the community' }).click();
+        await page.getByLabel('E-mail').fill('rian@example.com');
+        await shoot(page, 'join-1', theme);
+        await page.getByRole('button', { name: 'Send code' }).click();
+        await page.getByLabel('Code').fill('123456');
+        await shoot(page, 'join-2', theme);
+        await page.getByRole('button', { name: 'Continue' }).click();
+        await page.getByRole('checkbox', { name: 'I accept the Terms of use' }).check();
+        await shoot(page, 'join-3', theme);
+        for (const l of ['I accept the Privacy policy', 'I accept the Code of conduct', 'I am 18 or older']) await page.getByRole('checkbox', { name: l }).check();
+        await page.getByRole('button', { name: 'Continue' }).click();
+        await page.getByLabel('Display name').fill('Rian');
+        await shoot(page, 'join-4', theme);
+        await page.getByRole('button', { name: 'Join' }).click();
+        await page.getByRole('heading', { level: 2, name: 'Rian' }).waitFor();
+        await page.getByRole('button', { name: 'Edit profile' }).click();
+        await page.locator('input[type="file"]').setInputFiles(join(__dirname, 'assets', 'photo.png'));
+        await page.locator('.profile-form img.avatar').waitFor();
+        const stack = page.getByLabel('Stack');
+        for (const t of ['python', 'java', 'c++', 'docker', 'postgres', 'linux']) { await stack.fill(t); await stack.press('Enter'); }
+        await page.getByRole('button', { name: 'Add a time' }).click();
+        await page.getByLabel('About you (optional)').fill('CS student. I write Python and C++ and want to speak up in code reviews.');
+        await page.getByRole('button', { name: 'Save profile' }).click();
+        await page.locator('.profile img.avatar').waitFor();
+      }
+      await shoot(page, 'people', theme);
+      await page.getByRole('button', { name: 'Edit profile' }).click();
+      await page.getByRole('heading', { level: 1, name: 'Edit profile' }).waitFor();
+      await shoot(page, 'edit-profile', theme);
+      await go(page, '#/legal/privacy', 'Privacy policy');
+      await shoot(page, 'legal-privacy', theme);
+      await go(page, '#/settings', 'Settings');
+      await page.getByRole('region', { name: 'Account' }).scrollIntoViewIfNeeded();
+      await page.getByRole('button', { name: 'Delete my account…' }).click();
+      await page.getByRole('region', { name: 'Account' }).scrollIntoViewIfNeeded();
+      await shoot(page, 'settings-account', theme);
+      await page.getByRole('button', { name: 'Cancel' }).click();
+    }
+  });
+
+  test('worst-case profile does not overflow at 960 px', async ({ page }) => {
+    await onboard(page);
+    await joinCommunity(page, 'Maximiliano-Bartholomew-Wolfeschlegel-X');
+    await page.getByRole('button', { name: 'Edit profile' }).click();
+    const stack = page.getByLabel('Stack');
+    for (const t of ['an-internal-library-with-a-long', 'kubernetes', 'react native', 'scikit-learn', 'apache kafka', 'tensorflow', 'postgresql', 'github actions', 'elasticsearch', 'typescript']) {
+      await stack.fill(t);
+      await stack.press('Enter');
+    }
+    await page.getByLabel('About you (optional)').fill('x'.repeat(160));
+    await page.getByRole('button', { name: 'Save profile' }).click();
+    await page.getByRole('heading', { level: 2, name: 'Maximiliano-Bartholomew-Wolfeschlegel-X' }).waitFor();
+    await page.setViewportSize({ width: 960, height: 640 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+    await page.screenshot({ path: `${OUT}/people-worst-dark-960.png`, fullPage: true });
+  });
+});
+
+test.describe('moderation', () => {
+  test.use({ social: 'moderation' });
+
+  test('queue and a selected report', async ({ page }) => {
+    await onboard(page);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      await go(page, '#/moderation', 'Moderation');
+      await page.getByRole('list', { name: 'Open reports' }).getByRole('listitem').first().getByRole('button').click();
+      await page.getByRole('heading', { level: 2, name: /Report about/ }).waitFor();
+      await shoot(page, 'moderation', theme);
+    }
+  });
 });

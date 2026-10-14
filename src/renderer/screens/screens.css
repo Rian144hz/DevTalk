@@ -86,7 +86,7 @@
 .join-head { max-width: 640px; margin-bottom: var(--s2); }
 .join-step { max-width: 640px; margin-top: var(--s6); padding-top: var(--s6); border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: var(--s4); }
 .join-step > p { color: var(--ink-2); max-width: var(--measure); overflow-wrap: anywhere; }
-.join-step .field { max-width: 420px; }
+.join-step .field { max-width: none; }
 .input.code-input { font: 500 var(--text-lg) var(--font-mono); letter-spacing: 0; max-width: 220px; }
 .consents { list-style: none; padding: 0; display: flex; flex-direction: column; }
 .consent-row { display: flex; justify-content: space-between; align-items: center; gap: var(--s4); padding: var(--s3) 0; border-top: 1px solid var(--rule); flex-wrap: wrap; }

@@ -1,7 +1,14 @@
+import { useState } from 'react';
+
 /** A profile photo, or the first letter of the name in a circle. The name is always shown next to it. */
 export function Avatar({ src, name, size = 40 }: { src: string | null; name: string; size?: number }) {
+  // A photo that cannot be decoded (corrupt upload, wrong type) shows the initial instead of a broken image.
+  // Remember which src failed: a data: URL can fail before effects run, so a reset-on-change effect would undo it.
+  const [failed, setFailed] = useState<string | null>(null);
   const style = { width: size, height: size };
-  if (src) return <img className="avatar" src={src} alt="" width={size} height={size} style={style} />;
+  if (src && src !== failed) {
+    return <img className="avatar" src={src} alt="" width={size} height={size} style={style} onError={() => setFailed(src)} />;
+  }
   const initial = Array.from(name.trim())[0]?.toLocaleUpperCase('en') ?? '?';
   return (
     <span className="avatar avatar-initial" aria-hidden="true" style={{ ...style, fontSize: Math.round(size * 0.42) }}>
