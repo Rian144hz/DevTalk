@@ -590,7 +590,7 @@
       {
         "name": "float",
         "value": "0 12px 32px -8px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.35)",
-        "purpose": "Floating layers only (command palette, menus). Dark theme."
+        "purpose": "Floating layers only (command palette, report dialog, menus). Dark theme."
       },
       {
         "name": "float-light",
@@ -600,7 +600,7 @@
       {
         "name": "inset-ring",
         "value": "inset 0 0 0 1px var(--rule-strong)",
-        "purpose": "Selection outline on the checked segment and selected palette row; not elevation."
+        "purpose": "Selection outline on the checked segment, the selected palette row and the selected moderation report; not elevation."
       }
     ],
     "motion": [
@@ -639,19 +639,24 @@
       {
         "name": "single-column",
         "value": "1180px",
-        "purpose": "Home and Feedback collapse to one column below this width."
+        "purpose": "Home, Feedback and Moderation collapse to one column below this width."
       },
       {
         "name": "compact",
         "value": "1040px",
-        "purpose": "Page side padding 32px, galley margin column 200px, history grid drops track."
+        "purpose": "Page side padding 32px, galley margin column 200px, history grid drops track. Profile fact sheet term column 140px."
       }
     ],
     "layout": {
       "railWidth": "232px",
       "measure": "68ch",
       "galleyMarginColumn": "248px",
-      "pagePadding": "40px 56px 56px"
+      "pagePadding": "40px 56px 56px",
+      "joinColumn": "640px",
+      "profileColumn": "760px",
+      "profileTermColumn": "180px",
+      "moderationQueue": "340px",
+      "dialogWidth": "520px"
     }
   },
   "components": [
@@ -718,6 +723,53 @@
       "description": "Signature: the learner's text as a proof, rose deletions, sage insertions, numbered pencil carets, notes aligned in the margin.",
       "html": "<article class=\"ds-galley\"><div class=\"ds-galley-head\"><h2>Your answer</h2><span>2 edits</span></div><div class=\"ds-line\"><p class=\"ds-line-text\">Yesterday I <del>have fixed</del> <ins>fixed</ins><span class=\"ds-mark\">1</span> the flaky test.</p><div class=\"ds-line-notes\"><p><span class=\"ds-note-label\"><span class=\"ds-mark\">1</span>verb tense</span>With \"yesterday\" use the simple past.</p></div></div></article>",
       "css": ".ds-galley{background:var(--sheet,#20232b);border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);color:var(--ink,#e8e6e1);font-family:var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-galley-head{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid var(--rule,#2b2f39)}.ds-galley-head h2{margin:0;font-size:var(--text-lg,1.0625rem);font-weight:600}.ds-galley-head span{font-size:var(--text-sm,0.8125rem);color:var(--ink-3,#8c93a3)}.ds-line{display:grid;grid-template-columns:minmax(0,1fr) 248px;padding:12px 0}.ds-line-text{margin:0;padding:8px 24px;font:var(--text-base,0.9375rem)/1.85 var(--font-mono,'JetBrains Mono',ui-monospace,monospace);white-space:pre-wrap}.ds-line-notes{padding:8px 20px;border-left:1px solid var(--rule,#2b2f39);font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-line-notes p{margin:0}.ds-note-label{display:flex;align-items:center;gap:6px;color:var(--pencil,#7fb2e5);font-weight:500}.ds-galley del{color:var(--del,#d99aa8);text-decoration:line-through;text-decoration-thickness:1.5px;background:var(--del-wash,rgb(217 154 168 / 0.12));border-radius:2px}.ds-galley ins{color:var(--ins,#8cc5a2);text-decoration:none;background:var(--ins-wash,rgb(140 197 162 / 0.12));border-radius:2px}.ds-mark{display:inline-grid;place-items:center;width:16px;height:16px;font:500 10px var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--pencil,#7fb2e5);border:1px solid var(--pencil,#7fb2e5);border-radius:50%;vertical-align:2px;margin-left:2px}"
+    },
+    {
+      "name": "Avatar",
+      "kind": "custom",
+      "refersTo": "avatar",
+      "description": "Photo or initial in a ruled circle, never coloured per person; an undecodable photo falls back to the initial. 72px on a profile, 32px in lists.",
+      "html": "<span class=\"ds-avatar\" aria-hidden=\"true\">R</span>",
+      "css": ".ds-avatar{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font:600 17px/1 var(--font-ui,'Public Sans',system-ui,sans-serif);object-fit:cover}"
+    },
+    {
+      "name": "Stack Tag",
+      "kind": "chip",
+      "refersTo": "stack-tag",
+      "description": "A profile technology: Simple Icons logo in currentColor (the text tone) and its name in sans, in a 4px strong-rule chip; name only when no logo is known.",
+      "html": "<ul class=\"ds-stack\"><li><span class=\"ds-stack-tag\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/></svg><span>Python</span></span></li><li><span class=\"ds-stack-tag\"><span>Godot</span></span></li></ul>",
+      "css": ".ds-stack{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px}.ds-stack-tag{display:inline-flex;align-items:center;gap:6px;font:400 var(--text-md,0.875rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1);border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-chip,4px);padding:2px 8px}.ds-stack-tag svg{flex:none;fill:currentColor}"
+    },
+    {
+      "name": "Profile Fact Sheet",
+      "kind": "custom",
+      "description": "A profile as a ruled definition list: 180px term column in secondary ink (140px below 1040px). Also used for the moderation report detail.",
+      "html": "<dl class=\"ds-facts\"><dt>Native language</dt><dd>Portuguese (Brazil)</dd><dt>Time zone</dt><dd>America/Bahia</dd></dl>",
+      "css": ".ds-facts{display:grid;grid-template-columns:180px minmax(0,1fr);margin:0;border-top:1px solid var(--rule,#2b2f39);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1)}.ds-facts dt,.ds-facts dd{margin:0;padding:12px 0;border-bottom:1px solid var(--rule,#2b2f39)}.ds-facts dt{color:var(--ink-2,#b4b9c5);font-size:var(--text-md,0.875rem)}"
+    },
+    {
+      "name": "Report Dialog",
+      "kind": "custom",
+      "refersTo": "dialog",
+      "description": "The second floating layer after the palette: 520px sheet, float shadow, 35% black backdrop, no open/close animation; reason as radio rows with an ink accent, short sans textarea, quiet Cancel and primary Send.",
+      "html": "<div class=\"ds-dialog\" role=\"dialog\" aria-label=\"Report Sam\"><h2>Report Sam</h2><p class=\"ds-dialog-lede\">Reports go to the moderators. Sam is not told who reported them.</p><label class=\"ds-radio-row\"><input type=\"radio\" name=\"r\" checked> Spam or scams</label><label class=\"ds-radio-row\"><input type=\"radio\" name=\"r\"> Something else</label></div>",
+      "css": ".ds-dialog{width:min(520px,92vw);padding:24px;display:flex;flex-direction:column;gap:16px;background:var(--sheet,#20232b);color:var(--ink,#e8e6e1);border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-sheet,10px);box-shadow:0 12px 32px -8px rgb(0 0 0 / 0.55),0 2px 6px rgb(0 0 0 / 0.35);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-dialog h2{margin:0;font-size:var(--text-lg,1.0625rem);font-weight:600}.ds-dialog-lede{margin:-8px 0 0;color:var(--ink-2,#b4b9c5)}.ds-radio-row{display:flex;align-items:center;gap:12px;padding:6px 8px;border-radius:var(--r-control,6px);cursor:pointer}.ds-radio-row:hover{background:var(--sheet-hover,#262a33)}.ds-radio-row input{accent-color:var(--ink,#e8e6e1);width:16px;height:16px;margin:0}"
+    },
+    {
+      "name": "Inline Confirmation",
+      "kind": "custom",
+      "refersTo": "confirm-panel",
+      "description": "Block, account deletion and moderation decisions confirm inline, never in a modal: a neutral strong-rule sheet panel; the typed e-mail or required reason is the guard; no amber, no danger colour; the confirming action is secondary.",
+      "html": "<div class=\"ds-confirm\" role=\"group\" aria-label=\"Block Sam\"><p>Block Sam? You will stop seeing each other in DevTalk, and Sam cannot contact you.</p><div class=\"ds-confirm-actions\"><button class=\"ds-confirm-btn\">Block</button><button class=\"ds-confirm-quiet\">Cancel</button></div></div>",
+      "css": ".ds-confirm{display:flex;flex-direction:column;gap:8px;max-width:68ch;padding:16px 20px;border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-sheet,10px);background:var(--sheet,#20232b);color:var(--ink,#e8e6e1);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-confirm p{margin:0}.ds-confirm-actions{display:flex;gap:8px}.ds-confirm-btn,.ds-confirm-quiet{font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);border-radius:var(--r-control,6px);padding:9px 16px;cursor:pointer}.ds-confirm-btn{background:transparent;border:1px solid var(--rule-strong,#3a3f4b);color:var(--ink,#e8e6e1)}.ds-confirm-btn:hover{background:var(--sheet-hover,#262a33)}.ds-confirm-quiet{background:transparent;border:1px solid transparent;color:var(--ink-2,#b4b9c5);padding-inline:12px}"
+    },
+    {
+      "name": "Moderation Queue",
+      "kind": "nav",
+      "refersTo": "queue-row-selected",
+      "description": "Open reports as a ruled list: avatar, name, reason in secondary ink, date in tertiary ink; hover takes the sheet fill, the selected row sheet-hover plus an inset ring, like the palette selection.",
+      "html": "<ul class=\"ds-queue\"><li><button aria-current=\"true\"><span class=\"ds-q-av\">S</span><span><b>Sam</b><br><small>Spam or scams, profile</small></span><time>14 October 2026</time></button></li><li><button><span class=\"ds-q-av\">A</span><span><b>Alex</b><br><small>Harassment or bullying, profile</small></span><time>14 October 2026</time></button></li></ul>",
+      "css": ".ds-queue{list-style:none;padding:0;margin:0;width:340px;border-top:1px solid var(--rule,#2b2f39)}.ds-queue li{border-bottom:1px solid var(--rule,#2b2f39)}.ds-queue button{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 8px;background:transparent;border:0;border-radius:var(--r-control,6px);color:var(--ink,#e8e6e1);text-align:left;font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);cursor:pointer}.ds-queue button:hover{background:var(--sheet,#20232b)}.ds-queue button[aria-current=true]{background:var(--sheet-hover,#262a33);box-shadow:inset 0 0 0 1px var(--rule-strong,#3a3f4b)}.ds-queue b{font-weight:600}.ds-queue small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-queue time{align-self:start;font-size:var(--text-sm,0.8125rem);color:var(--ink-3,#8c93a3);white-space:nowrap}.ds-q-av{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font-weight:600;font-size:13px}"
     }
   ],
   "narrative": {
@@ -763,7 +815,8 @@
       "**Do** align every margin note to the galley line it marks, numbered to match its caret.",
       "**Do** separate rows and sections with 1px rules and a top border rather than wrapping them in cards.",
       "**Do** use the three-step tonal stack (rail, ground, sheet) for depth, and the float shadow only for overlays.",
-      "**Do** honour reduced motion: all durations drop to 0ms and looping animations stop."
+      "**Do** honour reduced motion: all durations drop to 0ms and looping animations stop.",
+      "**Do** confirm destructive actions inline in a neutral panel, guarded by a typed e-mail or a required reason."
     ],
     "donts": [
       "**Don't** build a dashboard of stat cards or metric tiles; progress is facts, ruled lists and tallies.",
@@ -771,7 +824,9 @@
       "**Don't** add a second accent colour or tint headings with the pencil.",
       "**Don't** add shadows to sheets, cards or buttons.",
       "**Don't** uppercase or letter-space labels, or put small category labels above headings.",
-      "**Don't** animate the command palette open or closed."
+      "**Don't** animate the command palette or the report dialog open or closed.",
+      "**Don't** colour destructive actions amber or red; amber stays for problems with the app.",
+      "**Don't** colour avatars or stack logos; logos take the text tone."
     ]
   }
 }

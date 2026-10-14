@@ -163,6 +163,46 @@ components:
   rail:
     backgroundColor: "{colors.graphite-rail}"
     width: "232px"
+  avatar:
+    backgroundColor: "{colors.galley-sheet-hover}"
+    textColor: "{colors.ink-secondary}"
+    rounded: "{rounded.pill}"
+    width: "40px"
+  stack-tag:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.chip}"
+    padding: "2px 8px"
+  textarea-short:
+    backgroundColor: "{colors.graphite-ground}"
+    textColor: "{colors.ink}"
+    typography: "{typography.body}"
+    rounded: "{rounded.control}"
+    padding: "8px 12px"
+    height: "96px"
+  dialog:
+    backgroundColor: "{colors.galley-sheet}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.sheet}"
+    padding: "24px"
+    width: "520px"
+  radio-row:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    padding: "6px 8px"
+  radio-row-hover:
+    backgroundColor: "{colors.galley-sheet-hover}"
+  confirm-panel:
+    backgroundColor: "{colors.galley-sheet}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.sheet}"
+    padding: "16px 20px"
+  queue-row-selected:
+    backgroundColor: "{colors.galley-sheet-hover}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    padding: "12px 8px"
 ---
 
 # Design System: DevTalk
@@ -237,7 +277,7 @@ A graphite (or pale cool-grey) document palette with one blue pencil and a pair 
 
 ## Layout
 
-A fixed 232px sidebar rail sits beside a fluid page padded 40px top and 56px sides (32px sides below 1040px). Home and Feedback use a two-column grid: a fluid main column and a 300px (Home) or 280px (Feedback) side column with a 40px gap; below 1180px both collapse to one column, and the Feedback side column stops being sticky. Practice, Progress and Settings cap content at 860px or 760px; Onboarding and Review cards cap at 560px.
+A fixed 232px sidebar rail sits beside a fluid page padded 40px top and 56px sides (32px sides below 1040px). Home and Feedback use a two-column grid: a fluid main column and a 300px (Home) or 280px (Feedback) side column with a 40px gap; below 1180px both collapse to one column, and the Feedback side column stops being sticky. Practice, Progress and Settings cap content at 860px or 760px; Onboarding and Review cards cap at 560px. The community screens follow the same rhythm: Join steps cap at 640px, People and the profile form at 760px, legal documents at the 68ch measure. Moderation is a 340px queue beside the selected report with a 40px gap, collapsing to one column below 1180px.
 
 Inside a galley each line is a two-column row: the mono text, then a 248px margin column (200px below 1040px) separated by a 1px rule, so each note sits beside the line it marks. Spacing runs on a 4px base (4, 8, 12, 16, 20, 24, 32, 40, 56). Sections are separated by a 1px top rule plus 24px padding rather than by cards; page headers put the title left and actions right, aligned to the bottom.
 
@@ -246,8 +286,8 @@ Inside a galley each line is a two-column row: the mono text, then a 248px margi
 The system is flat and tonal. Depth comes from three steps of surface (rail darker than ground, ground darker than sheet) and from 1px rules. Inputs sit on the ground colour so they read as recessed into a sheet. Shadow is used for exactly one thing: layers that float above the page.
 
 ### Shadow Vocabulary
-- **Float** (`box-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.35)`; light theme uses `rgb(20 24 32 / 0.22)` and `/ 0.12`): the command palette and other floating menus, over a 35% black backdrop.
-- **Inset ring** (`box-shadow: inset 0 0 0 1px` strong rule): a selection outline, not elevation, on the checked segment and the selected palette row.
+- **Float** (`box-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.35)`; light theme uses `rgb(20 24 32 / 0.22)` and `/ 0.12`): the command palette, the report dialog and other floating menus, over a 35% black backdrop.
+- **Inset ring** (`box-shadow: inset 0 0 0 1px` strong rule): a selection outline, not elevation, on the checked segment, the selected palette row and the selected moderation report.
 
 ### Named Rules
 **The Float-Only Rule.** Sheets, cards and buttons cast no shadow. If it is not floating over the page, it has no shadow.
@@ -282,11 +322,14 @@ Calm and compact; the press is the only movement.
 - **Hover / Focus:** border shifts to tertiary ink on hover and to focus blue on focus.
 - **Error:** amber border and an amber 13px message under the field; hints in tertiary ink.
 - **Segmented control:** a ground-filled 6px track with 4px options; the checked option takes sheet-hover fill, ink, weight 600 and an inset ring.
+- **Short textarea:** for prose that is not an answer (report details, warnings, bio): Public Sans at 1.6 leading, min 96px.
+- **Checkboxes and radios:** native 16px controls with an ink accent, never pencil. Radio rows are 6px by 8px with a 6px radius, sheet-hover on hover, and the 2px focus outline on the whole row.
 
 ### Navigation
 - **Rail:** darker rail tone, 1px right rule, brand row with a pencil-blue mark, a "Search or jump to..." button with `Ctrl K`, then nav rows.
 - **Rows:** 14px secondary ink with a 1.6-stroke line icon, 7px by 12px padding, 6px radius. Hover and current page both take the sheet fill with ink text; current adds weight 600. Counts sit right-aligned in mono; unreleased items carry a tertiary "Later".
 - **Command palette:** a 560px sheet at 14vh with the float shadow, a 17px borderless search input over a rule, rows with 6px radius; the selected row gets sheet-hover and an inset ring. It opens and closes without animation.
+- **Moderation row:** shown only to moderators, last in the rail, with the shield line icon.
 
 ### Galley (signature)
 The learner's text as a marked proof. A sheet with a heading row, optional "about the whole answer" notes, then line rows: mono text on the left with struck rose deletions, sage insertions and numbered pencil carets; on the right, the margin column with the matching numbered note label in pencil and the explanation in secondary ink. Lines with no edits say so quietly in the margin. Before the coach answers, the margin stays empty.
@@ -300,6 +343,27 @@ Waiting is shown as a step list (current step in pencil, done steps in secondary
 ### Tally marks
 Recurring mistakes are counted with drawn pencil tally strokes (2px by 16px, a rotated bar across each five) beside a mono count, inside ruled lists.
 
+### Avatar
+A circle with a 1px strong-rule border: the person's photo, or the first letter of the name in secondary ink, weight 600, on sheet-hover. Never coloured per person. A photo that cannot be decoded falls back to the initial. The name is always shown beside it. Sizes: 72px on a profile, 32px in lists.
+
+### Stack tag
+A technology on a profile: its Simple Icons logo at 14px in `currentColor` (the text tone), then its name in 14px Public Sans, inside a 4px chip outline in strong rule. Unknown technologies show the name only. Logos identify; they never decorate.
+
+### Profile fact sheet
+A profile is a ruled definition list, not a card: a 180px term column (140px below 1040px) in 14px secondary ink beside the value, every row ruled top and bottom. The moderation report detail uses the same sheet.
+
+### Report dialog
+The second floating layer after the palette: a 520px sheet with strong-rule border, the float shadow and a 35% black backdrop, opened and closed without animation. Heading, secondary-ink lede, radio rows for the reason, an optional short textarea, then Cancel (quiet) and Send report (primary) right-aligned.
+
+### Block button and destructive confirmations
+Blocking, deleting an account and moderation decisions confirm inline, never in a modal. The confirmation is a neutral panel: sheet fill, 1px strong rule, 10px radius, 16px by 20px padding. The guard is the input, not a colour: the typed e-mail enables account deletion, a required reason enables a suspension or warning. The confirming action is a secondary button.
+
+### Moderation queue
+Open reports as a ruled list: avatar, name in weight 600, reason and place in 13px secondary ink, date in tertiary ink. Hover takes the sheet fill; the selected row takes sheet-hover and an inset ring, like the palette selection. Each decision (dismiss, warn, suspend) is a section under a 1px top rule.
+
+### Join steps
+Join runs one step at a time in one column, like onboarding. The step count lives in the lede ("Step 2 of 4. Check your e-mail for a code."), never as a label above the heading. Consents are ruled rows with the document link right-aligned.
+
 ## Do's and Don'ts
 
 ### Do:
@@ -309,6 +373,7 @@ Recurring mistakes are counted with drawn pencil tally strokes (2px by 16px, a r
 - **Do** separate rows and sections with 1px rules and a top border rather than wrapping them in cards.
 - **Do** use the three-step tonal stack (rail, ground, sheet) for depth, and the float shadow only for overlays.
 - **Do** honour reduced motion: all durations drop to 0ms and looping animations stop.
+- **Do** confirm destructive actions inline in a neutral panel, guarded by a typed e-mail or a required reason.
 
 ### Don't:
 - **Don't** build a dashboard of stat cards or metric tiles; progress is facts, ruled lists and tallies.
@@ -316,4 +381,6 @@ Recurring mistakes are counted with drawn pencil tally strokes (2px by 16px, a r
 - **Don't** add a second accent colour or tint headings with the pencil.
 - **Don't** add shadows to sheets, cards or buttons.
 - **Don't** uppercase or letter-space labels, or put small category labels above headings.
-- **Don't** animate the command palette open or closed.
+- **Don't** animate the command palette or the report dialog open or closed.
+- **Don't** colour destructive actions amber or red; amber stays for problems with the app.
+- **Don't** colour avatars or stack logos; logos take the text tone.
