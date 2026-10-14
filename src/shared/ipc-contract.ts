@@ -1,10 +1,9 @@
 // Types and channel names shared by main, preload and renderer. No runtime dependencies:
 // the sandboxed preload bundles this file and cannot load node_modules.
 import type { Challenge, Expression } from '../core/domain/types';
-import type { Feedback } from '../core/feedback/engine';
 import type { LLMErrorKind } from '../core/llm/errors';
 import type { ProgressStage } from '../core/llm/structured';
-import type { HistoryItem, ProfileInput, StoredProfile, Theme } from '../core/ports';
+import type { HistoryItem, ProfileInput, StoredFeedback, StoredProfile, Theme } from '../core/ports';
 import type { ProgressSummary } from '../core/progress/summary';
 import type { ReviewRating, SrsCard } from '../core/srs/srs';
 import type { ProviderId } from './providers';
@@ -30,6 +29,15 @@ export interface ReviewItem {
   /** ISO dates of the next due date for each rating. */
   preview: Record<ReviewRating, string>;
 }
+/** A feedback as the Feedback screen shows it (fresh or from history). */
+export type FeedbackView = StoredFeedback;
+
+export interface ReviewQueue {
+  items: ReviewItem[];
+  /** ISO date of the earliest card, due or not; null when there are no cards. */
+  nextDueAt: string | null;
+}
+
 export interface ProgressEvent {
   requestId: string;
   stage: ProgressStage;
@@ -44,9 +52,11 @@ export interface Channels {
   'keys:clear': { in: { provider?: ProviderId }; out: KeyStatus };
   'challenges:next': { in: { requestId: string }; out: Challenge };
   'challenges:cancel': { in: { requestId: string }; out: null };
-  'feedback:submit': { in: { requestId: string; challengeId: number | null; text: string }; out: Feedback };
+  'challenges:pending': { in: Record<string, never>; out: Challenge | null };
+  'feedback:submit': { in: { requestId: string; challengeId: number | null; text: string }; out: FeedbackView };
   'feedback:cancel': { in: { requestId: string }; out: null };
-  'review:queue': { in: Record<string, never>; out: ReviewItem[] };
+  'feedback:get': { in: { feedbackId: number }; out: FeedbackView };
+  'review:queue': { in: Record<string, never>; out: ReviewQueue };
   'review:rate': { in: { expressionId: number; rating: ReviewRating }; out: { card: SrsCard } };
   'progress:summary': { in: Record<string, never>; out: ProgressSummary };
   'progress:history': { in: { before: string | null; limit?: number }; out: HistoryItem[] };
@@ -57,7 +67,7 @@ export type InvokeChannel = keyof Channels;
 
 export const INVOKE_CHANNELS = [
   'profile:get', 'profile:save', 'keys:status', 'keys:set', 'keys:clear', 'challenges:next', 'challenges:cancel',
-  'feedback:submit', 'feedback:cancel', 'review:queue', 'review:rate', 'progress:summary', 'progress:history',
+  'challenges:pending', 'feedback:submit', 'feedback:cancel', 'feedback:get', 'review:queue', 'review:rate', 'progress:summary', 'progress:history',
   'settings:get', 'settings:set',
 ] as const satisfies readonly InvokeChannel[];
 
@@ -70,10 +80,15 @@ export interface DevtalkApi {
   profile: { get(): R<'profile:get'>; save(p: ProfileInput): R<'profile:save'> };
   /** `provider` defaults to the one in the profile. */
   keys: { status(provider?: ProviderId): R<'keys:status'>; set(key: string, provider?: ProviderId): R<'keys:set'>; clear(provider?: ProviderId): R<'keys:clear'> };
-  challenges: { next(requestId: string): R<'challenges:next'>; cancel(requestId: string): R<'challenges:cancel'> };
+  challenges: {
+    next(requestId: string): R<'challenges:next'>;
+    cancel(requestId: string): R<'challenges:cancel'>;
+    pending(): R<'challenges:pending'>;
+  };
   feedback: {
     submit(input: Channels['feedback:submit']['in']): R<'feedback:submit'>;
     cancel(requestId: string): R<'feedback:cancel'>;
+    get(feedbackId: number): R<'feedback:get'>;
   };
   llm: { onProgress(cb: (e: ProgressEvent) => void): () => void };
   review: { queue(): R<'review:queue'>; rate(input: Channels['review:rate']['in']): R<'review:rate'> };

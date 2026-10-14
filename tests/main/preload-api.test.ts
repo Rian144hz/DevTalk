@@ -20,6 +20,8 @@ test('methods invoke the right channel with the right payload', async () => {
   await api.review.rate({ expressionId: 1, rating: 'good' });
   await api.progress.history({ before: null });
   await api.settings.set({ theme: 'dark' });
+  await api.feedback.get(7);
+  await api.challenges.pending();
   expect(calls).toEqual([
     ['keys:set', { key: 'k' }],
     ['keys:status', {}],
@@ -29,6 +31,8 @@ test('methods invoke the right channel with the right payload', async () => {
     ['review:rate', { expressionId: 1, rating: 'good' }],
     ['progress:history', { before: null }],
     ['settings:set', { theme: 'dark' }],
+    ['feedback:get', { feedbackId: 7 }],
+    ['challenges:pending', {}],
   ]);
 });
 

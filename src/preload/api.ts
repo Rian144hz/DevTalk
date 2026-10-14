@@ -17,10 +17,12 @@ export function buildApi(invoke: Invoke, subscribe: Subscribe): DevtalkApi {
     challenges: {
       next: (requestId) => call('challenges:next', { requestId }),
       cancel: (requestId) => call('challenges:cancel', { requestId }),
+      pending: () => call('challenges:pending'),
     },
     feedback: {
       submit: (input) => call('feedback:submit', input),
       cancel: (requestId) => call('feedback:cancel', { requestId }),
+      get: (feedbackId) => call('feedback:get', { feedbackId }),
     },
     llm: { onProgress: (cb) => subscribe(PROGRESS_EVENT, cb) },
     review: { queue: () => call('review:queue'), rate: (input) => call('review:rate', input) },

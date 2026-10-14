@@ -137,6 +137,7 @@ export function createHandlers(deps: HandlerDeps): Handlers {
       return cancellable(requestId, (signal, onProgress) => generator.next(profile, signal, onProgress));
     }),
     'challenges:cancel': handle('challenges:cancel', cancel),
+    'challenges:pending': handle('challenges:pending', () => store.pendingChallenge()),
 
     'feedback:submit': handle('feedback:submit', ({ requestId, challengeId, text }) => {
       const profile = requireProfile();
@@ -144,19 +145,25 @@ export function createHandlers(deps: HandlerDeps): Handlers {
       if (challengeId !== null && !challenge) throw new AppFailure('not_found', 'That challenge no longer exists.');
       const provider = providerFor(profile);
       const engine = new FeedbackEngine({ provider, store, clock, coachTemplate: deps.templates().coach });
-      return cancellable(requestId, (signal, onProgress) =>
-        engine.review(
+      return cancellable(requestId, async (signal, onProgress) => {
+        const result = await engine.review(
           { text, source: 'typed', context: challenge ? { kind: 'challenge', challenge } : { kind: 'free' }, learner: profile },
           signal,
           onProgress,
-        ),
-      );
+        );
+        return store.getFeedback(result.feedbackId)!;
+      });
     }),
     'feedback:cancel': handle('feedback:cancel', cancel),
+    'feedback:get': handle('feedback:get', ({ feedbackId }) => {
+      const feedback = store.getFeedback(feedbackId);
+      if (!feedback) throw new AppFailure('not_found', 'That feedback no longer exists.');
+      return feedback;
+    }),
 
     'review:queue': handle('review:queue', () => {
       const now = clock.now();
-      return store.dueCards(now, { excludeNew: false, limit: 50 }).map(({ expression, card }) => {
+      const items = store.dueCards(now, { excludeNew: false, limit: 50 }).map(({ expression, card }) => {
         const preview = previewDue(card, now);
         return {
           expression,
@@ -164,6 +171,7 @@ export function createHandlers(deps: HandlerDeps): Handlers {
           preview: Object.fromEntries(REVIEW_RATINGS.map((r) => [r, preview[r].toISOString()])) as Record<(typeof REVIEW_RATINGS)[number], string>,
         };
       });
+      return { items, nextDueAt: store.nextDueAt()?.toISOString() ?? null };
     }),
     'review:rate': handle('review:rate', ({ expressionId, rating }) => {
       const card = store.getCard(expressionId);

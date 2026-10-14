@@ -30,6 +30,7 @@ export const INPUT_SCHEMAS = {
   'keys:clear': z.object({ provider: z.enum(PROVIDERS).optional() }).strict(),
   'challenges:next': requestId,
   'challenges:cancel': requestId,
+  'challenges:pending': empty,
   'feedback:submit': z
     .object({
       requestId: z.string().min(1).max(100),
@@ -38,6 +39,7 @@ export const INPUT_SCHEMAS = {
     })
     .strict(),
   'feedback:cancel': requestId,
+  'feedback:get': z.object({ feedbackId: z.number().int().positive() }).strict(),
   'review:queue': empty,
   'review:rate': z.object({ expressionId: z.number().int().positive(), rating: z.enum(['again', 'hard', 'good', 'easy']) }).strict(),
   'progress:summary': empty,

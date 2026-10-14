@@ -147,13 +147,42 @@ test('review:rate moves the card and review:queue no longer returns it', async (
   const { h } = setup({ provider: new FakeProvider([feedbackReply]) });
   await h['feedback:submit']({ requestId: 'f1', challengeId: null, text: 'hello' });
   const queue = await h['review:queue']({});
-  expect(queue.ok && queue.data).toHaveLength(2);
-  const item = (queue as { data: { expression: { id: number }; preview: Record<string, string> }[] }).data[0]!;
+  if (!queue.ok) throw new Error('queue failed');
+  expect(queue.data.items).toHaveLength(2);
+  const item = queue.data.items[0]!;
   expect(Object.keys(item.preview)).toEqual(['again', 'hard', 'good', 'easy']);
   expect(await h['review:rate']({ expressionId: item.expression.id, rating: 'easy' })).toMatchObject({ ok: true });
   const after = await h['review:queue']({});
-  expect((after as { data: { expression: { id: number } }[] }).data.map((d) => d.expression.id)).not.toContain(item.expression.id);
+  if (!after.ok) throw new Error('queue failed');
+  expect(after.data.items.map((d) => d.expression.id)).not.toContain(item.expression.id);
   expect(await h['review:rate']({ expressionId: 9999, rating: 'good' })).toMatchObject({ ok: false, error: { kind: 'not_found' } });
+});
+
+test('review:queue reports when the next card is due', async () => {
+  const { h } = setup();
+  expect(await h['review:queue']({})).toEqual({ ok: true, data: { items: [], nextDueAt: null } });
+});
+
+test('feedback:submit returns the full view; feedback:get reads it back', async () => {
+  const { h } = setup({ provider: new FakeProvider([challengeReply, feedbackReply]) });
+  const ch = await h['challenges:next']({ requestId: 'c1' });
+  if (!ch.ok) throw new Error('challenge failed');
+  const fb = await h['feedback:submit']({ requestId: 'f1', challengeId: ch.data.id, text: 'I have fixed it.' });
+  if (!fb.ok) throw new Error('feedback failed');
+  expect(fb.data).toMatchObject({ text: 'I have fixed it.', naturalRewrite: 'I fixed it.', challenge: { id: ch.data.id } });
+  expect(fb.data.expressions.map((e) => e.text)).toEqual(['track down', 'root cause']);
+  expect(await h['feedback:get']({ feedbackId: fb.data.feedbackId })).toEqual({ ok: true, data: fb.data });
+  expect(await h['feedback:get']({ feedbackId: 999 })).toMatchObject({ ok: false, error: { kind: 'not_found' } });
+});
+
+test('challenges:pending is the unanswered challenge', async () => {
+  const { h } = setup({ provider: new FakeProvider([challengeReply, feedbackReply]) });
+  expect(await h['challenges:pending']({})).toEqual({ ok: true, data: null });
+  const ch = await h['challenges:next']({ requestId: 'c1' });
+  if (!ch.ok) throw new Error('challenge failed');
+  expect(await h['challenges:pending']({})).toMatchObject({ ok: true, data: { id: ch.data.id } });
+  await h['feedback:submit']({ requestId: 'f1', challengeId: ch.data.id, text: 'Done.' });
+  expect(await h['challenges:pending']({})).toEqual({ ok: true, data: null });
 });
 
 test('progress summary and history', async () => {
