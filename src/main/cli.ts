@@ -1,8 +1,9 @@
 import { createInterface } from 'node:readline/promises';
 import { DEFAULT_MODELS, DEFAULT_PROVIDER, PROVIDERS, PROVIDER_LABELS, type ProviderId } from '../shared/providers';
 import type { AppContext } from './app-context';
+import { runSocialSmoke, zenityAsk } from './social/cli';
 
-export const CLI_FLAGS = ['--set-key', '--smoke'] as const;
+export const CLI_FLAGS = ['--set-key', '--smoke', '--social-smoke'] as const;
 export const isCliMode = (argv: string[]) => CLI_FLAGS.some((f) => argv.includes(f));
 
 const DEFAULT_PROFILE = {
@@ -39,6 +40,12 @@ export async function runCli(argv: string[], ctx: AppContext): Promise<number> {
     else if (profile.ok && profile.data?.provider !== provider) await h['settings:set']({ provider, model: DEFAULT_MODELS[provider] });
     process.stdout.write(`\nKey saved. The coach now uses ${PROVIDER_LABELS[provider]} (${DEFAULT_MODELS[provider]}).\n`);
     return 0;
+  }
+
+  if (argv.includes('--social-smoke')) {
+    return runSocialSmoke(h, { ask: zenityAsk, log: (line) => process.stdout.write(`${line}\n`) }, {
+      checkModerator: argv.includes('--check-moderator'),
+    });
   }
 
   // --smoke: one real challenge → feedback round trip through the same handlers the UI uses.

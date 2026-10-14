@@ -70,13 +70,35 @@ npm run cli -- --smoke
 - **Review**: **Space** reveals the meaning; **1–4** rate Again, Hard, Good, Easy.
 - **Ctrl+K** opens the command palette; **Ctrl+1…Ctrl+7** jump to Home, Practice, Review, People, Rooms, Progress and Settings (the sidebar order).
 
+## Community (Supabase)
+
+The community (accounts, profiles, blocks, reports, moderation) runs on a free Supabase project. The window never talks to the network: the main process holds the Supabase client and keeps the session encrypted with the system keyring.
+
+1. **Settings.** Copy `.env.example` to `.env` and fill in the project URL and the **publishable** key (Project Settings › API). Never put the secret / service_role key there; the app refuses to start the community with it.
+2. **E-mail codes.** Supabase only sends e-mail to your own team until you set up SMTP (Authentication › Emails › SMTP Settings). The "Confirm sign up" and "Magic link or OTP" templates must show `{{ .Token }}` so people get a code, not a link.
+3. **Database.** Open SQL Editor › New query, paste all of `supabase/setup.sql`, and click Run. It creates the tables, the row-level security rules and the private `avatars` bucket. Regenerate it after changing a migration with `npm run build:setup-sql`.
+4. **Delete-account function.** Edge Functions › Deploy a new function › Via editor, name it `delete-account`, paste `supabase/functions/delete-account/single-file.ts` (regenerate with `npm run build:edge`) and keep "Verify JWT" on. The service-role key it needs already exists in the function's environment and never leaves the server.
+5. **Moderators.** Sign in once in the app, then run in SQL Editor: `insert into moderators (user_id) select id from auth.users where email = 'you@example.com';`
+
+Check it end to end (a zenity dialog asks for your e-mail and the code):
+
+```bash
+npm run cli -- --social-smoke
+```
+
+```bash
+npm run cli -- --social-smoke --check-moderator
+```
+
+Free projects pause after 7 days without use; restore them from the Supabase dashboard. Set `DEVTALK_FAKE_SOCIAL=1` (or `=moderation`, signed in as a seeded moderator) to work on the community screens without a server.
+
 ## Tests
 
 ```bash
 npm test
 ```
 
-Runs the core (no network), renderer logic and main-process tests. The main-process tests run under Electron's Node so the SQLite module matches.
+Runs the core (no network), renderer logic, Supabase (migrations and row-level security on an in-memory Postgres) and main-process tests. The main-process tests run under Electron's Node so the SQLite module matches.
 
 ```bash
 npm run test:e2e
@@ -96,6 +118,9 @@ Set `DEVTALK_FAKE_LLM=1` to use the fixture coach and `DEVTALK_USER_DATA=<dir>` 
 
 - Your practice data: `~/.config/devtalk/devtalk.sqlite` (local SQLite)
 - API keys: `~/.config/devtalk/api-key-<provider>.bin`, encrypted by the system keyring
+- Community session: `~/.config/devtalk/social-session.bin`, encrypted by the system keyring
+- Database migrations and the delete-account function: `supabase/`
+- Legal documents shown in the app: `docs/legal/`
 - Coach prompts: `prompts/coach.md` and `prompts/challenge.md` — edit them freely; they are read on every request
 - Design tokens: `src/renderer/design-system/tokens.css`
 - Approved mockups: `docs/design/mockups/` (serve them with the `mockups` entry in `.claude/launch.json`)

@@ -18,6 +18,7 @@
     "test:renderer": "vitest run --project renderer",
     "test:supabase": "vitest run --project supabase",
     "build:setup-sql": "node scripts/build-setup-sql.mts",
+    "build:edge": "node scripts/build-edge.mts",
     "gen:stack-icons": "node scripts/gen-stack-icons.mts",
     "test:e2e": "electron-vite build && playwright test"
   },
