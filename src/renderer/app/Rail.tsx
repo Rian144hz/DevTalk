@@ -29,7 +29,7 @@ export function Rail(props: { active: RouteName; dueCount: number; provider: Pro
                 {item.route === 'review' && props.dueCount > 0 && (
                   <span className="count num">{props.dueCount}<span className="visually-hidden"> due</span></span>
                 )}
-                {item.route === 'people' && <span className="later">Later</span>}
+                {item.route === 'rooms' && <span className="later">Later</span>}
               </a>
             </li>
           ))}

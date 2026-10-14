@@ -21,11 +21,11 @@ function Wrap({ id, label, hint, error, children }: FieldText & { id: string; ch
   );
 }
 
-export function TextField({ label, hint, error, ...rest }: FieldText & InputHTMLAttributes<HTMLInputElement>) {
+export function TextField({ label, hint, error, className, ...rest }: FieldText & InputHTMLAttributes<HTMLInputElement>) {
   const id = useId();
   return (
     <Wrap id={id} label={label} hint={hint} error={error}>
-      <input {...rest} id={id} className="input" aria-invalid={error ? true : undefined} aria-describedby={described(id, hint, error)} />
+      <input {...rest} id={id} className={className ? `input ${className}` : 'input'} aria-invalid={error ? true : undefined} aria-describedby={described(id, hint, error)} />
     </Wrap>
   );
 }

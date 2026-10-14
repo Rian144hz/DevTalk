@@ -27,10 +27,10 @@ test('history opens a past feedback', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Your answer' })).toBeVisible();
 });
 
-test('Rooms and People explain they are coming later', async ({ page }) => {
-  await page.getByRole('link', { name: 'Rooms' }).click();
+test('Rooms explains it is coming later; People invites you to join', async ({ page }) => {
+  await page.getByRole('link', { name: /Rooms/ }).click();
   await expect(page.getByRole('heading', { name: 'Coming in a later version' })).toBeVisible();
   await expect(page.getByText('voice rooms')).toBeVisible();
-  await page.getByRole('link', { name: /People/ }).click();
-  await expect(page.getByText('practise with other developers')).toBeVisible();
+  await page.getByRole('link', { name: 'People' }).click();
+  await expect(page.getByText('Practise with other developers, not only with the coach.')).toBeVisible();
 });

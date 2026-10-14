@@ -26,3 +26,15 @@ export function formatRelativeDay(iso: string, now: Date): string {
   if (days === 1) return 'yesterday';
   return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
+
+/** "31 January 2099" in the viewer's time zone. */
+export function formatLongDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+export const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
+
+/** "Monday, 19:00 to 21:00" (times stay in the profile's own time zone). */
+export function formatSlot(slot: { day: number; from: string; to: string }): string {
+  return `${DAY_NAMES[slot.day] ?? 'Day'}, ${slot.from} to ${slot.to}`;
+}

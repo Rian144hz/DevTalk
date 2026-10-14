@@ -81,3 +81,66 @@
 .history-text { overflow-wrap: anywhere; }
 .progress .empty { margin-top: var(--s2); }
 @media (max-width: 1040px) { .history li a { grid-template-columns: 80px minmax(0, 1fr) auto; } .history li a .track { display: none; } }
+
+/* Join the community: one column, one step at a time (same rhythm as onboarding) */
+.join-head { max-width: 640px; margin-bottom: var(--s2); }
+.join-step { max-width: 640px; margin-top: var(--s6); padding-top: var(--s6); border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: var(--s4); }
+.join-step > p { color: var(--ink-2); max-width: var(--measure); overflow-wrap: anywhere; }
+.join-step .field { max-width: 420px; }
+.input.code-input { font: 500 var(--text-lg) var(--font-mono); letter-spacing: 0; max-width: 220px; }
+.consents { list-style: none; padding: 0; display: flex; flex-direction: column; }
+.consent-row { display: flex; justify-content: space-between; align-items: center; gap: var(--s4); padding: var(--s3) 0; border-top: 1px solid var(--rule); flex-wrap: wrap; }
+.consent-row:last-child { border-bottom: 1px solid var(--rule); }
+.consent-row label { display: flex; align-items: center; gap: var(--s3); cursor: pointer; }
+.consent-row input { width: 16px; height: 16px; margin: 0; accent-color: var(--ink); flex: none; }
+.consent-row a { font-size: var(--text-sm); }
+.form-actions { display: flex; justify-content: flex-end; align-items: center; gap: var(--s2); }
+.form-actions.spread { justify-content: space-between; flex-wrap: wrap; }
+.row-actions { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+
+/* Profile form (Join step 4 and Edit profile) */
+.profile-form { max-width: 760px; display: flex; flex-direction: column; gap: var(--s6); }
+.photo-row { display: flex; align-items: flex-start; gap: var(--s5); }
+.photo-actions { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s5); align-items: start; }
+.stack-list.editable { margin-bottom: var(--s2); }
+.stack-list.editable li { display: inline-flex; align-items: center; gap: 2px; }
+.tag-remove { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 0; border-radius: var(--r-control); background: transparent; color: var(--ink-3); }
+.tag-remove:hover { color: var(--ink); background: var(--sheet-hover); }
+.slots { border: 0; padding: 0; margin: 0; min-width: 0; }
+.slots legend { padding: 0; margin-bottom: var(--s2); }
+.slot-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--s2); margin-bottom: var(--s3); }
+.slot-row { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.slot-row .select { width: 150px; }
+.slot-row .input { width: 9.5em; }
+.slots .row-actions { margin-top: var(--s1); }
+
+/* People: your profile as a ruled fact sheet, not a card wall */
+.people .notice { max-width: 760px; margin-bottom: var(--s4); }
+.profile { max-width: 760px; }
+.profile-head { display: flex; align-items: center; gap: var(--s5); padding-bottom: var(--s5); }
+.profile-head h2 { font-size: var(--text-xl); }
+.profile-head .lede { margin-top: 2px; }
+.profile-facts { display: grid; grid-template-columns: 180px minmax(0, 1fr); margin: 0; border-top: 1px solid var(--rule); }
+.profile-facts dt, .profile-facts dd { padding: var(--s3) 0; border-bottom: 1px solid var(--rule); margin: 0; }
+.profile-facts dt { color: var(--ink-2); font-size: var(--text-md); }
+.profile-facts dd { overflow-wrap: anywhere; min-width: 0; }
+.slots-read { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--s1); }
+.bio { max-width: var(--measure); }
+.people-next { max-width: 760px; margin-top: var(--s10); }
+.people-intro { max-width: 640px; display: flex; flex-direction: column; gap: var(--s4); padding-top: var(--s6); border-top: 1px solid var(--rule); }
+.intro-points { padding-left: var(--s5); color: var(--ink-2); display: flex; flex-direction: column; gap: var(--s1); }
+.profile-skeleton { max-width: 760px; }
+
+/* Legal documents: a reading page */
+.legal { display: flex; flex-direction: column; gap: var(--s6); }
+.back-link { font-size: var(--text-md); align-self: flex-start; }
+.legal-doc { max-width: var(--measure); display: flex; flex-direction: column; gap: var(--s3); }
+.legal-doc h1 { margin-bottom: var(--s1); }
+.legal-doc h1 + p { color: var(--ink-3); font-size: var(--text-md); }
+.legal-doc h2 { margin-top: var(--s5); }
+.legal-doc ul, .legal-doc ol { padding-left: var(--s5); display: flex; flex-direction: column; gap: var(--s1); }
+
+@media (max-width: 1040px) {
+  .profile-facts { grid-template-columns: 140px minmax(0, 1fr); }
+}

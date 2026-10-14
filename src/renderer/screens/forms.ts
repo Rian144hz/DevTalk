@@ -1,4 +1,5 @@
 import type { Level } from '../../core/domain/types';
+import type { Area } from '../../core/social/types';
 import type { ProviderId } from '../../shared/providers';
 
 export const LANGUAGE_OPTIONS = [
@@ -27,3 +28,9 @@ export const KEY_LINKS: Partial<Record<ProviderId, { href: string; label: string
   gemini: { href: 'https://aistudio.google.com/apikey', label: 'Get a free key' },
   anthropic: { href: 'https://console.anthropic.com/settings/keys', label: 'Get a key' },
 };
+
+export const AREA_LABELS: Record<Area, string> = {
+  backend: 'Back end', frontend: 'Front end', mobile: 'Mobile', data: 'Data', devops: 'DevOps', other: 'Other',
+};
+
+export const ALL_LEVELS: Level[] = ['A2', 'B1', 'B2', 'C1', 'C2'];

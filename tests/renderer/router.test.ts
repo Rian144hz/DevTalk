@@ -13,3 +13,12 @@ test('round-trips', () => {
     expect(parseHash(toHash(r))).toEqual(r);
   }
 });
+
+test('sub-pages are kept only where they exist', () => {
+  expect(parseHash('#/people/edit')).toEqual({ name: 'people', sub: 'edit' });
+  expect(parseHash('#/legal/privacy')).toEqual({ name: 'legal', sub: 'privacy' });
+  expect(parseHash('#/legal/nope')).toEqual({ name: 'legal' });
+  expect(parseHash('#/review/edit')).toEqual({ name: 'review' });
+  expect(parseHash('#/join')).toEqual({ name: 'join' });
+  expect(toHash({ name: 'people', sub: 'edit' })).toBe('#/people/edit');
+});

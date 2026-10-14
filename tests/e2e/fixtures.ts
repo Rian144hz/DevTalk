@@ -7,15 +7,41 @@ export { expect } from '@playwright/test';
 
 const ROOT = join(__dirname, '..', '..');
 
+export interface LaunchOptions {
+  dataDir: string;
+  keyring?: 'plain' | 'unavailable';
+  /** '1' = empty fake community, 'moderation' = seeded and signed in as a moderator. */
+  social?: '' | '1' | 'moderation';
+  /** e.g. 'deleteAccount' or 'deleteAccount:offline' */
+  socialFail?: string;
+}
+
+/** Launches the built app with the fixture coach and the given data directory. */
+export async function launchApp(o: LaunchOptions): Promise<ElectronApplication> {
+  const env = { ...process.env, DEVTALK_FAKE_LLM: '1', DEVTALK_USER_DATA: o.dataDir, DEVTALK_TEST_KEYRING: o.keyring ?? 'plain' } as Record<string, string>;
+  if (o.social) env['DEVTALK_FAKE_SOCIAL'] = o.social;
+  if (o.socialFail) env['DEVTALK_FAKE_SOCIAL_FAIL'] = o.socialFail;
+  delete env['ELECTRON_RUN_AS_NODE'];
+  delete env['ELECTRON_RENDERER_URL'];
+  return electron.launch({ args: ['.'], cwd: ROOT, env });
+}
+
+export const newDataDir = () => mkdtempSync(join(tmpdir(), 'devtalk-e2e-'));
+
 /** Launches the built app with the fixture coach and a throwaway data directory. */
-export const test = base.extend<{ keyring: 'plain' | 'unavailable'; app: ElectronApplication; page: Page }>({
+export const test = base.extend<{
+  keyring: 'plain' | 'unavailable';
+  social: '' | '1' | 'moderation';
+  socialFail: string;
+  app: ElectronApplication;
+  page: Page;
+}>({
   keyring: ['plain', { option: true }],
-  app: async ({ keyring }, use) => {
-    const dataDir = mkdtempSync(join(tmpdir(), 'devtalk-e2e-'));
-    const env = { ...process.env, DEVTALK_FAKE_LLM: '1', DEVTALK_USER_DATA: dataDir, DEVTALK_TEST_KEYRING: keyring } as Record<string, string>;
-    delete env['ELECTRON_RUN_AS_NODE'];
-    delete env['ELECTRON_RENDERER_URL'];
-    const app = await electron.launch({ args: ['.'], cwd: ROOT, env });
+  social: ['', { option: true }],
+  socialFail: ['', { option: true }],
+  app: async ({ keyring, social, socialFail }, use) => {
+    const dataDir = newDataDir();
+    const app = await launchApp({ dataDir, keyring, social, socialFail });
     await use(app);
     await app.close();
     rmSync(dataDir, { recursive: true, force: true });
@@ -65,3 +91,19 @@ export const queueSize = (page: Page) =>
     const r = await window.devtalk.review.queue();
     return r.ok ? r.data.items.length : -1;
   });
+
+/** Signs up in the fake community: e-mail, code 123456, documents, then a profile named `name`. */
+export async function joinCommunity(page: Page, name = 'Rian', email = 'rian@example.com'): Promise<void> {
+  await page.evaluate(() => { location.hash = '#/join'; });
+  await page.getByLabel('E-mail').fill(email);
+  await page.getByRole('button', { name: 'Send code' }).click();
+  await page.getByLabel('Code').fill('123456');
+  await page.getByRole('button', { name: 'Continue' }).click();
+  for (const label of ['I accept the Terms of use', 'I accept the Privacy policy', 'I accept the Code of conduct', 'I am 18 or older']) {
+    await page.getByRole('checkbox', { name: label }).check();
+  }
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByLabel('Display name').fill(name);
+  await page.getByRole('button', { name: 'Join' }).click();
+  await page.getByRole('heading', { level: 2, name }).waitFor();
+}

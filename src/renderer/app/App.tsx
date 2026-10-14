@@ -18,6 +18,9 @@ import { FeedbackRoute } from '../screens/FeedbackScreen';
 import { ReviewScreen } from '../screens/ReviewScreen';
 import { ProgressScreen } from '../screens/ProgressScreen';
 import { LaterScreen } from '../screens/LaterScreen';
+import { JoinScreen } from '../screens/JoinScreen';
+import { LegalScreen, type LegalDoc } from '../screens/LegalScreen';
+import { PeopleScreen } from '../screens/PeopleScreen';
 
 /** The component gallery ships only in dev builds (or a build made for screenshots). */
 const GALLERY = import.meta.env.DEV || import.meta.env['VITE_COMPONENT_GALLERY'] === '1';
@@ -33,6 +36,7 @@ function Placeholder({ title }: { title: string }) {
 const SCREEN_TITLES: Record<RouteName, string> = {
   onboarding: 'Set up your coach', home: 'Today', practice: 'Practice', feedback: 'Feedback', review: 'Review',
   progress: 'Progress', settings: 'Settings', people: 'People', rooms: 'Rooms', components: 'Components',
+  join: 'Join the community', legal: 'Terms and privacy', moderation: 'Moderation',
 };
 
 /** Ctrl+1…Ctrl+7 follow the sidebar order. */
@@ -94,7 +98,7 @@ function Shell() {
   const provider = profile.provider as ProviderId;
   return (
     <div className="app">
-      <Rail active={name} dueCount={dueCount} provider={provider} model={profile.model || DEFAULT_MODELS[provider]}
+      <Rail active={name === 'join' ? 'people' : name} dueCount={dueCount} provider={provider} model={profile.model || DEFAULT_MODELS[provider]}
         onOpenPalette={() => setPaletteOpen(true)} />
       {name === 'components' && GALLERY ? <ComponentsScreen />
         : name === 'home' ? <HomeScreen key={route.id ?? 0} />
@@ -102,7 +106,10 @@ function Shell() {
         : name === 'feedback' && route.id ? <FeedbackRoute id={route.id} onNext={() => { window.location.hash = '#/practice'; }} />
         : name === 'review' ? <ReviewScreen />
         : name === 'progress' ? <ProgressScreen />
-        : name === 'people' || name === 'rooms' ? <LaterScreen which={name} />
+        : name === 'people' ? <PeopleScreen edit={route.sub === 'edit'} />
+        : name === 'join' ? <JoinScreen />
+        : name === 'legal' ? <LegalScreen doc={(route.sub ?? 'terms') as LegalDoc} />
+        : name === 'rooms' ? <LaterScreen which="rooms" />
         : name === 'settings' ? <SettingsScreen profile={profile} />
         : <Placeholder title={SCREEN_TITLES[name]} />}
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={commands} />
