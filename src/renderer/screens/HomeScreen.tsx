@@ -105,7 +105,10 @@ export function HomeScreen() {
               <h2 id="watch">Keeps coming back</h2>
               <ul className="ruled">
                 {recurring.map((m) => (
-                  <li key={m.category}>{MISTAKE_LABELS[m.category]}<Tally count={m.last30Days} label={`${m.last30Days} times in the last 30 days`} /></li>
+                  <li key={m.category}>
+                    <span>{MISTAKE_LABELS[m.category]}</span>
+                    <span className="watch-count"><Tally count={m.last30Days} label={`${m.last30Days} times in the last 30 days`} /><span className="muted small num" aria-hidden="true">{m.last30Days}</span></span>
+                  </li>
                 ))}
               </ul>
             </section>

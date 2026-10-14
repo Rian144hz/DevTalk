@@ -52,7 +52,9 @@ test('screens', async ({ page }) => {
     await page.getByRole('button', { name: 'Write it' }).waitFor();
     await shoot(page, 'home', theme);
     await page.evaluate(() => { location.hash = '#/practice'; });
-    await page.getByRole('textbox', { name: 'Your answer' }).fill(SAMPLE_ANSWER);
+    await page.getByRole('textbox', { name: 'Your answer' }).fill(
+      'I think we should not add the Redis cache yet. The endpoint already answers in 40 ms, and a cache adds invalidation risk. Could we measure with real traffic first?',
+    );
     await shoot(page, 'practice', theme);
     await go(page, feedbackHash, 'Your answer');
     await shoot(page, 'feedback', theme);
@@ -85,7 +87,7 @@ test('coach states', async ({ page }) => {
   await page.getByRole('button', { name: 'Write it' }).click();
   for (const theme of THEMES) {
     await page.evaluate((t) => { document.documentElement.dataset['theme'] = t; }, theme);
-    await page.getByRole('textbox', { name: 'Your answer' }).fill(`${SAMPLE_ANSWER} #ratelimit`);
+    await page.getByRole('textbox', { name: 'Your answer' }).fill(`${SAMPLE_ANSWER} I also need to ask about the rate limit on staging.`);
     await page.getByRole('button', { name: 'Get feedback' }).click();
     await page.getByRole('status').filter({ hasText: 'The coach is reading your answer' }).waitFor();
     await page.setViewportSize({ width: 1440, height: 900 });

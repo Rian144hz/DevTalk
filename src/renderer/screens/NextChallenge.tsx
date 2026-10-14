@@ -4,7 +4,6 @@ import { CHALLENGE_CATEGORY_LABELS } from '../../core/domain/categories';
 import { api } from '../lib/api';
 import { useCoachRequest } from '../lib/useCoachRequest';
 import { Button, Chip, CoachProgress, Notice } from '../design-system';
-import { challengeTitle } from './ChallengeBrief';
 
 /** The pending challenge with "Write it", or a way to ask the coach for one. */
 export function NextChallenge({ pending, onReady, onWrite }: { pending: Challenge | null; onReady(c: Challenge): void; onWrite(): void }) {
@@ -17,8 +16,7 @@ export function NextChallenge({ pending, onReady, onWrite }: { pending: Challeng
     return (
       <div className="next">
         <div>
-          <span className="track">Next: {CHALLENGE_CATEGORY_LABELS[pending.category].toLowerCase()}</span>
-          <h2>{challengeTitle(pending)}</h2>
+          <h2>Next: {CHALLENGE_CATEGORY_LABELS[pending.category].toLowerCase()}</h2>
           <p>{pending.situation}</p>
           {pending.required.length > 0 && (
             <div className="need">Use in your answer {pending.required.map((r) => <Chip key={r.expression.id}>{r.expression.text}</Chip>)}</div>

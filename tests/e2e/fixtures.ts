@@ -57,7 +57,7 @@ export async function answerOnce(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Write it' }).click();
   await page.getByRole('textbox', { name: 'Your answer' }).fill(SAMPLE_ANSWER);
   await page.keyboard.press('Control+Enter');
-  await page.locator('.galley .mark-n').first().waitFor();
+  await page.locator('.galley .line-text .mark-n').first().waitFor();
 }
 
 export const queueSize = (page: Page) =>

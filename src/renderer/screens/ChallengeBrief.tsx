@@ -8,9 +8,8 @@ export const challengeTitle = (c: Challenge) => c.summary.charAt(0).toUpperCase(
 export function ChallengeBrief({ challenge, compact = false }: { challenge: Challenge; compact?: boolean }) {
   return (
     <div className="brief">
-      <span className="track">{CHALLENGE_CATEGORY_LABELS[challenge.category]}</span>
       <h1>{challengeTitle(challenge)}</h1>
-      <p className="brief-situation">{challenge.situation}</p>
+      <p className="brief-situation"><span className="brief-category">{CHALLENGE_CATEGORY_LABELS[challenge.category]}.</span> {challenge.situation}</p>
       {!compact && <p className="brief-who"><span className="muted">With</span> {challenge.interlocutor}</p>}
       {!compact && <p className="brief-task">{challenge.task}</p>}
       {challenge.required.length > 0 && (

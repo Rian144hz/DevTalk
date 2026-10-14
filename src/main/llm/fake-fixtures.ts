@@ -60,8 +60,8 @@ export function createFixtureProvider(opts: { delayMs?: number } = {}): LLMProvi
       if (opts.delayMs) await sleep(opts.delayMs, req.signal);
       if (req.signal.aborted) throw new LLMError('cancelled', 'Request cancelled');
       turn++;
-      // e2e switch: an answer containing #ratelimit behaves like a provider that hit its quota.
-      if (req.user.includes('#ratelimit')) throw new LLMError('rate_limited', 'Fixture rate limit');
+      // e2e switch: an answer that mentions a "rate limit" behaves like a provider that hit its quota.
+      if (req.schemaName === 'feedback' && /rate limit/i.test(req.user)) throw new LLMError('rate_limited', 'Fixture rate limit');
       return req.schemaName === 'challenge' ? challengeReply(req) : feedbackReply(req, turn);
     },
   };

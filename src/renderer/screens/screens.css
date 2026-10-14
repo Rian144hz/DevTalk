@@ -17,6 +17,7 @@
 .brief { display: flex; flex-direction: column; gap: var(--s2); max-width: var(--measure); }
 .track { font-size: var(--text-sm); color: var(--ink-2); }
 .brief-situation { color: var(--ink-2); }
+.brief-category { color: var(--ink); font-weight: 600; }
 .brief-task { font-weight: 600; }
 .brief-required { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--s2); margin-top: var(--s2); }
 .brief-required li { display: flex; gap: var(--s3); align-items: baseline; flex-wrap: wrap; }
@@ -34,6 +35,7 @@
 .watch { margin-top: var(--s10); }
 .watch li { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); padding: var(--s2) 0; font-size: var(--text-md); }
 .watch ul { margin-top: var(--s2); }
+.watch-count { display: inline-flex; align-items: center; gap: var(--s2); }
 @media (max-width: 1180px) { .home { grid-template-columns: minmax(0, 1fr); } .side { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s8); } .watch { margin-top: 0; } }
 
 /* Practice */
@@ -56,7 +58,8 @@
 .status { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); white-space: nowrap; }
 .status.ok { color: var(--pencil); }
 .status.open { color: var(--ink-2); }
-.fb-actions { display: flex; flex-direction: column; gap: var(--s2); margin-top: var(--s4); }
+.fb-head { flex-wrap: wrap; align-items: flex-start; }
+.fb-actions { display: flex; gap: var(--s2); flex-wrap: wrap; }
 @media (max-width: 1180px) { .fb { grid-template-columns: minmax(0, 1fr); } .fb-side { position: static; } }
 
 /* Review */

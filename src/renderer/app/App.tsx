@@ -35,7 +35,8 @@ const SCREEN_TITLES: Record<RouteName, string> = {
   progress: 'Progress', settings: 'Settings', people: 'People', rooms: 'Rooms', components: 'Components',
 };
 
-const SHORTCUT_ROUTES: RouteName[] = ['home', 'practice', 'review', 'progress', 'settings', 'rooms'];
+/** Ctrl+1…Ctrl+7 follow the sidebar order. */
+const SHORTCUT_ROUTES: RouteName[] = ['home', 'practice', 'review', 'people', 'rooms', 'progress', 'settings'];
 
 function Shell() {
   const { profile, dueCount, refresh } = useAppData();
@@ -47,12 +48,13 @@ function Shell() {
     const go = (name: RouteName) => () => navigate({ name });
     const theme = (t: Theme) => () => void api().settings.set({ theme: t }).then(() => refresh());
     return [
-      { id: 'go-home', label: 'Go to Today', keywords: ['home'], shortcut: 'Ctrl 1', run: go('home') },
+      { id: 'go-home', label: 'Go to Home', keywords: ['today'], shortcut: 'Ctrl 1', run: go('home') },
       { id: 'go-practice', label: 'Go to Practice', keywords: ['write', 'answer'], shortcut: 'Ctrl 2', run: go('practice') },
       { id: 'go-review', label: 'Go to Review', keywords: ['cards', 'expressions'], shortcut: 'Ctrl 3', run: go('review') },
-      { id: 'go-progress', label: 'Go to Progress', keywords: ['history', 'stats'], shortcut: 'Ctrl 4', run: go('progress') },
-      { id: 'go-settings', label: 'Go to Settings', keywords: ['preferences', 'key', 'model', 'coach'], shortcut: 'Ctrl 5', run: go('settings') },
-      { id: 'go-rooms', label: 'Go to Rooms', keywords: ['voice'], shortcut: 'Ctrl 6', run: go('rooms') },
+      { id: 'go-people', label: 'Go to People', keywords: ['partners', 'chat'], shortcut: 'Ctrl 4', run: go('people') },
+      { id: 'go-rooms', label: 'Go to Rooms', keywords: ['voice'], shortcut: 'Ctrl 5', run: go('rooms') },
+      { id: 'go-progress', label: 'Go to Progress', keywords: ['history', 'stats'], shortcut: 'Ctrl 6', run: go('progress') },
+      { id: 'go-settings', label: 'Go to Settings', keywords: ['preferences', 'key', 'model', 'coach'], shortcut: 'Ctrl 7', run: go('settings') },
       { id: 'new-challenge', label: 'Get a new challenge', keywords: ['practice'], run: go('practice') },
       { id: 'start-review', label: 'Start review', keywords: ['cards'], run: go('review') },
       { id: 'theme-dark', label: 'Switch to dark theme', keywords: ['appearance'], run: theme('dark') },

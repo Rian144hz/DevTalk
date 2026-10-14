@@ -22,6 +22,8 @@ export interface HandlerDeps {
   /** Reachability check for the chosen coach (Ollama: running and model installed). */
   checkProvider: (profile: StoredProfile) => Promise<{ ok: boolean; detail: string }>;
   templates: () => { coach: string; challenge: string };
+  /** Tie-breaker for the challenge category (fixture mode makes it deterministic). */
+  rng?: () => number;
   emitProgress: (requestId: string, stage: ProgressStage) => void;
 }
 
@@ -135,7 +137,7 @@ export function createHandlers(deps: HandlerDeps): Handlers {
     'challenges:next': handle('challenges:next', ({ requestId }) => {
       const profile = requireProfile();
       const provider = providerFor(profile);
-      const generator = new ChallengeGenerator({ provider, store, clock, challengeTemplate: deps.templates().challenge });
+      const generator = new ChallengeGenerator({ provider, store, clock, challengeTemplate: deps.templates().challenge, rng: deps.rng });
       return cancellable(requestId, (signal, onProgress) => generator.next(profile, signal, onProgress));
     }),
     'challenges:cancel': handle('challenges:cancel', cancel),

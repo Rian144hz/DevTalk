@@ -93,7 +93,7 @@ export function ReviewScreen() {
       <div className="review-actions">
         {revealed ? (
           REVIEW_RATINGS.map((r, i) => (
-            <Button key={r} variant={r === 'good' ? 'primary' : 'secondary'} disabled={busy} onClick={() => void rate(r)} className="rate">
+            <Button key={r} variant="secondary" disabled={busy} onClick={() => void rate(r)} className="rate">
               <span>{LABELS[r]}<span className="rate-when">{formatDueIn(now, new Date(item.preview[r]))}</span></span>
               <Kbd>{i + 1}</Kbd>
             </Button>

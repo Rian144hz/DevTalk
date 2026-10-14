@@ -43,8 +43,9 @@ export function FeedbackScreen({ mode, onNext }: { mode: FeedbackMode; onNext():
 
   return (
     <main className="page feedback">
-      <header className="page-head">
+      <header className="page-head fb-head">
         {challenge ? <ChallengeBrief challenge={challenge} compact /> : <h1>Feedback</h1>}
+        {mode.kind === 'ready' && <ReadyActions view={mode.view} onNext={onNext} />}
       </header>
       <div className="fb">
         <div className="fb-main">
@@ -101,7 +102,6 @@ export function FeedbackScreen({ mode, onNext }: { mode: FeedbackMode; onNext():
               </ul>
             </>
           )}
-          {mode.kind === 'ready' && <ReadyActions view={mode.view} onNext={onNext} />}
         </aside>
       </div>
     </main>

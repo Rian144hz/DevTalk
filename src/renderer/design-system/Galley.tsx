@@ -18,7 +18,10 @@ function Segment({ s }: { s: GalleySegment }) {
 function Note({ note }: { note: GalleyNote }) {
   return (
     <p>
-      <span className="note-label">{note.n !== null && <span className="visually-hidden">Edit {note.n}, </span>}{MISTAKE_LABELS[note.category]}</span>
+      <span className="note-label">
+        {note.n !== null && <><span className="mark-n" aria-hidden="true">{note.n}</span><span className="visually-hidden">Edit {note.n}, </span></>}
+        {MISTAKE_LABELS[note.category]}
+      </span>
       {note.explanation}
     </p>
   );

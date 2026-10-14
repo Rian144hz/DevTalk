@@ -90,6 +90,7 @@ export function createAppContext(emitProgress: (requestId: string, stage: Progre
       profile.provider === 'ollama'
         ? checkOllama({ model: profile.model })
         : { ok: true, detail: 'Cloud coaches are checked when you ask for feedback.' },
+    rng: useFixtureLLM() ? () => 0 : undefined,
     emitProgress,
   });
 

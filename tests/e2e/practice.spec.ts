@@ -19,7 +19,7 @@ test('get a challenge, answer it, see feedback', async ({ page }) => {
   await page.keyboard.press('Control+Enter');
   await expect(page.getByRole('status').filter({ hasText: 'The coach is reading your answer' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Your answer' })).toBeVisible();
-  await expect(page.locator('.galley .mark-n')).toHaveCount(2);
+  await expect(page.locator('.galley .line-text .mark-n')).toHaveCount(2);
   await expect(page).toHaveURL(/#\/feedback\/\d+$/);
   // Home now shows the last answer and no longer the first-run state.
   await page.getByRole('link', { name: 'Home' }).click();
@@ -31,7 +31,7 @@ test('Ctrl+Enter twice saves one answer', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Your answer' }).fill(SAMPLE_ANSWER);
   await page.keyboard.press('Control+Enter');
   await page.keyboard.press('Control+Enter');
-  await expect(page.locator('.galley .mark-n')).toHaveCount(2);
+  await expect(page.locator('.galley .line-text .mark-n')).toHaveCount(2);
   expect(await historyCount(page)).toBe(1);
 });
 

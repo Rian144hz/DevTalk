@@ -13,11 +13,11 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('a usage limit keeps the answer and offers Try again', async ({ page }) => {
-  await answer(page, `${SAMPLE_ANSWER} #ratelimit`);
+  await answer(page, `${SAMPLE_ANSWER} I also need to ask about the rate limit on staging.`);
   await expect(page.getByRole('alert').filter({ hasText: 'usage limit' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
   await page.getByRole('button', { name: 'Edit answer' }).click();
-  await expect(page.getByRole('textbox', { name: 'Your answer' })).toHaveValue(`${SAMPLE_ANSWER} #ratelimit`);
+  await expect(page.getByRole('textbox', { name: 'Your answer' })).toHaveValue(`${SAMPLE_ANSWER} I also need to ask about the rate limit on staging.`);
 });
 
 test('no key sends you to Settings', async ({ page }) => {
@@ -42,7 +42,7 @@ test('Copy puts the rewrite on the clipboard', async ({ app, page }) => {
 
 test('Write it again reopens the same challenge with your answer', async ({ page }) => {
   await answer(page, SAMPLE_ANSWER);
-  await expect(page.locator('.galley .mark-n')).toHaveCount(2);
+  await expect(page.locator('.galley .line-text .mark-n')).toHaveCount(2);
   await page.getByRole('button', { name: 'Write it again' }).click();
   await expect(page.getByRole('textbox', { name: 'Your answer' })).toHaveValue(SAMPLE_ANSWER);
 });
