@@ -12,6 +12,9 @@ export const DEFAULT_MODELS: Record<ProviderId, string> = {
   ollama: 'qwen3:4b',
 };
 
+/** Used automatically when the chosen Gemini model stays overloaded. */
+export const GEMINI_FALLBACK_MODEL = 'gemini-flash-lite-latest';
+
 export const PROVIDER_LABELS: Record<ProviderId, string> = {
   gemini: 'Google Gemini',
   anthropic: 'Anthropic Claude',

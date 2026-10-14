@@ -17,6 +17,8 @@ const REFUSAL_REASONS = new Set(['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST', 'S
 export function createGeminiProvider(opts: {
   apiKey: string;
   model: string;
+  /** Tried once when `model` is still overloaded after the retries (the free tier's newest model often is). */
+  fallbackModel?: string;
   /** Injectable for tests. */
   client?: GeminiClient;
   sleep?: (ms: number) => Promise<void>;
@@ -45,9 +47,18 @@ export function createGeminiProvider(opts: {
           response = await client.models.generateContent(params);
           break;
         } catch (err) {
+          const overloaded = err instanceof ApiError && RETRYABLE_STATUS.has(err.status);
+          if (!overloaded || req.signal.aborted) throw toLLMError(err, req.signal);
           const delay = RETRY_DELAYS_MS[attempt];
-          if (delay === undefined || req.signal.aborted || !(err instanceof ApiError) || !RETRYABLE_STATUS.has(err.status)) {
-            throw toLLMError(err, req.signal);
+          if (delay === undefined) {
+            // Still overloaded after the retries: one attempt on the lighter model, if there is one.
+            if (!opts.fallbackModel || params.model === opts.fallbackModel) throw toLLMError(err, req.signal);
+            try {
+              response = await client.models.generateContent({ ...params, model: opts.fallbackModel });
+              break;
+            } catch (fallbackErr) {
+              throw toLLMError(fallbackErr, req.signal);
+            }
           }
           await sleep(delay);
           if (req.signal.aborted) throw new LLMError('cancelled', 'Request cancelled', { cause: err });

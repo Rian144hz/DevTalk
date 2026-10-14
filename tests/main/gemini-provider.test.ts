@@ -137,3 +137,33 @@ describe('retries when Google is overloaded', () => {
     expect(calls).toHaveLength(1);
   });
 });
+
+describe('fallback model when Google stays overloaded', () => {
+  test('after the retries, one attempt goes to the fallback model', async () => {
+    const { client, calls } = fakeClient((p) => {
+      if (p.model === 'gemini-flash-latest') throw new ApiError({ status: 503, message: 'high demand' });
+      return ok();
+    });
+    const provider = createGeminiProvider({ apiKey: 'k', model: 'gemini-flash-latest', fallbackModel: 'gemini-flash-lite-latest', client, sleep: async () => {} });
+    expect(await provider.generateJson(req())).toBe('{"n":1,"kind":"a"}');
+    expect(calls.map((c) => c.model)).toEqual(['gemini-flash-latest', 'gemini-flash-latest', 'gemini-flash-latest', 'gemini-flash-lite-latest']);
+  });
+
+  test('no fallback when the model already is the fallback, or for errors that are not overload', async () => {
+    const same = fakeClient(() => { throw new ApiError({ status: 503, message: 'busy' }); });
+    await createGeminiProvider({ apiKey: 'k', model: 'gemini-flash-lite-latest', fallbackModel: 'gemini-flash-lite-latest', client: same.client, sleep: async () => {} })
+      .generateJson(req()).catch(() => {});
+    expect(same.calls).toHaveLength(3);
+    const auth = fakeClient(() => { throw new ApiError({ status: 400, message: 'API key not valid' }); });
+    await expect(createGeminiProvider({ apiKey: 'k', model: 'm', fallbackModel: 'lite', client: auth.client, sleep: async () => {} }).generateJson(req()))
+      .rejects.toMatchObject({ kind: 'auth' });
+    expect(auth.calls).toHaveLength(1);
+  });
+
+  test('if the fallback also fails, the person sees unavailable', async () => {
+    const { client, calls } = fakeClient(() => { throw new ApiError({ status: 503, message: 'busy' }); });
+    await expect(createGeminiProvider({ apiKey: 'k', model: 'm', fallbackModel: 'lite', client, sleep: async () => {} }).generateJson(req()))
+      .rejects.toMatchObject({ kind: 'unavailable' });
+    expect(calls).toHaveLength(4);
+  });
+});

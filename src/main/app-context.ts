@@ -9,7 +9,7 @@ import { createHandlers, type Handlers } from './ipc/handlers';
 import { createAnthropicProvider } from './llm/anthropic-provider';
 import { createGeminiProvider } from './llm/gemini-provider';
 import { checkOllama, createOllamaProvider } from './llm/ollama-provider';
-import type { ProviderId } from '../shared/providers';
+import { GEMINI_FALLBACK_MODEL, type ProviderId } from '../shared/providers';
 import { createFixtureProvider } from './llm/fake-fixtures';
 import { createKeyVault, isKeyringUsable, type KeyVault, type SafeStorageLike } from './vault/key-vault';
 
@@ -83,7 +83,7 @@ export function createAppContext(emitProgress: (requestId: string, stage: Progre
       }
       if (!apiKey) throw new LLMError('no_key', 'No API key');
       return profile.provider === 'gemini'
-        ? createGeminiProvider({ apiKey, model: profile.model })
+        ? createGeminiProvider({ apiKey, model: profile.model, fallbackModel: GEMINI_FALLBACK_MODEL })
         : createAnthropicProvider({ apiKey, model: profile.model });
     },
     checkProvider: async (profile) =>
