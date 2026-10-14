@@ -234,17 +234,27 @@ Visual: segue o DESIGN.md (Galley Proof), com os mesmos tokens e componentes.
 - **Smoke manual** contra o projeto real: `npm run cli -- --social-smoke` pede o e-mail e o código numa janela
   zenity, cria ou atualiza o perfil e lê de volta.
 
-## 10. Preparação do Supabase (feita pelo usuário, guiada, antes do código que depende dela)
+## 10. Preparação do Supabase
 
-1. Criar a conta e o projeto em supabase.com (plano Free) na região **South America (São Paulo)**. Guardar a
-   senha do banco num gerenciador de senhas.
-2. Project Settings › API: copiar a **Project URL** e a **publishable key** para o `.env` local (eu preparo o
-   arquivo; a pessoa cola os valores numa janela, não no chat).
-3. Authentication › Email Templates › "Magic Link": trocar o corpo para mostrar `{{ .Token }}` (o código).
-4. Aplicar as migrations: SQL Editor (colar) ou `npx supabase db push` (com login).
-5. Publicar a função `delete-account` com `npx supabase functions deploy` (com login).
-6. Entrar no app e, no SQL Editor, rodar `insert into moderators (user_id) values ('<seu id>')` para virar
-   moderador.
+### Já feito (2026-10-14, guiado)
+1. Projeto `devtalk` criado no plano Free, região São Paulo.
+2. URL e chave publicável gravadas no `.env` local (fora do git). O endpoint de saúde respondeu 200.
+3. **SMTP próprio** (Gmail `noreplaydevtalk@gmail.com` com senha de app). Ele é obrigatório: sem SMTP próprio,
+   o Supabase só envia e-mail para membros da equipe do projeto e não deixa editar os modelos.
+4. Os modelos "Confirm sign up" e "Magic link or OTP" mostram `{{ .Token }}`. No teste, o e-mail chegou só com o
+   código numérico.
+
+Detalhes para a implementação:
+- O campo de código aceita de 6 a 10 dígitos, porque o comprimento é configurável no painel.
+- O limite de e-mails com SMTP próprio é 30 por hora.
+
+### A fazer quando o código existir (guiado, pelo navegador, sem CLI)
+1. **Banco:** o app gera um único `supabase/setup.sql`, com todas as migrations em ordem. A pessoa cola no SQL
+   Editor e clica em Run.
+2. **Função `delete-account`:** criar em Edge Functions › Deploy a new function › editor do painel, colando o
+   código. `SUPABASE_SERVICE_ROLE_KEY` já existe no ambiente das funções e nunca sai do servidor.
+3. **Moderador:** entrar no app uma vez e, no SQL Editor, rodar
+   `insert into moderators (user_id) select id from auth.users where email = '<seu e-mail>';`.
 
 Projetos grátis pausam após 7 dias sem uso. A reativação é no painel (Restore), e o app explica isso na mensagem
 de erro.
