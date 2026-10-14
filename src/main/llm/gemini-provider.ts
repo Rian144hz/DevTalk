@@ -9,30 +9,49 @@ export interface GeminiClient {
 }
 
 const MAX_OUTPUT_TOKENS = 8192;
+/** Waits before retrying when Google answers "overloaded" (common on the free tier). */
+const RETRY_DELAYS_MS = [2000, 5000];
+const RETRYABLE_STATUS = new Set([500, 502, 503, 504]);
 const REFUSAL_REASONS = new Set(['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST', 'SPII', 'RECITATION']);
 
-export function createGeminiProvider(opts: { apiKey: string; model: string; client?: GeminiClient }): LLMProvider {
+export function createGeminiProvider(opts: {
+  apiKey: string;
+  model: string;
+  /** Injectable for tests. */
+  client?: GeminiClient;
+  sleep?: (ms: number) => Promise<void>;
+}): LLMProvider {
   const client: GeminiClient = opts.client ?? new GoogleGenAI({ apiKey: opts.apiKey });
+  const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
 
   return {
     id: 'gemini',
     model: opts.model,
     async generateJson(req: LLMRequest): Promise<string> {
+      const params: GenerateContentParameters = {
+        model: opts.model,
+        contents: req.user,
+        config: {
+          systemInstruction: req.system,
+          responseMimeType: 'application/json',
+          responseJsonSchema: toGeminiSchema(req.schema),
+          maxOutputTokens: MAX_OUTPUT_TOKENS,
+          abortSignal: req.signal,
+        },
+      };
       let response;
-      try {
-        response = await client.models.generateContent({
-          model: opts.model,
-          contents: req.user,
-          config: {
-            systemInstruction: req.system,
-            responseMimeType: 'application/json',
-            responseJsonSchema: toGeminiSchema(req.schema),
-            maxOutputTokens: MAX_OUTPUT_TOKENS,
-            abortSignal: req.signal,
-          },
-        });
-      } catch (err) {
-        throw toLLMError(err, req.signal);
+      for (let attempt = 0; ; attempt++) {
+        try {
+          response = await client.models.generateContent(params);
+          break;
+        } catch (err) {
+          const delay = RETRY_DELAYS_MS[attempt];
+          if (delay === undefined || req.signal.aborted || !(err instanceof ApiError) || !RETRYABLE_STATUS.has(err.status)) {
+            throw toLLMError(err, req.signal);
+          }
+          await sleep(delay);
+          if (req.signal.aborted) throw new LLMError('cancelled', 'Request cancelled', { cause: err });
+        }
       }
 
       if (response.promptFeedback?.blockReason) throw new LLMError('refusal', 'The model declined to answer this request.');

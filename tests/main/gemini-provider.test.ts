@@ -75,7 +75,8 @@ test.each([
   const { client } = fakeClient(() => {
     throw new ApiError({ status, message });
   });
-  await expect(createGeminiProvider({ apiKey: 'k', model: 'm', client }).generateJson(req())).rejects.toMatchObject({ kind });
+  const provider = createGeminiProvider({ apiKey: 'k', model: 'm', client, sleep: async () => {} });
+  await expect(provider.generateJson(req())).rejects.toMatchObject({ kind });
 });
 
 test('an aborted request → cancelled, whatever the SDK throws', async () => {
@@ -92,4 +93,47 @@ test('network failures → unavailable', async () => {
     throw new TypeError('fetch failed');
   });
   await expect(createGeminiProvider({ apiKey: 'k', model: 'm', client }).generateJson(req())).rejects.toMatchObject({ kind: 'unavailable' });
+});
+
+describe('retries when Google is overloaded', () => {
+  test('a 503 is retried and the next reply is used', async () => {
+    let n = 0;
+    const { client, calls } = fakeClient(() => {
+      if (n++ === 0) throw new ApiError({ status: 503, message: 'This model is currently experiencing high demand.' });
+      return ok();
+    });
+    const waits: number[] = [];
+    const provider = createGeminiProvider({ apiKey: 'k', model: 'm', client, sleep: async (ms) => { waits.push(ms); } });
+    expect(await provider.generateJson(req())).toBe('{"n":1,"kind":"a"}');
+    expect(calls).toHaveLength(2);
+    expect(waits).toEqual([2000]);
+  });
+
+  test('gives up after 3 attempts with unavailable', async () => {
+    const { client, calls } = fakeClient(() => {
+      throw new ApiError({ status: 503, message: 'busy' });
+    });
+    const waits: number[] = [];
+    const provider = createGeminiProvider({ apiKey: 'k', model: 'm', client, sleep: async (ms) => { waits.push(ms); } });
+    await expect(provider.generateJson(req())).rejects.toMatchObject({ kind: 'unavailable' });
+    expect(calls).toHaveLength(3);
+    expect(waits).toEqual([2000, 5000]);
+  });
+
+  test('rate limits, bad keys and cancels are not retried', async () => {
+    for (const status of [429, 400]) {
+      const { client, calls } = fakeClient(() => {
+        throw new ApiError({ status, message: 'API key not valid' });
+      });
+      await createGeminiProvider({ apiKey: 'k', model: 'm', client, sleep: async () => {} }).generateJson(req()).catch(() => {});
+      expect(calls).toHaveLength(1);
+    }
+    const ac = new AbortController();
+    const { client, calls } = fakeClient(() => {
+      throw new ApiError({ status: 503, message: 'busy' });
+    });
+    const provider = createGeminiProvider({ apiKey: 'k', model: 'm', client, sleep: async () => { ac.abort(); } });
+    await expect(provider.generateJson(req(ac.signal))).rejects.toMatchObject({ kind: 'cancelled' });
+    expect(calls).toHaveLength(1);
+  });
 });
