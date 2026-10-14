@@ -1,0 +1,319 @@
+---
+name: DevTalk
+description: A desktop English coach for developers that marks your writing like an editor's proof, with edits instead of grades.
+colors:
+  graphite-ground: "#16181d"
+  graphite-rail: "#121419"
+  galley-sheet: "#20232b"
+  galley-sheet-hover: "#262a33"
+  rule: "#2b2f39"
+  rule-strong: "#3a3f4b"
+  ink: "#e8e6e1"
+  ink-secondary: "#b4b9c5"
+  ink-tertiary: "#8c93a3"
+  pencil-blue: "#7fb2e5"
+  pencil-ink: "#0d1622"
+  pencil-wash: "rgb(127 178 229 / 0.12)"
+  dusty-rose: "#d99aa8"
+  dusty-rose-wash: "rgb(217 154 168 / 0.12)"
+  sage: "#8cc5a2"
+  sage-wash: "rgb(140 197 162 / 0.12)"
+  amber-warn: "#e0b26a"
+  focus-blue: "#9cc6f0"
+  light-ground: "#eef0f3"
+  light-rail: "#e6e9ee"
+  light-sheet: "#ffffff"
+  light-sheet-hover: "#f6f7f9"
+  light-rule: "#d5d9e0"
+  light-rule-strong: "#bcc2cc"
+  light-ink: "#1b1e24"
+  light-ink-secondary: "#454b57"
+  light-ink-tertiary: "#5c6370"
+  light-pencil-blue: "#2c66a8"
+  light-pencil-ink: "#ffffff"
+  light-dusty-rose: "#a23e58"
+  light-sage: "#2d7a4e"
+  light-amber-warn: "#8a5a00"
+typography:
+  display:
+    fontFamily: "Public Sans Variable, Public Sans, system-ui, sans-serif"
+    fontSize: "1.625rem"
+    fontWeight: 700
+    lineHeight: 1.2
+    letterSpacing: "-0.01em"
+  headline:
+    fontFamily: "Public Sans Variable, Public Sans, system-ui, sans-serif"
+    fontSize: "1.0625rem"
+    fontWeight: 600
+    lineHeight: 1.3
+  title:
+    fontFamily: "Public Sans Variable, Public Sans, system-ui, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: 600
+    lineHeight: 1.4
+  body:
+    fontFamily: "Public Sans Variable, Public Sans, system-ui, sans-serif"
+    fontSize: "0.9375rem"
+    fontWeight: 400
+    lineHeight: 1.6
+  label:
+    fontFamily: "Public Sans Variable, Public Sans, system-ui, sans-serif"
+    fontSize: "0.8125rem"
+    fontWeight: 500
+    lineHeight: 1.6
+  caption:
+    fontFamily: "Public Sans Variable, Public Sans, system-ui, sans-serif"
+    fontSize: "0.75rem"
+    fontWeight: 500
+    lineHeight: 1.6
+  galley:
+    fontFamily: "JetBrains Mono Variable, JetBrains Mono, ui-monospace, monospace"
+    fontSize: "0.9375rem"
+    fontWeight: 400
+    lineHeight: 1.85
+  expression:
+    fontFamily: "JetBrains Mono Variable, JetBrains Mono, ui-monospace, monospace"
+    fontSize: "1.0625rem"
+    fontWeight: 500
+    lineHeight: 1.4
+  mono-small:
+    fontFamily: "JetBrains Mono Variable, JetBrains Mono, ui-monospace, monospace"
+    fontSize: "0.75rem"
+    fontWeight: 400
+    lineHeight: 1.6
+rounded:
+  chip: "4px"
+  control: "6px"
+  sheet: "10px"
+  pill: "999px"
+spacing:
+  s1: "4px"
+  s2: "8px"
+  s3: "12px"
+  s4: "16px"
+  s5: "20px"
+  s6: "24px"
+  s8: "32px"
+  s10: "40px"
+  s14: "56px"
+components:
+  button-primary:
+    backgroundColor: "{colors.pencil-blue}"
+    textColor: "{colors.pencil-ink}"
+    typography: "{typography.body}"
+    rounded: "{rounded.control}"
+    padding: "9px 16px"
+  button-secondary:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    padding: "9px 16px"
+  button-secondary-hover:
+    backgroundColor: "{colors.galley-sheet-hover}"
+  button-quiet:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink-secondary}"
+    rounded: "{rounded.control}"
+    padding: "9px 12px"
+  button-quiet-hover:
+    backgroundColor: "{colors.galley-sheet}"
+    textColor: "{colors.ink}"
+  chip:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
+    typography: "{typography.mono-small}"
+    rounded: "{rounded.chip}"
+    padding: "1px 8px"
+  badge:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink-secondary}"
+    typography: "{typography.caption}"
+    rounded: "{rounded.pill}"
+    padding: "0 8px"
+  input:
+    backgroundColor: "{colors.graphite-ground}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    padding: "8px 12px"
+  textarea-answer:
+    backgroundColor: "{colors.graphite-ground}"
+    textColor: "{colors.ink}"
+    typography: "{typography.galley}"
+    rounded: "{rounded.control}"
+    padding: "8px 12px"
+    height: "180px"
+  galley:
+    backgroundColor: "{colors.galley-sheet}"
+    textColor: "{colors.ink}"
+    typography: "{typography.galley}"
+    rounded: "{rounded.sheet}"
+  expression-card:
+    backgroundColor: "{colors.galley-sheet}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.sheet}"
+    padding: "16px 20px"
+  nav-item:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink-secondary}"
+    rounded: "{rounded.control}"
+    padding: "7px 12px"
+  nav-item-active:
+    backgroundColor: "{colors.galley-sheet}"
+    textColor: "{colors.ink}"
+  rail:
+    backgroundColor: "{colors.graphite-rail}"
+    width: "232px"
+---
+
+# Design System: DevTalk
+
+## Overview
+
+**Creative North Star: "Galley Proof"**
+
+Every answer the learner writes is a galley, and the coach marks it the way an editor marks a proof: in non-repro blue pencil, with numbered carets in the line and short notes in the margin beside the line they mark. Removals are struck through in dusty rose and insertions sit beside them in sage; these are edits, not grades. The interface around the galley is a quiet desktop tool: a graphite ground, raised sheets with 1px rules, sans-serif chrome, and monospace wherever the learner's own words or a reusable expression appear.
+
+Density is that of a working document rather than a dashboard. Content is set in one main column with a narrow side column; lists are ruled, not boxed; headings are sentence-case and plain. The system rejects the category default it was built against: a grey dashboard of stat cards with one violet accent. Progress is shown as facts, ruled lists and tally marks, never as metric tiles.
+
+Dark is the default theme; a light theme swaps to a cool white sheet on pale grey with a darker pencil. Both themes share every structural rule.
+
+**Key Characteristics:**
+- One accent, pencil blue, carrying only the coach's voice and the primary action.
+- Desaturated rose/sage diff marks on monospace text; never "wrong/right" colouring.
+- Flat raised sheets defined by 1px rules; shadow only on floating layers.
+- Margin notes aligned row by row to the line they annotate.
+- Sentence-case, untracked type throughout; no uppercase labels.
+
+## Colors
+
+A graphite (or pale cool-grey) document palette with one blue pencil and a pair of muted proof marks.
+
+### Primary
+- **Non-Repro Pencil Blue** (`pencil-blue`; `light-pencil-blue` in light theme): the coach's voice. Numbered proof carets, margin-note labels, the primary button fill, the coach progress bar and current step, tally marks, the "ok" requirement status, the brand mark, links and the underline on highlighted expressions in the fluent rewrite. Its wash (`pencil-wash`) is the text-selection colour. Text on a pencil fill uses `pencil-ink`.
+
+### Secondary
+- **Dusty Rose** (`dusty-rose`, with `dusty-rose-wash` behind it): deleted text in a galley, struck through at 1.5px. Used for nothing else.
+- **Sage** (`sage`, with `sage-wash`): inserted text in a galley, never underlined. Used for nothing else.
+
+### Tertiary
+- **Proof Amber** (`amber-warn`; `light-amber-warn`): field errors, invalid-field borders, and the tinted border of error notices (mixed 55% into the rule colour). Problems with the app are amber; the learner's mistakes are never amber.
+
+### Neutral
+- **Graphite Ground** (`graphite-ground` / `light-ground`): app background and the fill of inputs, which sit "below" the sheet.
+- **Graphite Rail** (`graphite-rail` / `light-rail`): the sidebar, one step darker than the ground.
+- **Galley Sheet** (`galley-sheet` / `light-sheet`): raised surfaces: galleys, expression cards, the rewrite block, notices, the command palette, active and hovered nav rows. `galley-sheet-hover` is the next step for hover and selected states on a sheet.
+- **Rule** (`rule`) and **Strong Rule** (`rule-strong`): 1px dividers and borders. Plain rules separate rows and sections; strong rules outline controls, chips, badges, keys and notices.
+- **Ink** (`ink`), **Ink Secondary** (`ink-secondary`), **Ink Tertiary** (`ink-tertiary`): primary text, supporting text (ledes, margin notes, meanings), and hints/metadata. Tertiary ink passes AA on both grounds.
+- **Focus Blue** (`focus-blue`; equals the pencil in light theme): the 2px focus outline.
+
+### Named Rules
+**The Blue Pencil Rule.** Pencil blue belongs to the coach and to the one primary action on a screen. It never decorates headings, backgrounds or icons that the coach did not "write".
+
+**The Edits, Not Grades Rule.** Rose and sage appear only as a pair of diff marks inside the learner's text. They are never status colours, never fills, never "correct/incorrect" signals; app errors use amber.
+
+## Typography
+
+**Display Font:** Public Sans Variable (with system-ui, sans-serif)
+**Body Font:** Public Sans Variable (with system-ui, sans-serif)
+**Label/Mono Font:** JetBrains Mono Variable (with ui-monospace, monospace)
+
+**Character:** A neutral, slightly civic sans runs the interface; a programmer's monospace sets the learner's words, expressions, keys and counts, so "your text" and "the tool" read as two different materials.
+
+### Hierarchy
+- **Display** (700, 26px, 1.2, -0.01em): the single page title (h1), including the challenge title on Practice and Feedback.
+- **Headline** (600, 17px, 1.3): section and sheet headings (h2): galley head, "Next: ...", side-column headings.
+- **Title** (600, 14px, 1.4): sub-headings inside a sheet (h3) and field labels.
+- **Body** (400, 15px, 1.6): all running text; ledes and briefs capped at the 68ch measure. The fluent rewrite is set larger (17px, 1.75).
+- **Label** (500, 13px): margin notes, coach progress, hints, metadata, notice details, track lines.
+- **Caption** (500, 12px): type badges, rail footer, "Later" tags.
+- **Galley** (mono 400, 15px, 1.85): the learner's text in a galley and in the answer textarea. The open leading leaves room for strike-throughs and carets.
+- **Expression** (mono 500, 17px; 20px on the review card): the phrase on an expression card.
+- **Mono small** (mono, 12–13px): chips, `kbd` keys, nav counts, the model id.
+
+### Named Rules
+**The Two Materials Rule.** Monospace is reserved for the learner's own words, reusable expressions, keys and numbers; everything else is Public Sans. Never set interface chrome in mono or the galley in sans.
+
+**The Sentence-Case Rule.** Headings and labels are sentence-case with no tracking. The only letter-spacing in the system is the display title's -0.01em.
+
+## Layout
+
+A fixed 232px sidebar rail sits beside a fluid page padded 40px top and 56px sides (32px sides below 1040px). Home and Feedback use a two-column grid: a fluid main column and a 300px (Home) or 280px (Feedback) side column with a 40px gap; below 1180px both collapse to one column, and the Feedback side column stops being sticky. Practice, Progress and Settings cap content at 860px or 760px; Onboarding and Review cards cap at 560px.
+
+Inside a galley each line is a two-column row: the mono text, then a 248px margin column (200px below 1040px) separated by a 1px rule, so each note sits beside the line it marks. Spacing runs on a 4px base (4, 8, 12, 16, 20, 24, 32, 40, 56). Sections are separated by a 1px top rule plus 24px padding rather than by cards; page headers put the title left and actions right, aligned to the bottom.
+
+## Elevation & Depth
+
+The system is flat and tonal. Depth comes from three steps of surface (rail darker than ground, ground darker than sheet) and from 1px rules. Inputs sit on the ground colour so they read as recessed into a sheet. Shadow is used for exactly one thing: layers that float above the page.
+
+### Shadow Vocabulary
+- **Float** (`box-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.35)`; light theme uses `rgb(20 24 32 / 0.22)` and `/ 0.12`): the command palette and other floating menus, over a 35% black backdrop.
+- **Inset ring** (`box-shadow: inset 0 0 0 1px` strong rule): a selection outline, not elevation, on the checked segment and the selected palette row.
+
+### Named Rules
+**The Float-Only Rule.** Sheets, cards and buttons cast no shadow. If it is not floating over the page, it has no shadow.
+
+## Shapes
+
+Three radii, sized to the object: 4px for small inline things (chips, keys, segmented options), 6px for controls (buttons, inputs, nav rows, focus outlines), 10px for sheets (galleys, cards, notices, palette). Badges are full pills. Diff marks get a 2px corner on their wash. Borders are always 1px; dashed borders mean "absent or open": the empty state and the "chunk" type badge. The numbered proof caret is a 16px circle outlined in pencil.
+
+## Components
+
+### Buttons
+Calm and compact; the press is the only movement.
+- **Shape:** gently rounded (6px), 9px by 16px padding, weight 500, optional trailing `kbd` hint.
+- **Primary:** pencil fill with pencil-ink text; at most one per view.
+- **Secondary:** transparent with a strong-rule border; hover fills with the sheet-hover tone.
+- **Quiet:** borderless secondary-ink text; hover raises to sheet with ink text.
+- **Hover / Focus / Active:** colour changes over 180ms; press scales to 0.97 over 120ms on a strong ease-out. Focus is a 2px focus-blue outline offset 2px. Disabled is 50% opacity; busy shows a pulsing 6px dot.
+
+### Chips
+- **Style:** mono 13px expression text in a 1px strong-rule outline, 4px radius, no fill. Inside requirement lists and the due list it drops its border and padding to read as plain mono.
+- **Type badges:** 12px pills. Phrasal verb: ink text, tertiary-ink border. Collocation: ink on sheet-hover fill. Chunk: secondary ink, dashed border.
+
+### Cards / Containers
+- **Corner Style:** 10px.
+- **Background:** galley sheet on the ground.
+- **Shadow Strategy:** none (see Elevation).
+- **Border:** 1px rule.
+- **Internal Padding:** 16–24px; galley heads and general notes 16px by 24px; expression cards 16px by 20px (24px on the review card).
+
+### Inputs / Fields
+- **Style:** ground-colour fill, 1px strong-rule border, 6px radius, 8px by 12px padding; the answer textarea is set in the galley mono at 1.85 leading, min 180px.
+- **Hover / Focus:** border shifts to tertiary ink on hover and to focus blue on focus.
+- **Error:** amber border and an amber 13px message under the field; hints in tertiary ink.
+- **Segmented control:** a ground-filled 6px track with 4px options; the checked option takes sheet-hover fill, ink, weight 600 and an inset ring.
+
+### Navigation
+- **Rail:** darker rail tone, 1px right rule, brand row with a pencil-blue mark, a "Search or jump to..." button with `Ctrl K`, then nav rows.
+- **Rows:** 14px secondary ink with a 1.6-stroke line icon, 7px by 12px padding, 6px radius. Hover and current page both take the sheet fill with ink text; current adds weight 600. Counts sit right-aligned in mono; unreleased items carry a tertiary "Later".
+- **Command palette:** a 560px sheet at 14vh with the float shadow, a 17px borderless search input over a rule, rows with 6px radius; the selected row gets sheet-hover and an inset ring. It opens and closes without animation.
+
+### Galley (signature)
+The learner's text as a marked proof. A sheet with a heading row, optional "about the whole answer" notes, then line rows: mono text on the left with struck rose deletions, sage insertions and numbered pencil carets; on the right, the margin column with the matching numbered note label in pencil and the explanation in secondary ink. Lines with no edits say so quietly in the margin. Before the coach answers, the margin stays empty.
+
+### Expression card
+Same layout everywhere: mono phrase with its type badge top-right, meaning in secondary ink, an example sentence, optional footer in tertiary ink.
+
+### Coach progress
+Waiting is shown as a step list (current step in pencil, done steps in secondary ink) and a 2px rule-coloured track with a sliding pencil segment, plus a cancel action. Under reduced motion the segment stops and fills the track at half opacity.
+
+### Tally marks
+Recurring mistakes are counted with drawn pencil tally strokes (2px by 16px, a rotated bar across each five) beside a mono count, inside ruled lists.
+
+## Do's and Don'ts
+
+### Do:
+- **Do** keep pencil blue to the coach's marks, notes, progress and the one primary action per view.
+- **Do** set the learner's text, expressions, keys and counts in JetBrains Mono, and everything else in Public Sans.
+- **Do** align every margin note to the galley line it marks, numbered to match its caret.
+- **Do** separate rows and sections with 1px rules and a top border rather than wrapping them in cards.
+- **Do** use the three-step tonal stack (rail, ground, sheet) for depth, and the float shadow only for overlays.
+- **Do** honour reduced motion: all durations drop to 0ms and looping animations stop.
+
+### Don't:
+- **Don't** build a dashboard of stat cards or metric tiles; progress is facts, ruled lists and tallies.
+- **Don't** use rose or sage outside the diff, or label anything "wrong" or "correct".
+- **Don't** add a second accent colour or tint headings with the pencil.
+- **Don't** add shadows to sheets, cards or buttons.
+- **Don't** uppercase or letter-space labels, or put small category labels above headings.
+- **Don't** animate the command palette open or closed.

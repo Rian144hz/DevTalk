@@ -20,6 +20,42 @@
         ],
         "createdAt": "2026-10-14T00:55:01.174Z",
         "reason": "assistant decision: canon card intentionally depicts the category-standard dark dev tool (Inter); decision-round sketch only"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/assigned.html"
+        ],
+        "createdAt": "2026-10-14T12:32:06.755Z",
+        "reason": "assistant decision: decision-round sketch of an alternative visual world; its fonts are intentionally not the shipped system"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/model-pick.html"
+        ],
+        "createdAt": "2026-10-14T12:32:06.786Z",
+        "reason": "assistant decision: decision-round sketch of an alternative visual world; its fonts are intentionally not the shipped system"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/challenger-wayfinding.html"
+        ],
+        "createdAt": "2026-10-14T12:32:06.816Z",
+        "reason": "assistant decision: decision-round sketch of an alternative visual world; its fonts are intentionally not the shipped system"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/canon.html"
+        ],
+        "createdAt": "2026-10-14T12:32:06.847Z",
+        "reason": "assistant decision: decision-round sketch of an alternative visual world; its fonts are intentionally not the shipped system"
       }
     ]
   }

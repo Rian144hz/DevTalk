@@ -1,0 +1,777 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-14T12:33:08+00:00",
+  "title": "Design System: DevTalk",
+  "extensions": {
+    "colorMeta": {
+      "graphite-ground": {
+        "role": "neutral",
+        "displayName": "Graphite Ground",
+        "canonical": "#16181d",
+        "cssVar": "--bg",
+        "tonalRamp": [
+          "oklch(15% 0.010 268)",
+          "oklch(26% 0.010 268)",
+          "oklch(37% 0.010 268)",
+          "oklch(48% 0.010 268)",
+          "oklch(59% 0.010 268)",
+          "oklch(70% 0.010 268)",
+          "oklch(82% 0.010 268)",
+          "oklch(95% 0.010 268)"
+        ],
+        "oklch": "oklch(20.9% 0.010 268)",
+        "theme": "dark (default :root)"
+      },
+      "graphite-rail": {
+        "role": "neutral",
+        "displayName": "Graphite Rail",
+        "canonical": "#121419",
+        "cssVar": "--bg-rail",
+        "tonalRamp": [
+          "oklch(15% 0.011 268)",
+          "oklch(26% 0.011 268)",
+          "oklch(37% 0.011 268)",
+          "oklch(48% 0.011 268)",
+          "oklch(59% 0.011 268)",
+          "oklch(70% 0.011 268)",
+          "oklch(82% 0.011 268)",
+          "oklch(95% 0.011 268)"
+        ],
+        "oklch": "oklch(19.1% 0.011 268)",
+        "theme": "dark (default :root)"
+      },
+      "galley-sheet": {
+        "role": "neutral",
+        "displayName": "Galley Sheet",
+        "canonical": "#20232b",
+        "cssVar": "--sheet",
+        "tonalRamp": [
+          "oklch(15% 0.016 269)",
+          "oklch(26% 0.016 269)",
+          "oklch(37% 0.016 269)",
+          "oklch(48% 0.016 269)",
+          "oklch(59% 0.016 269)",
+          "oklch(70% 0.016 269)",
+          "oklch(82% 0.016 269)",
+          "oklch(95% 0.016 269)"
+        ],
+        "oklch": "oklch(25.7% 0.016 269)",
+        "theme": "dark (default :root)"
+      },
+      "galley-sheet-hover": {
+        "role": "neutral",
+        "displayName": "Galley Sheet Hover",
+        "canonical": "#262a33",
+        "cssVar": "--sheet-hover",
+        "tonalRamp": [
+          "oklch(15% 0.018 266)",
+          "oklch(26% 0.018 266)",
+          "oklch(37% 0.018 266)",
+          "oklch(48% 0.018 266)",
+          "oklch(59% 0.018 266)",
+          "oklch(70% 0.018 266)",
+          "oklch(82% 0.018 266)",
+          "oklch(95% 0.018 266)"
+        ],
+        "oklch": "oklch(28.5% 0.018 266)",
+        "theme": "dark (default :root)"
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "canonical": "#2b2f39",
+        "cssVar": "--rule",
+        "tonalRamp": [
+          "oklch(15% 0.019 268)",
+          "oklch(26% 0.019 268)",
+          "oklch(37% 0.019 268)",
+          "oklch(48% 0.019 268)",
+          "oklch(59% 0.019 268)",
+          "oklch(70% 0.019 268)",
+          "oklch(82% 0.019 268)",
+          "oklch(95% 0.019 268)"
+        ],
+        "oklch": "oklch(30.5% 0.019 268)",
+        "theme": "dark (default :root)"
+      },
+      "rule-strong": {
+        "role": "neutral",
+        "displayName": "Strong Rule",
+        "canonical": "#3a3f4b",
+        "cssVar": "--rule-strong",
+        "tonalRamp": [
+          "oklch(15% 0.022 267)",
+          "oklch(26% 0.022 267)",
+          "oklch(37% 0.022 267)",
+          "oklch(48% 0.022 267)",
+          "oklch(59% 0.022 267)",
+          "oklch(70% 0.022 267)",
+          "oklch(82% 0.022 267)",
+          "oklch(95% 0.022 267)"
+        ],
+        "oklch": "oklch(36.8% 0.022 267)",
+        "theme": "dark (default :root)"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#e8e6e1",
+        "cssVar": "--ink",
+        "tonalRamp": [
+          "oklch(15% 0.007 89)",
+          "oklch(26% 0.007 89)",
+          "oklch(37% 0.007 89)",
+          "oklch(48% 0.007 89)",
+          "oklch(59% 0.007 89)",
+          "oklch(70% 0.007 89)",
+          "oklch(82% 0.007 89)",
+          "oklch(95% 0.007 89)"
+        ],
+        "oklch": "oklch(92.5% 0.007 89)",
+        "theme": "dark (default :root)"
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "Ink Secondary",
+        "canonical": "#b4b9c5",
+        "cssVar": "--ink-2",
+        "tonalRamp": [
+          "oklch(15% 0.018 268)",
+          "oklch(26% 0.018 268)",
+          "oklch(37% 0.018 268)",
+          "oklch(48% 0.018 268)",
+          "oklch(59% 0.018 268)",
+          "oklch(70% 0.018 268)",
+          "oklch(82% 0.018 268)",
+          "oklch(95% 0.018 268)"
+        ],
+        "oklch": "oklch(78.6% 0.018 268)",
+        "theme": "dark (default :root)"
+      },
+      "ink-tertiary": {
+        "role": "neutral",
+        "displayName": "Ink Tertiary",
+        "canonical": "#8c93a3",
+        "cssVar": "--ink-3",
+        "tonalRamp": [
+          "oklch(15% 0.025 267)",
+          "oklch(26% 0.025 267)",
+          "oklch(37% 0.025 267)",
+          "oklch(48% 0.025 267)",
+          "oklch(59% 0.025 267)",
+          "oklch(70% 0.025 267)",
+          "oklch(82% 0.025 267)",
+          "oklch(95% 0.025 267)"
+        ],
+        "oklch": "oklch(66.3% 0.025 267)",
+        "theme": "dark (default :root)"
+      },
+      "pencil-blue": {
+        "role": "primary",
+        "displayName": "Non-Repro Pencil Blue",
+        "canonical": "#7fb2e5",
+        "cssVar": "--pencil",
+        "tonalRamp": [
+          "oklch(15% 0.092 249)",
+          "oklch(26% 0.092 249)",
+          "oklch(37% 0.092 249)",
+          "oklch(48% 0.092 249)",
+          "oklch(59% 0.092 249)",
+          "oklch(70% 0.092 249)",
+          "oklch(82% 0.092 249)",
+          "oklch(95% 0.092 249)"
+        ],
+        "oklch": "oklch(74.7% 0.092 249)",
+        "theme": "dark (default :root)"
+      },
+      "pencil-ink": {
+        "role": "primary",
+        "displayName": "Pencil Ink",
+        "canonical": "#0d1622",
+        "cssVar": "--pencil-ink",
+        "tonalRamp": [
+          "oklch(15% 0.028 256)",
+          "oklch(26% 0.028 256)",
+          "oklch(37% 0.028 256)",
+          "oklch(48% 0.028 256)",
+          "oklch(59% 0.028 256)",
+          "oklch(70% 0.028 256)",
+          "oklch(82% 0.028 256)",
+          "oklch(95% 0.028 256)"
+        ],
+        "oklch": "oklch(19.8% 0.028 256)",
+        "theme": "dark (default :root)"
+      },
+      "pencil-wash": {
+        "role": "primary",
+        "displayName": "Pencil Wash",
+        "canonical": "rgb(127 178 229 / 0.12)",
+        "cssVar": "--pencil-wash",
+        "theme": "dark (default :root)"
+      },
+      "dusty-rose": {
+        "role": "secondary",
+        "displayName": "Dusty Rose",
+        "canonical": "#d99aa8",
+        "cssVar": "--del",
+        "tonalRamp": [
+          "oklch(15% 0.077 4)",
+          "oklch(26% 0.077 4)",
+          "oklch(37% 0.077 4)",
+          "oklch(48% 0.077 4)",
+          "oklch(59% 0.077 4)",
+          "oklch(70% 0.077 4)",
+          "oklch(82% 0.077 4)",
+          "oklch(95% 0.077 4)"
+        ],
+        "oklch": "oklch(75.1% 0.077 4)",
+        "theme": "dark (default :root)"
+      },
+      "dusty-rose-wash": {
+        "role": "secondary",
+        "displayName": "Dusty Rose Wash",
+        "canonical": "rgb(217 154 168 / 0.12)",
+        "cssVar": "--del-wash",
+        "theme": "dark (default :root)"
+      },
+      "sage": {
+        "role": "secondary",
+        "displayName": "Sage",
+        "canonical": "#8cc5a2",
+        "cssVar": "--ins",
+        "tonalRamp": [
+          "oklch(15% 0.078 157)",
+          "oklch(26% 0.078 157)",
+          "oklch(37% 0.078 157)",
+          "oklch(48% 0.078 157)",
+          "oklch(59% 0.078 157)",
+          "oklch(70% 0.078 157)",
+          "oklch(82% 0.078 157)",
+          "oklch(95% 0.078 157)"
+        ],
+        "oklch": "oklch(77.4% 0.078 157)",
+        "theme": "dark (default :root)"
+      },
+      "sage-wash": {
+        "role": "secondary",
+        "displayName": "Sage Wash",
+        "canonical": "rgb(140 197 162 / 0.12)",
+        "cssVar": "--ins-wash",
+        "theme": "dark (default :root)"
+      },
+      "amber-warn": {
+        "role": "tertiary",
+        "displayName": "Proof Amber",
+        "canonical": "#e0b26a",
+        "cssVar": "--warn",
+        "tonalRamp": [
+          "oklch(15% 0.105 78)",
+          "oklch(26% 0.105 78)",
+          "oklch(37% 0.105 78)",
+          "oklch(48% 0.105 78)",
+          "oklch(59% 0.105 78)",
+          "oklch(70% 0.105 78)",
+          "oklch(82% 0.105 78)",
+          "oklch(95% 0.105 78)"
+        ],
+        "oklch": "oklch(79.0% 0.105 78)",
+        "theme": "dark (default :root)"
+      },
+      "focus-blue": {
+        "role": "neutral",
+        "displayName": "Focus Blue",
+        "canonical": "#9cc6f0",
+        "cssVar": "--focus",
+        "tonalRamp": [
+          "oklch(15% 0.075 249)",
+          "oklch(26% 0.075 249)",
+          "oklch(37% 0.075 249)",
+          "oklch(48% 0.075 249)",
+          "oklch(59% 0.075 249)",
+          "oklch(70% 0.075 249)",
+          "oklch(82% 0.075 249)",
+          "oklch(95% 0.075 249)"
+        ],
+        "oklch": "oklch(81.1% 0.075 249)",
+        "theme": "dark (default :root)"
+      },
+      "light-ground": {
+        "role": "neutral",
+        "displayName": "Graphite Ground (light theme)",
+        "canonical": "#eef0f3",
+        "cssVar": "--bg",
+        "tonalRamp": [
+          "oklch(15% 0.005 258)",
+          "oklch(26% 0.005 258)",
+          "oklch(37% 0.005 258)",
+          "oklch(48% 0.005 258)",
+          "oklch(59% 0.005 258)",
+          "oklch(70% 0.005 258)",
+          "oklch(82% 0.005 258)",
+          "oklch(95% 0.005 258)"
+        ],
+        "oklch": "oklch(95.4% 0.005 258)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-rail": {
+        "role": "neutral",
+        "displayName": "Graphite Rail (light theme)",
+        "canonical": "#e6e9ee",
+        "cssVar": "--bg-rail",
+        "tonalRamp": [
+          "oklch(15% 0.007 261)",
+          "oklch(26% 0.007 261)",
+          "oklch(37% 0.007 261)",
+          "oklch(48% 0.007 261)",
+          "oklch(59% 0.007 261)",
+          "oklch(70% 0.007 261)",
+          "oklch(82% 0.007 261)",
+          "oklch(95% 0.007 261)"
+        ],
+        "oklch": "oklch(93.3% 0.007 261)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-sheet": {
+        "role": "neutral",
+        "displayName": "Galley Sheet (light theme)",
+        "canonical": "#ffffff",
+        "cssVar": "--sheet",
+        "tonalRamp": [
+          "oklch(15% 0.000 90)",
+          "oklch(26% 0.000 90)",
+          "oklch(37% 0.000 90)",
+          "oklch(48% 0.000 90)",
+          "oklch(59% 0.000 90)",
+          "oklch(70% 0.000 90)",
+          "oklch(82% 0.000 90)",
+          "oklch(95% 0.000 90)"
+        ],
+        "oklch": "oklch(100.0% 0.000 90)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-sheet-hover": {
+        "role": "neutral",
+        "displayName": "Galley Sheet Hover (light theme)",
+        "canonical": "#f6f7f9",
+        "cssVar": "--sheet-hover",
+        "tonalRamp": [
+          "oklch(15% 0.003 265)",
+          "oklch(26% 0.003 265)",
+          "oklch(37% 0.003 265)",
+          "oklch(48% 0.003 265)",
+          "oklch(59% 0.003 265)",
+          "oklch(70% 0.003 265)",
+          "oklch(82% 0.003 265)",
+          "oklch(95% 0.003 265)"
+        ],
+        "oklch": "oklch(97.6% 0.003 265)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-rule": {
+        "role": "neutral",
+        "displayName": "Rule (light theme)",
+        "canonical": "#d5d9e0",
+        "cssVar": "--rule",
+        "tonalRamp": [
+          "oklch(15% 0.011 262)",
+          "oklch(26% 0.011 262)",
+          "oklch(37% 0.011 262)",
+          "oklch(48% 0.011 262)",
+          "oklch(59% 0.011 262)",
+          "oklch(70% 0.011 262)",
+          "oklch(82% 0.011 262)",
+          "oklch(95% 0.011 262)"
+        ],
+        "oklch": "oklch(88.4% 0.011 262)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-rule-strong": {
+        "role": "neutral",
+        "displayName": "Strong Rule (light theme)",
+        "canonical": "#bcc2cc",
+        "cssVar": "--rule-strong",
+        "tonalRamp": [
+          "oklch(15% 0.016 261)",
+          "oklch(26% 0.016 261)",
+          "oklch(37% 0.016 261)",
+          "oklch(48% 0.016 261)",
+          "oklch(59% 0.016 261)",
+          "oklch(70% 0.016 261)",
+          "oklch(82% 0.016 261)",
+          "oklch(95% 0.016 261)"
+        ],
+        "oklch": "oklch(81.2% 0.016 261)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-ink": {
+        "role": "neutral",
+        "displayName": "Ink (light theme)",
+        "canonical": "#1b1e24",
+        "cssVar": "--ink",
+        "tonalRamp": [
+          "oklch(15% 0.012 264)",
+          "oklch(26% 0.012 264)",
+          "oklch(37% 0.012 264)",
+          "oklch(48% 0.012 264)",
+          "oklch(59% 0.012 264)",
+          "oklch(70% 0.012 264)",
+          "oklch(82% 0.012 264)",
+          "oklch(95% 0.012 264)"
+        ],
+        "oklch": "oklch(23.5% 0.012 264)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-ink-secondary": {
+        "role": "neutral",
+        "displayName": "Ink Secondary (light theme)",
+        "canonical": "#454b57",
+        "cssVar": "--ink-2",
+        "tonalRamp": [
+          "oklch(15% 0.022 264)",
+          "oklch(26% 0.022 264)",
+          "oklch(37% 0.022 264)",
+          "oklch(48% 0.022 264)",
+          "oklch(59% 0.022 264)",
+          "oklch(70% 0.022 264)",
+          "oklch(82% 0.022 264)",
+          "oklch(95% 0.022 264)"
+        ],
+        "oklch": "oklch(41.2% 0.022 264)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-ink-tertiary": {
+        "role": "neutral",
+        "displayName": "Ink Tertiary (light theme)",
+        "canonical": "#5c6370",
+        "cssVar": "--ink-3",
+        "tonalRamp": [
+          "oklch(15% 0.022 263)",
+          "oklch(26% 0.022 263)",
+          "oklch(37% 0.022 263)",
+          "oklch(48% 0.022 263)",
+          "oklch(59% 0.022 263)",
+          "oklch(70% 0.022 263)",
+          "oklch(82% 0.022 263)",
+          "oklch(95% 0.022 263)"
+        ],
+        "oklch": "oklch(49.8% 0.022 263)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-pencil-blue": {
+        "role": "primary",
+        "displayName": "Non-Repro Pencil Blue (light theme)",
+        "canonical": "#2c66a8",
+        "cssVar": "--pencil",
+        "tonalRamp": [
+          "oklch(15% 0.120 254)",
+          "oklch(26% 0.120 254)",
+          "oklch(37% 0.120 254)",
+          "oklch(48% 0.120 254)",
+          "oklch(59% 0.120 254)",
+          "oklch(70% 0.120 254)",
+          "oklch(82% 0.120 254)",
+          "oklch(95% 0.120 254)"
+        ],
+        "oklch": "oklch(50.6% 0.121 254)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-pencil-ink": {
+        "role": "primary",
+        "displayName": "Pencil Ink (light theme)",
+        "canonical": "#ffffff",
+        "cssVar": "--pencil-ink",
+        "tonalRamp": [
+          "oklch(15% 0.000 90)",
+          "oklch(26% 0.000 90)",
+          "oklch(37% 0.000 90)",
+          "oklch(48% 0.000 90)",
+          "oklch(59% 0.000 90)",
+          "oklch(70% 0.000 90)",
+          "oklch(82% 0.000 90)",
+          "oklch(95% 0.000 90)"
+        ],
+        "oklch": "oklch(100.0% 0.000 90)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-dusty-rose": {
+        "role": "secondary",
+        "displayName": "Dusty Rose (light theme)",
+        "canonical": "#a23e58",
+        "cssVar": "--del",
+        "tonalRamp": [
+          "oklch(15% 0.120 7)",
+          "oklch(26% 0.120 7)",
+          "oklch(37% 0.120 7)",
+          "oklch(48% 0.120 7)",
+          "oklch(59% 0.120 7)",
+          "oklch(70% 0.120 7)",
+          "oklch(82% 0.120 7)",
+          "oklch(95% 0.120 7)"
+        ],
+        "oklch": "oklch(50.8% 0.134 7)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-sage": {
+        "role": "secondary",
+        "displayName": "Sage (light theme)",
+        "canonical": "#2d7a4e",
+        "cssVar": "--ins",
+        "tonalRamp": [
+          "oklch(15% 0.103 155)",
+          "oklch(26% 0.103 155)",
+          "oklch(37% 0.103 155)",
+          "oklch(48% 0.103 155)",
+          "oklch(59% 0.103 155)",
+          "oklch(70% 0.103 155)",
+          "oklch(82% 0.103 155)",
+          "oklch(95% 0.103 155)"
+        ],
+        "oklch": "oklch(52.0% 0.103 155)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-amber-warn": {
+        "role": "tertiary",
+        "displayName": "Proof Amber (light theme)",
+        "canonical": "#8a5a00",
+        "cssVar": "--warn",
+        "tonalRamp": [
+          "oklch(15% 0.108 73)",
+          "oklch(26% 0.108 73)",
+          "oklch(37% 0.108 73)",
+          "oklch(48% 0.108 73)",
+          "oklch(59% 0.108 73)",
+          "oklch(70% 0.108 73)",
+          "oklch(82% 0.108 73)",
+          "oklch(95% 0.108 73)"
+        ],
+        "oklch": "oklch(50.8% 0.108 73)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The single page title (h1), including the challenge title."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section and sheet headings (h2)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Sub-headings inside a sheet (h3) and field labels."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text; ledes and briefs capped at 68ch."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Margin notes, coach progress, hints, metadata."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Type badges, rail footer, Later tags."
+      },
+      "galley": {
+        "displayName": "Galley Mono",
+        "purpose": "The learner's text in a galley and the answer textarea; open 1.85 leading for marks."
+      },
+      "expression": {
+        "displayName": "Expression Mono",
+        "purpose": "Phrase on an expression card (20px on the review card)."
+      },
+      "mono-small": {
+        "displayName": "Mono Small",
+        "purpose": "Chips, kbd keys, nav counts, model id."
+      }
+    },
+    "shadows": [
+      {
+        "name": "float",
+        "value": "0 12px 32px -8px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.35)",
+        "purpose": "Floating layers only (command palette, menus). Dark theme."
+      },
+      {
+        "name": "float-light",
+        "value": "0 12px 32px -8px rgb(20 24 32 / 0.22), 0 2px 6px rgb(20 24 32 / 0.12)",
+        "purpose": "Float shadow in the light theme."
+      },
+      {
+        "name": "inset-ring",
+        "value": "inset 0 0 0 1px var(--rule-strong)",
+        "purpose": "Selection outline on the checked segment and selected palette row; not elevation."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Default easing for press and panel motion."
+      },
+      {
+        "name": "dur-press",
+        "value": "120ms",
+        "purpose": "Button press scale to 0.97."
+      },
+      {
+        "name": "dur-ui",
+        "value": "180ms",
+        "purpose": "Colour and border state changes."
+      },
+      {
+        "name": "dur-panel",
+        "value": "240ms",
+        "purpose": "Panel transitions."
+      },
+      {
+        "name": "coach-slide",
+        "value": "1.4s ease-out infinite",
+        "purpose": "Coach progress bar segment; stops under reduced motion."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "all durations 0ms",
+        "purpose": "prefers-reduced-motion: reduce zeroes durations and stops loops."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "single-column",
+        "value": "1180px",
+        "purpose": "Home and Feedback collapse to one column below this width."
+      },
+      {
+        "name": "compact",
+        "value": "1040px",
+        "purpose": "Page side padding 32px, galley margin column 200px, history grid drops track."
+      }
+    ],
+    "layout": {
+      "railWidth": "232px",
+      "measure": "68ch",
+      "galleyMarginColumn": "248px",
+      "pagePadding": "40px 56px 56px"
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one primary action per view, in pencil blue, with an optional key hint.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Write it <kbd class=\"ds-kbd\">Enter</kbd></button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2,8px);border-radius:var(--r-control,6px);padding:9px var(--s4,16px);font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);border:1px solid transparent;cursor:pointer;transition:transform var(--dur-press,120ms) var(--ease-out,cubic-bezier(0.23,1,0.32,1)),background-color var(--dur-ui,180ms) ease,border-color var(--dur-ui,180ms) ease;white-space:nowrap}.ds-btn:active{transform:scale(0.97)}.ds-btn:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}.ds-btn-primary{background:var(--pencil,#7fb2e5);color:var(--pencil-ink,#0d1622)}.ds-kbd{font:var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--pencil-ink,#0d1622);border:1px solid color-mix(in srgb,var(--pencil-ink,#0d1622) 35%,transparent);border-radius:var(--r-chip,4px);padding:0 5px;line-height:1.6}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Outlined alternative action; fills with the sheet-hover tone on hover.",
+      "html": "<button class=\"ds-btn-secondary\">Write it again</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;gap:8px;border-radius:var(--r-control,6px);padding:9px 16px;font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);background:transparent;border:1px solid var(--rule-strong,#3a3f4b);color:var(--ink,#e8e6e1);cursor:pointer;transition:transform 120ms cubic-bezier(0.23,1,0.32,1),background-color 180ms ease}.ds-btn-secondary:hover{background:var(--sheet-hover,#262a33)}.ds-btn-secondary:active{transform:scale(0.97)}.ds-btn-secondary:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Borderless tertiary action such as Copy or Cancel.",
+      "html": "<button class=\"ds-btn-quiet\">Copy</button>",
+      "css": ".ds-btn-quiet{display:inline-flex;align-items:center;gap:8px;border-radius:var(--r-control,6px);padding:9px 12px;font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);background:transparent;border:1px solid transparent;color:var(--ink-2,#b4b9c5);cursor:pointer;transition:background-color 180ms ease,color 180ms ease}.ds-btn-quiet:hover{background:var(--sheet,#20232b);color:var(--ink,#e8e6e1)}.ds-btn-quiet:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Recessed field on the ground colour; border shifts on hover and focus, amber when invalid.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">API key</span><input class=\"ds-input\" placeholder=\"Paste your key\"><span class=\"ds-field-hint\">Stored on this computer only.</span></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:4px;font-family:var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1)}.ds-field-label{font-size:var(--text-md,0.875rem);font-weight:600}.ds-field-hint{font-size:var(--text-sm,0.8125rem);color:var(--ink-3,#8c93a3)}.ds-input{width:100%;background:var(--bg,#16181d);border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-control,6px);padding:8px 12px;color:var(--ink,#e8e6e1);font:inherit}.ds-input::placeholder{color:var(--ink-3,#8c93a3)}.ds-input:hover{border-color:var(--ink-3,#8c93a3)}.ds-input:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:0;border-color:var(--focus,#9cc6f0)}.ds-input[aria-invalid=true]{border-color:var(--warn,#e0b26a)}"
+    },
+    {
+      "name": "Sidebar Navigation",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Rail rows with line icons; hover and current page take the sheet fill, counts in mono.",
+      "html": "<nav class=\"ds-rail\"><a class=\"ds-nav\" aria-current=\"page\" href=\"#\"><svg class=\"ds-icon\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\"><path d=\"M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z\"/></svg>Home</a><a class=\"ds-nav\" href=\"#\"><svg class=\"ds-icon\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\"><path d=\"M4 5h16v14H4zM8 10h8M8 14h5\"/></svg>Review<span class=\"ds-count\">2</span></a></nav>",
+      "css": ".ds-rail{display:flex;flex-direction:column;gap:2px;width:232px;padding:20px 12px;background:var(--bg-rail,#121419);border-right:1px solid var(--rule,#2b2f39);font-family:var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-nav{display:flex;align-items:center;gap:12px;padding:7px 12px;border-radius:var(--r-control,6px);color:var(--ink-2,#b4b9c5);text-decoration:none;font-size:var(--text-md,0.875rem)}.ds-nav:hover{background:var(--sheet,#20232b);color:var(--ink,#e8e6e1)}.ds-nav[aria-current=page]{background:var(--sheet,#20232b);color:var(--ink,#e8e6e1);font-weight:600}.ds-nav:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}.ds-count{margin-left:auto;font:var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ink-2,#b4b9c5)}.ds-icon{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}"
+    },
+    {
+      "name": "Expression Chip and Type Badges",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Mono expression chip in a strong-rule outline; pill badges distinguish expression types.",
+      "html": "<div class=\"ds-row\"><span class=\"ds-chip\">roll out</span><span class=\"ds-badge\" data-type=\"phrasal_verb\">phrasal verb</span><span class=\"ds-badge\" data-type=\"collocation\">collocation</span><span class=\"ds-badge\" data-type=\"chunk\">chunk</span></div>",
+      "css": ".ds-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-family:var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-chip{font:var(--text-sm,0.8125rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-chip,4px);padding:1px 8px;color:var(--ink,#e8e6e1)}.ds-badge{font-size:var(--text-xs,0.75rem);font-weight:500;color:var(--ink-2,#b4b9c5);border:1px solid var(--rule-strong,#3a3f4b);border-radius:999px;padding:0 8px;white-space:nowrap}.ds-badge[data-type=phrasal_verb]{color:var(--ink,#e8e6e1);border-color:var(--ink-3,#8c93a3)}.ds-badge[data-type=collocation]{color:var(--ink,#e8e6e1);background:var(--sheet-hover,#262a33)}.ds-badge[data-type=chunk]{border-style:dashed}"
+    },
+    {
+      "name": "Expression Card",
+      "kind": "card",
+      "refersTo": "expression-card",
+      "description": "Same layout wherever it appears: mono phrase, type badge, meaning, example.",
+      "html": "<article class=\"ds-expr\"><div class=\"ds-expr-top\"><span class=\"ds-expr-phrase\">trade-off</span><span class=\"ds-badge2\">collocation</span></div><p class=\"ds-expr-meaning\">a choice with pros and cons</p><p class=\"ds-expr-example\">The trade-off is more memory for fewer queries.</p></article>",
+      "css": ".ds-expr{background:var(--sheet,#20232b);border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);padding:16px 20px;display:flex;flex-direction:column;gap:8px;max-width:260px;color:var(--ink,#e8e6e1);font-family:var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-expr p{margin:0}.ds-expr-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.ds-expr-phrase{font:500 var(--text-lg,1.0625rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-badge2{font-size:var(--text-xs,0.75rem);font-weight:500;color:var(--ink,#e8e6e1);background:var(--sheet-hover,#262a33);border:1px solid var(--rule-strong,#3a3f4b);border-radius:999px;padding:0 8px}.ds-expr-meaning{color:var(--ink-2,#b4b9c5);font-size:var(--text-md,0.875rem)}.ds-expr-example{font-size:var(--text-md,0.875rem)}"
+    },
+    {
+      "name": "Galley with Margin Notes",
+      "kind": "custom",
+      "refersTo": "galley",
+      "description": "Signature: the learner's text as a proof, rose deletions, sage insertions, numbered pencil carets, notes aligned in the margin.",
+      "html": "<article class=\"ds-galley\"><div class=\"ds-galley-head\"><h2>Your answer</h2><span>2 edits</span></div><div class=\"ds-line\"><p class=\"ds-line-text\">Yesterday I <del>have fixed</del> <ins>fixed</ins><span class=\"ds-mark\">1</span> the flaky test.</p><div class=\"ds-line-notes\"><p><span class=\"ds-note-label\"><span class=\"ds-mark\">1</span>verb tense</span>With \"yesterday\" use the simple past.</p></div></div></article>",
+      "css": ".ds-galley{background:var(--sheet,#20232b);border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);color:var(--ink,#e8e6e1);font-family:var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-galley-head{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid var(--rule,#2b2f39)}.ds-galley-head h2{margin:0;font-size:var(--text-lg,1.0625rem);font-weight:600}.ds-galley-head span{font-size:var(--text-sm,0.8125rem);color:var(--ink-3,#8c93a3)}.ds-line{display:grid;grid-template-columns:minmax(0,1fr) 248px;padding:12px 0}.ds-line-text{margin:0;padding:8px 24px;font:var(--text-base,0.9375rem)/1.85 var(--font-mono,'JetBrains Mono',ui-monospace,monospace);white-space:pre-wrap}.ds-line-notes{padding:8px 20px;border-left:1px solid var(--rule,#2b2f39);font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-line-notes p{margin:0}.ds-note-label{display:flex;align-items:center;gap:6px;color:var(--pencil,#7fb2e5);font-weight:500}.ds-galley del{color:var(--del,#d99aa8);text-decoration:line-through;text-decoration-thickness:1.5px;background:var(--del-wash,rgb(217 154 168 / 0.12));border-radius:2px}.ds-galley ins{color:var(--ins,#8cc5a2);text-decoration:none;background:var(--ins-wash,rgb(140 197 162 / 0.12));border-radius:2px}.ds-mark{display:inline-grid;place-items:center;width:16px;height:16px;font:500 10px var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--pencil,#7fb2e5);border:1px solid var(--pencil,#7fb2e5);border-radius:50%;vertical-align:2px;margin-left:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Galley Proof",
+    "overview": "Every answer the learner writes is a galley, and the coach marks it the way an editor marks a proof: in non-repro blue pencil, with numbered carets in the line and short notes in the margin beside the line they mark. Removals are struck through in dusty rose and insertions sit beside them in sage; these are edits, not grades. The interface around the galley is a quiet desktop tool: a graphite ground, raised sheets with 1px rules, sans-serif chrome, and monospace wherever the learner's own words or a reusable expression appear.\n\nDensity is that of a working document rather than a dashboard. Content is set in one main column with a narrow side column; lists are ruled, not boxed; headings are sentence-case and plain. The system rejects the category default it was built against: a grey dashboard of stat cards with one violet accent. Progress is shown as facts, ruled lists and tally marks, never as metric tiles.\n\nDark is the default theme; a light theme swaps to a cool white sheet on pale grey with a darker pencil. Both themes share every structural rule.",
+    "keyCharacteristics": [
+      "One accent, pencil blue, carrying only the coach's voice and the primary action.",
+      "Desaturated rose/sage diff marks on monospace text; never \"wrong/right\" colouring.",
+      "Flat raised sheets defined by 1px rules; shadow only on floating layers.",
+      "Margin notes aligned row by row to the line they annotate.",
+      "Sentence-case, untracked type throughout; no uppercase labels."
+    ],
+    "rules": [
+      {
+        "name": "The Blue Pencil Rule",
+        "body": "Pencil blue belongs to the coach and to the one primary action on a screen. It never decorates headings, backgrounds or icons that the coach did not \"write\".",
+        "section": "colors"
+      },
+      {
+        "name": "The Edits, Not Grades Rule",
+        "body": "Rose and sage appear only as a pair of diff marks inside the learner's text. They are never status colours, never fills, never \"correct/incorrect\" signals; app errors use amber.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Materials Rule",
+        "body": "Monospace is reserved for the learner's own words, reusable expressions, keys and numbers; everything else is Public Sans. Never set interface chrome in mono or the galley in sans.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sentence-Case Rule",
+        "body": "Headings and labels are sentence-case with no tracking. The only letter-spacing in the system is the display title's -0.01em.",
+        "section": "typography"
+      },
+      {
+        "name": "The Float-Only Rule",
+        "body": "Sheets, cards and buttons cast no shadow. If it is not floating over the page, it has no shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** keep pencil blue to the coach's marks, notes, progress and the one primary action per view.",
+      "**Do** set the learner's text, expressions, keys and counts in JetBrains Mono, and everything else in Public Sans.",
+      "**Do** align every margin note to the galley line it marks, numbered to match its caret.",
+      "**Do** separate rows and sections with 1px rules and a top border rather than wrapping them in cards.",
+      "**Do** use the three-step tonal stack (rail, ground, sheet) for depth, and the float shadow only for overlays.",
+      "**Do** honour reduced motion: all durations drop to 0ms and looping animations stop."
+    ],
+    "donts": [
+      "**Don't** build a dashboard of stat cards or metric tiles; progress is facts, ruled lists and tallies.",
+      "**Don't** use rose or sage outside the diff, or label anything \"wrong\" or \"correct\".",
+      "**Don't** add a second accent colour or tint headings with the pencil.",
+      "**Don't** add shadows to sheets, cards or buttons.",
+      "**Don't** uppercase or letter-space labels, or put small category labels above headings.",
+      "**Don't** animate the command palette open or closed."
+    ]
+  }
+}
