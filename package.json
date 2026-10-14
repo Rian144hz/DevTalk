@@ -13,7 +13,8 @@
     "test:core": "vitest run --project core",
     "test:main": "cross-env ELECTRON_RUN_AS_NODE=1 electron node_modules/vitest/vitest.mjs run --project main",
     "test": "npm run test:core && npm run test:main",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "cli": "electron-vite build && electron ."
   },
   "license": "UNLICENSED",
   "type": "commonjs",

@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createKeyVault, KeyringUnavailableError, type SafeStorageLike } from '../../src/main/vault/key-vault';
+import { createKeyVault, isKeyringUsable, KeyringUnavailableError, type SafeStorageLike } from '../../src/main/vault/key-vault';
 
 let dir: string;
 let file: string;
@@ -56,4 +56,21 @@ test('a corrupt file reads as no key', () => {
   });
   createKeyVault({ safeStorage: fakeSafeStorage(), filePath: file }).set('sk-ant-x');
   expect(vault.get()).toBeNull();
+});
+
+describe('isKeyringUsable', () => {
+  const ss = (available: boolean, backend: string) => ({
+    isEncryptionAvailable: () => available,
+    getSelectedStorageBackend: () => backend,
+  });
+  test('Linux basic_text backend is not a real keyring', () => {
+    expect(isKeyringUsable(ss(true, 'basic_text'), 'linux')).toBe(false);
+    expect(isKeyringUsable(ss(true, 'unknown'), 'linux')).toBe(false);
+    expect(isKeyringUsable(ss(true, 'gnome_libsecret'), 'linux')).toBe(true);
+    expect(isKeyringUsable(ss(true, 'kwallet6'), 'linux')).toBe(true);
+  });
+  test('other platforms rely on isEncryptionAvailable', () => {
+    expect(isKeyringUsable(ss(true, 'unknown'), 'darwin')).toBe(true);
+    expect(isKeyringUsable(ss(false, 'gnome_libsecret'), 'linux')).toBe(false);
+  });
 });

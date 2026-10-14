@@ -50,3 +50,17 @@ export function createKeyVault(deps: { safeStorage: SafeStorageLike; filePath: s
     },
   };
 }
+
+/**
+ * On Linux, Electron falls back to a hard-coded password ("basic_text") when no secret
+ * service is running; that is obfuscation, not encryption, so it does not count.
+ */
+export function isKeyringUsable(
+  safeStorage: { isEncryptionAvailable(): boolean; getSelectedStorageBackend?(): string },
+  platform: NodeJS.Platform,
+): boolean {
+  if (!safeStorage.isEncryptionAvailable()) return false;
+  if (platform !== 'linux') return true;
+  const backend = safeStorage.getSelectedStorageBackend?.() ?? 'unknown';
+  return backend !== 'basic_text' && backend !== 'unknown';
+}
