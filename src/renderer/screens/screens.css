@@ -112,10 +112,11 @@
 .slot-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--s2); margin-bottom: var(--s3); }
 .slot-row { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
 .slot-row .select { width: 150px; }
-.slot-row .input { width: 9.5em; }
+.slot-row .select.num { width: 96px; }
 .slots .row-actions { margin-top: var(--s1); }
 
 /* People: your profile as a ruled fact sheet, not a card wall */
+.people .page-head { max-width: 760px; }
 .people .notice { max-width: 760px; margin-bottom: var(--s4); }
 .profile { max-width: 760px; }
 .profile-head { display: flex; align-items: center; gap: var(--s5); padding-bottom: var(--s5); }
@@ -152,8 +153,7 @@
 .account-block > p { max-width: var(--measure); }
 .check-row { display: flex; align-items: center; gap: var(--s3); cursor: pointer; align-self: flex-start; }
 .check-row input { width: 16px; height: 16px; margin: 0; accent-color: var(--ink); flex: none; }
-.delete-confirm { display: flex; flex-direction: column; gap: var(--s3); max-width: 480px; padding: var(--s4) var(--s5); border: 1px solid color-mix(in srgb, var(--warn) 55%, var(--rule)); border-radius: var(--r-sheet); background: var(--sheet); }
-.btn.btn-destructive:not([disabled]) { border-color: var(--warn); color: var(--warn); }
+.delete-confirm { display: flex; flex-direction: column; gap: var(--s3); max-width: 480px; padding: var(--s4) var(--s5); border: 1px solid var(--rule-strong); border-radius: var(--r-sheet); background: var(--sheet); }
 .account-docs { display: flex; gap: var(--s4); flex-wrap: wrap; }
 
 /* Moderation: a ruled queue beside the selected report */

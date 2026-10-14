@@ -1,4 +1,4 @@
-import { formatDueIn, formatRelativeDay, formatLongDate, formatSlot } from '../../src/renderer/lib/format';
+import { formatDueIn, formatRelativeDay, formatLongDate, formatSlot, halfHourTimes } from '../../src/renderer/lib/format';
 
 const t0 = new Date('2026-10-14T12:00:00');
 const plus = (ms: number) => new Date(t0.getTime() + ms);
@@ -27,4 +27,14 @@ test('formatLongDate writes the day, month and year', () => {
 test('formatSlot names the day and the times', () => {
   expect(formatSlot({ day: 1, from: '19:00', to: '21:00' })).toBe('Monday, 19:00 to 21:00');
   expect(formatSlot({ day: 0, from: '08:30', to: '09:00' })).toBe('Sunday, 08:30 to 09:00');
+});
+
+test('halfHourTimes lists the day in 30-minute steps and keeps an odd saved value', () => {
+  const t = halfHourTimes();
+  expect(t).toHaveLength(48);
+  expect(t.slice(0, 3)).toEqual(['00:00', '00:30', '01:00']);
+  expect(t.at(-1)).toBe('23:30');
+  const withOdd = halfHourTimes('19:15');
+  expect(withOdd).toHaveLength(49);
+  expect(withOdd.slice(38, 41)).toEqual(['19:00', '19:15', '19:30']);
 });

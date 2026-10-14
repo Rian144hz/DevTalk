@@ -225,7 +225,7 @@ export function ModerationScreen() {
                       <TextField label="Reason for the suspension" value={reason} maxLength={1000} onChange={(e) => setReason(e.target.value)}
                         hint="Kept in the history. Other moderators read it." />
                       <div className="row-actions">
-                        <Button variant="secondary" className="btn-destructive" busy={busy === 'suspend'} disabled={!reason.trim()}
+                        <Button variant="secondary" busy={busy === 'suspend'} disabled={!reason.trim()}
                           onClick={() => void decide('suspend', {
                             kind: 'suspend',
                             reportId,

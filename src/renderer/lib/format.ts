@@ -38,3 +38,11 @@ export const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'
 export function formatSlot(slot: { day: number; from: string; to: string }): string {
   return `${DAY_NAMES[slot.day] ?? 'Day'}, ${slot.from} to ${slot.to}`;
 }
+
+/** "00:00" … "23:30" in 30-minute steps, plus `keep` (a saved value off the grid) in order. */
+export function halfHourTimes(keep?: string): string[] {
+  const times: string[] = [];
+  for (let m = 0; m < 24 * 60; m += 30) times.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
+  if (keep && /^\d{2}:\d{2}$/.test(keep) && !times.includes(keep)) times.push(keep);
+  return times.sort();
+}

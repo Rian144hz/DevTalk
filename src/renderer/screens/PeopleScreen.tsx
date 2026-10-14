@@ -185,7 +185,7 @@ export function PeopleScreen({ edit }: { edit: boolean }) {
     <main className="page people">
       {head(suspended ? undefined : <Button variant="secondary" onClick={go('#/people/edit')}>Edit profile</Button>)}
       {suspended && (
-        <Notice tone="error" title={suspendedText(suspended)} detail="Until then you cannot edit your profile or send reports." />
+        <Notice tone="info" title={suspendedText(suspended)} detail="Until then you cannot edit your profile or send reports." />
       )}
       {notices.map((n) => (
         <Notice key={n.id} tone="info" title="Message from the moderators" detail={`${n.message} (${formatLongDate(n.createdAt)})`}

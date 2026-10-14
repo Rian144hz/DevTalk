@@ -4,7 +4,7 @@ import { AREAS, PROFILE_LIMITS, type Area, type AvailabilitySlot, type ProfileDr
 import { ProfileDraftSchema, normalizeStackTags } from '../../core/social/validate';
 import { Icon } from '../app/icons';
 import { Avatar, Button, Notice, Segmented, Select, StackTag, TextArea, TextField } from '../design-system';
-import { DAY_NAMES } from '../lib/format';
+import { DAY_NAMES, halfHourTimes } from '../lib/format';
 import { AvatarInputError, prepareAvatar } from '../lib/image';
 import { browserAvatarDeps } from '../lib/image-browser';
 import { KNOWN_STACKS } from '../lib/stack-icons';
@@ -203,11 +203,15 @@ export function ProfileForm({
                   onChange={(e) => setSlot(i, { day: Number(e.target.value) as AvailabilitySlot['day'] })}>
                   {WEEK.map((d) => <option key={d} value={d}>{DAY_NAMES[d]}</option>)}
                 </select>
-                <input className="input num" type="time" aria-label={`Start of time ${i + 1}`} value={s.from}
-                  onChange={(e) => setSlot(i, { from: e.target.value })} />
+                <select className="select num" aria-label={`Start of time ${i + 1}`} value={s.from}
+                  onChange={(e) => setSlot(i, { from: e.target.value })}>
+                  {halfHourTimes(s.from).map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
                 <span className="muted">to</span>
-                <input className="input num" type="time" aria-label={`End of time ${i + 1}`} value={s.to}
-                  onChange={(e) => setSlot(i, { to: e.target.value })} />
+                <select className="select num" aria-label={`End of time ${i + 1}`} value={s.to}
+                  onChange={(e) => setSlot(i, { to: e.target.value })}>
+                  {halfHourTimes(s.to).map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
                 <Button variant="quiet" aria-label={`Remove time ${i + 1}`} onClick={() => setSlots(slots.filter((_, k) => k !== i))}>Remove</Button>
               </li>
             ))}

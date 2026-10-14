@@ -137,7 +137,7 @@ export function AccountSection() {
               {deleteError && <Notice tone="error" title={deleteError} />}
               <div className="settings-actions">
                 <Button variant="quiet" disabled={deleting} onClick={() => { setConfirming(false); setTyped(''); setDeleteError(null); }}>Cancel</Button>
-                <Button variant="secondary" className="btn-destructive" busy={deleting} disabled={!matches} onClick={() => void deleteAccount()}>
+                <Button variant="secondary" busy={deleting} disabled={!matches} onClick={() => void deleteAccount()}>
                   Delete my account
                 </Button>
               </div>
