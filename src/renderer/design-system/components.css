@@ -90,7 +90,7 @@ kbd { font: var(--text-xs) var(--font-mono); color: var(--ink-2); border: 1px so
 /* Tally marks (how often something came back) */
 .tally { display: inline-flex; gap: var(--s2); align-items: center; color: var(--pencil); }
 .tally-group { position: relative; display: inline-flex; gap: 3px; align-items: center; }
-.tally-group i { width: 2px; height: 16px; background: currentColor; border-radius: 1px; transform: skewX(-12deg); }
+.tally-group i { width: 2px; height: 16px; background: currentColor; border-radius: 1px; }
 .tally-group b { position: absolute; left: -3px; right: -3px; top: 6px; height: 2px; background: currentColor; transform: rotate(-24deg); border-radius: 1px; }
 
 /* Ruled lists */

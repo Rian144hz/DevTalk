@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import type { Challenge } from '../../core/domain/types';
 import { CHALLENGE_CATEGORY_LABELS } from '../../core/domain/categories';
 import { api } from '../lib/api';
+import { challengeTitle } from './ChallengeBrief';
 import { useCoachRequest } from '../lib/useCoachRequest';
 import { Button, Chip, CoachProgress, Notice } from '../design-system';
 
@@ -16,8 +17,8 @@ export function NextChallenge({ pending, onReady, onWrite }: { pending: Challeng
     return (
       <div className="next">
         <div>
-          <h2>Next: {CHALLENGE_CATEGORY_LABELS[pending.category].toLowerCase()}</h2>
-          <p>{pending.situation}</p>
+          <h2>Next: {challengeTitle(pending)}</h2>
+          <p><span className="brief-category">{CHALLENGE_CATEGORY_LABELS[pending.category]}.</span> {pending.situation}</p>
           {pending.required.length > 0 && (
             <div className="need">Use in your answer {pending.required.map((r) => <Chip key={r.expression.id}>{r.expression.text}</Chip>)}</div>
           )}
