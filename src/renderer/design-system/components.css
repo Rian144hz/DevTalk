@@ -96,3 +96,32 @@ kbd { font: var(--text-xs) var(--font-mono); color: var(--ink-2); border: 1px so
 /* Ruled lists */
 .ruled { list-style: none; padding: 0; }
 .ruled > * + * { border-top: 1px solid var(--rule); }
+
+/* Stack tags: a technology's logo in the text colour, then its name */
+.stack-list { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: var(--s2); }
+.stack-tag { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-md); color: var(--ink); border: 1px solid var(--rule-strong); border-radius: var(--r-chip); padding: 2px var(--s2); overflow-wrap: anywhere; }
+.stack-icon { flex: none; fill: currentColor; }
+
+/* Avatar: photo or initial; never coloured */
+.avatar { flex: none; border-radius: 50%; border: 1px solid var(--rule-strong); object-fit: cover; background: var(--sheet-hover); }
+.avatar-initial { display: inline-grid; place-items: center; color: var(--ink-2); font-weight: 600; line-height: 1; user-select: none; }
+
+/* Modal dialog (reports): same sheet and float as the palette, no open/close animation */
+.dialog { margin: auto; width: min(520px, 92vw); max-height: 88vh; padding: 0; background: var(--sheet); color: var(--ink); border: 1px solid var(--rule-strong); border-radius: var(--r-sheet); box-shadow: var(--shadow-float); }
+.dialog::backdrop { background: rgb(0 0 0 / 0.35); }
+.dialog-body { padding: var(--s6); display: flex; flex-direction: column; gap: var(--s4); }
+.dialog-lede { color: var(--ink-2); margin-top: calc(var(--s2) * -1); }
+.dialog-actions { display: flex; justify-content: flex-end; gap: var(--s2); padding-top: var(--s2); }
+.radio-list { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.radio-list legend { padding: 0; margin-bottom: var(--s2); }
+.radio-row { display: flex; align-items: center; gap: var(--s3); padding: 6px var(--s2); border-radius: var(--r-control); cursor: pointer; }
+.radio-row:hover { background: var(--sheet-hover); }
+.radio-row input { accent-color: var(--ink); width: 16px; height: 16px; margin: 0; flex: none; }
+.radio-row:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 0; }
+.radio-row input:focus-visible { outline: none; }
+.textarea.textarea-short { min-height: 96px; font-family: var(--font-ui); line-height: 1.6; }
+
+/* Block: inline confirmation, no modal */
+.block-confirm { display: flex; flex-direction: column; gap: var(--s2); padding: var(--s4) var(--s5); border: 1px solid var(--rule-strong); border-radius: var(--r-sheet); background: var(--sheet); max-width: var(--measure); }
+.block-actions { display: flex; gap: var(--s2); }
+.block-done { color: var(--ink-2); }

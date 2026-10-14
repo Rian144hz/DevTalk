@@ -34,11 +34,11 @@ export const PasswordField = (props: FieldText & InputHTMLAttributes<HTMLInputEl
   <TextField {...props} type="password" autoComplete="off" spellCheck={false} />
 );
 
-export function TextArea({ label, hint, error, ...rest }: FieldText & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function TextArea({ label, hint, error, className, ...rest }: FieldText & TextareaHTMLAttributes<HTMLTextAreaElement>) {
   const id = useId();
   return (
     <Wrap id={id} label={label} hint={hint} error={error}>
-      <textarea {...rest} id={id} className="textarea" aria-invalid={error ? true : undefined} aria-describedby={described(id, hint, error)} />
+      <textarea {...rest} id={id} className={className ? `textarea ${className}` : 'textarea'} aria-invalid={error ? true : undefined} aria-describedby={described(id, hint, error)} />
     </Wrap>
   );
 }

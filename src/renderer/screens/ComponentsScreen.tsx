@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { buildGalley } from '../../core/feedback/galley';
 import type { Expression } from '../../core/domain/types';
 import {
-  Button, Chip, CoachProgress, EmptyState, ExpressionCard, Galley, Notice, PasswordField, Segmented, Select, Skeleton,
-  Tally, TextArea, TextField, TypeBadge,
+  Avatar, BlockButton, Button, Chip, CoachProgress, EmptyState, ExpressionCard, Galley, Notice, PasswordField, ReportDialog,
+  Segmented, Select, Skeleton, StackList, Tally, TextArea, TextField, TypeBadge,
 } from '../design-system';
 
 const answer =
@@ -21,6 +21,8 @@ const expr: Expression = { id: 1, text: 'hold off on', type: 'phrasal_verb', mea
 export function ComponentsScreen() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [level, setLevel] = useState<'B1' | 'B2' | 'C1'>('B1');
+  const [reporting, setReporting] = useState(false);
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
   return (
     <main className="page gallery">
       <header className="page-head">
@@ -56,6 +58,19 @@ export function ComponentsScreen() {
         <Notice tone="info" title="Nothing to review now." detail="Next review in 3 h." />
         <EmptyState title="Your first answer will appear here" body="Write an answer to a challenge and the coach marks it up like an editor." action={<Button variant="primary">Get a challenge</Button>} />
         <div><Skeleton width="40%" /><Skeleton /><Skeleton width="80%" /></div>
+      </section>
+
+      <section className="gallery-row stack">
+        <div className="gallery-row">
+          <Avatar src={null} name="Rian" size={64} /><Avatar src={null} name="ana" /><Avatar src={null} name="Élodie" size={28} />
+        </div>
+        <StackList tags={['python', 'java', 'c++', 'react native', 'postgres', 'docker', 'my-company-lib']} />
+        <div className="gallery-row">
+          <Button variant="secondary" onClick={() => setReporting(true)}>Report Sam</Button>
+          <BlockButton name="Sam" onBlock={async () => { await wait(600); return null; }} />
+        </div>
+        <ReportDialog open={reporting} targetName="Sam" onClose={() => setReporting(false)}
+          onSubmit={async () => { await wait(600); return null; }} />
       </section>
 
       <section className="gallery-grid">
