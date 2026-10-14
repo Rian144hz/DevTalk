@@ -1,0 +1,381 @@
+import {
+  FunctionsFetchError,
+  FunctionsHttpError,
+  FunctionsRelayError,
+  StorageApiError,
+  createClient,
+  isAuthApiError,
+  isAuthRetryableFetchError,
+} from '@supabase/supabase-js';
+import { LEGAL_DOCUMENTS, LEGAL_VERSION } from '../../core/social/types';
+import type { AvailabilitySlot, ModerationReport, ProfileDraft, SocialProfile } from '../../core/social/types';
+import type { Level } from '../../core/domain/types';
+import type { Area, ReportContext, ReportReason } from '../../core/social/types';
+import type { ModerationHistoryItem, Notice, SocialBackend, SocialSession } from './backend';
+import { SocialError, mapSupabaseError } from './errors';
+import type { SessionStore } from './session-store';
+
+const DAY_MS = 86_400_000;
+const REQUIRED = [...LEGAL_DOCUMENTS, 'age_18'] as const;
+const avatarPath = (userId: string) => `${userId}/avatar.webp`;
+
+interface ProfileRow {
+  id: string;
+  display_name: string;
+  native_language: string;
+  level: string;
+  timezone: string;
+  area: string;
+  stack: string[];
+  availability: AvailabilitySlot[];
+  bio: string;
+  avatar_path: string | null;
+  suspended_until: string | null;
+}
+
+function toProfile(row: ProfileRow): SocialProfile {
+  return {
+    id: row.id,
+    displayName: row.display_name,
+    nativeLanguage: row.native_language,
+    level: row.level as Level,
+    timezone: row.timezone,
+    area: row.area as Area,
+    stack: row.stack ?? [],
+    availability: row.availability ?? [],
+    bio: row.bio ?? '',
+    hasAvatar: row.avatar_path !== null,
+    suspendedUntil: row.suspended_until,
+  };
+}
+
+function activeSuspension(until: string | null): string | null {
+  if (!until) return null;
+  return until === 'infinity' || Date.parse(until) > Date.now() ? until : null;
+}
+
+function mapAuthError(err: unknown, verifying = false): SocialError {
+  if (isAuthRetryableFetchError(err)) {
+    return new SocialError(err.status === 0 ? 'offline' : 'asleep', err.message);
+  }
+  if (isAuthApiError(err)) {
+    const code = err.code ?? '';
+    if (err.status === 429 || code.startsWith('over_')) return new SocialError('rate_limited', err.message);
+    if (err.status >= 500) return new SocialError('asleep', err.message);
+    if (verifying && (code === 'otp_expired' || code === 'invalid_credentials' || (err.status >= 400 && err.status < 500))) {
+      return new SocialError('invalid_code', err.message);
+    }
+    return new SocialError('unknown', err.message);
+  }
+  if (err instanceof SocialError) return err;
+  if (err instanceof TypeError) return new SocialError('offline', err.message);
+  return new SocialError('unknown', err instanceof Error ? err.message : String(err));
+}
+
+function mapStorageError(err: unknown): SocialError {
+  if (err instanceof StorageApiError) {
+    const status = Number(err.status);
+    return mapSupabaseError({ message: err.message }, Number.isFinite(status) ? status : 500);
+  }
+  return new SocialError('offline', err instanceof Error ? err.message : String(err));
+}
+
+export interface SupabaseBackendOptions {
+  url: string;
+  key: string;
+  storage: SessionStore;
+  fetch?: typeof fetch;
+  autoRefreshToken?: boolean;
+}
+
+export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBackend {
+  const client = createClient(opts.url, opts.key, {
+    auth: {
+      storage: opts.storage,
+      persistSession: true,
+      autoRefreshToken: opts.autoRefreshToken ?? true,
+      detectSessionInUrl: false,
+    },
+    global: opts.fetch ? { fetch: opts.fetch } : {},
+  });
+
+  /** Unwraps a PostgREST result or throws the mapped error. */
+  function check<T>(res: { data: T; error: { code?: string; message?: string } | null; status: number }): T {
+    if (res.error) throw mapSupabaseError(res.error, res.status);
+    return res.data;
+  }
+
+  async function me(): Promise<SocialSession> {
+    const s = await session();
+    if (!s) throw new SocialError('not_signed_in', 'Sign in first.');
+    return s;
+  }
+
+  async function session(): Promise<SocialSession | null> {
+    const { data, error } = await client.auth.getSession();
+    if (error) throw mapAuthError(error);
+    const user = data.session?.user;
+    return user ? { userId: user.id, email: user.email ?? '' } : null;
+  }
+
+  async function ownRow(userId: string): Promise<ProfileRow | null> {
+    return check(await client.from('profiles').select('*').eq('id', userId).maybeSingle<ProfileRow>());
+  }
+
+  async function assertActive(userId: string): Promise<void> {
+    const row = await ownRow(userId);
+    const until = activeSuspension(row?.suspended_until ?? null);
+    if (until) throw new SocialError('suspended', `Suspended until ${until}`, until);
+  }
+
+  return {
+    configured: true,
+
+    async sendCode(email) {
+      const { error } = await client.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+      if (error) throw mapAuthError(error);
+    },
+
+    async verifyCode(email, code) {
+      const { data, error } = await client.auth.verifyOtp({ email, token: code, type: 'email' });
+      if (error) throw mapAuthError(error, true);
+      if (!data.user) throw new SocialError('invalid_code', 'No user returned for this code.');
+      return { userId: data.user.id, email: data.user.email ?? email };
+    },
+
+    session,
+
+    async signOut() {
+      await client.auth.signOut({ scope: 'local' });
+    },
+
+    async hasAcceptedCurrentDocuments() {
+      const { userId } = await me();
+      const rows = check(
+        await client.from('consents').select('document').eq('user_id', userId).eq('version', LEGAL_VERSION),
+      ) as { document: string }[];
+      const have = new Set(rows.map((r) => r.document));
+      return REQUIRED.every((d) => have.has(d));
+    },
+
+    async acceptDocuments() {
+      const { userId } = await me();
+      const rows = REQUIRED.map((document) => ({ user_id: userId, document, version: LEGAL_VERSION }));
+      check(await client.from('consents').upsert(rows, { onConflict: 'user_id,document,version', ignoreDuplicates: true }));
+    },
+
+    async getOwnProfile() {
+      const { userId } = await me();
+      const row = await ownRow(userId);
+      return row ? toProfile(row) : null;
+    },
+
+    async saveProfile(draft: ProfileDraft) {
+      const { userId } = await me();
+      await assertActive(userId);
+      const row = {
+        id: userId,
+        display_name: draft.displayName,
+        native_language: draft.nativeLanguage,
+        level: draft.level,
+        timezone: draft.timezone,
+        area: draft.area,
+        stack: draft.stack,
+        availability: draft.availability,
+        bio: draft.bio,
+      };
+      const saved = check(await client.from('profiles').upsert(row, { onConflict: 'id' }).select('*').single<ProfileRow>());
+      if (!saved) throw new SocialError('unknown', 'The profile was not saved.');
+      return toProfile(saved);
+    },
+
+    async uploadAvatar(webp) {
+      const { userId } = await me();
+      const { error } = await client.storage
+        .from('avatars')
+        .upload(avatarPath(userId), webp, { upsert: true, contentType: 'image/webp', cacheControl: '3600' });
+      if (error) throw mapStorageError(error);
+      check(await client.from('profiles').update({ avatar_path: avatarPath(userId) }).eq('id', userId));
+    },
+
+    async removeAvatar() {
+      const { userId } = await me();
+      const { error } = await client.storage.from('avatars').remove([avatarPath(userId)]);
+      if (error) throw mapStorageError(error);
+      check(await client.from('profiles').update({ avatar_path: null }).eq('id', userId));
+    },
+
+    async avatarDataUrl(userId) {
+      await me();
+      const { data, error } = await client.storage.from('avatars').download(avatarPath(userId));
+      if (error || !data) return null;
+      const bytes = Buffer.from(await data.arrayBuffer());
+      return `data:image/webp;base64,${bytes.toString('base64')}`;
+    },
+
+    async block(userId) {
+      const { userId: blocker } = await me();
+      check(await client.from('blocks').upsert({ blocker, blocked: userId }, { onConflict: 'blocker,blocked', ignoreDuplicates: true }));
+    },
+
+    async unblock(userId) {
+      const { userId: blocker } = await me();
+      check(await client.from('blocks').delete().eq('blocker', blocker).eq('blocked', userId));
+    },
+
+    async listBlocks() {
+      await me();
+      const rows = check(await client.from('blocks').select('blocked').order('created_at')) as { blocked: string }[];
+      return rows.map((r) => r.blocked);
+    },
+
+    async report(input) {
+      const { userId } = await me();
+      await assertActive(userId);
+      check(
+        await client.from('reports').insert({
+          reporter: userId,
+          reported: input.reported,
+          context_type: input.contextType,
+          context_id: input.contextId,
+          reason: input.reason,
+          details: input.details,
+        }),
+      );
+    },
+
+    async listNotices(): Promise<Notice[]> {
+      await me();
+      const rows = check(
+        await client.from('notices').select('id, message, created_at, read_at').order('created_at', { ascending: false }),
+      ) as { id: number; message: string; created_at: string; read_at: string | null }[];
+      return rows.map((r) => ({ id: r.id, message: r.message, createdAt: r.created_at, read: r.read_at !== null }));
+    },
+
+    async markNoticeRead(id) {
+      await me();
+      check(await client.from('notices').update({ read_at: new Date().toISOString() }).eq('id', id).is('read_at', null));
+    },
+
+    async isModerator() {
+      if (!(await session())) return false;
+      return check(await client.rpc('is_moderator')) === true;
+    },
+
+    async listOpenReports(): Promise<ModerationReport[]> {
+      await me();
+      if (!(await this.isModerator())) throw new SocialError('forbidden', 'Only moderators can do this.');
+      const rows = check(
+        await client
+          .from('reports')
+          .select('id, reporter, reported, context_type, context_id, reason, details, created_at')
+          .eq('status', 'open')
+          .order('created_at'),
+      ) as {
+        id: number;
+        reporter: string | null;
+        reported: string | null;
+        context_type: ReportContext;
+        context_id: string | null;
+        reason: ReportReason;
+        details: string;
+        created_at: string;
+      }[];
+      const ids = [...new Set(rows.map((r) => r.reported).filter((x): x is string => x !== null))];
+      const names = new Map<string, string>();
+      if (ids.length > 0) {
+        const people = check(await client.from('profiles').select('id, display_name').in('id', ids)) as {
+          id: string;
+          display_name: string;
+        }[];
+        for (const p of people) names.set(p.id, p.display_name);
+      }
+      return rows.map((r) => ({
+        id: r.id,
+        reporter: r.reporter ?? '',
+        reported: r.reported ? { id: r.reported, displayName: names.get(r.reported) ?? 'Deleted account' } : null,
+        contextType: r.context_type,
+        contextId: r.context_id,
+        reason: r.reason,
+        details: r.details,
+        createdAt: r.created_at,
+      }));
+    },
+
+    async actionsAbout(userId): Promise<ModerationHistoryItem[]> {
+      await me();
+      const rows = check(
+        await client
+          .from('moderation_actions')
+          .select('action, reason, until, created_at')
+          .eq('target', userId)
+          .order('created_at', { ascending: false }),
+      ) as { action: string; reason: string; until: string | null; created_at: string }[];
+      return rows.map((r) => ({ action: r.action, reason: r.reason, until: r.until, createdAt: r.created_at }));
+    },
+
+    async decide(decision) {
+      await me();
+      if (decision.kind === 'dismiss') {
+        check(await client.from('reports').update({ status: 'dismissed' }).eq('id', decision.reportId).eq('status', 'open'));
+        return;
+      }
+      const row: Record<string, string | number | null> =
+        decision.kind === 'warn'
+          ? { target: decision.target, action: 'warn', reason: decision.message, report_id: decision.reportId }
+          : decision.kind === 'suspend'
+            ? {
+                target: decision.target,
+                action: 'suspend',
+                reason: decision.reason,
+                until: decision.days === null ? 'infinity' : new Date(Date.now() + decision.days * DAY_MS).toISOString(),
+                report_id: decision.reportId,
+              }
+            : { target: decision.target, action: 'unsuspend', reason: '' };
+      check(await client.from('moderation_actions').insert(row));
+    },
+
+    async exportOwnData() {
+      const { userId, email } = await me();
+      const row = await ownRow(userId);
+      const consents = check(await client.from('consents').select('document, version, accepted_at').eq('user_id', userId));
+      const blocks = check(await client.from('blocks').select('blocked, created_at').eq('blocker', userId));
+      const reportsMade = check(
+        await client.from('reports').select('id, reported, context_type, context_id, reason, details, status, created_at').eq('reporter', userId),
+      );
+      const notices = await this.listNotices();
+      let avatarUrl: string | null = null;
+      if (row?.avatar_path) {
+        const { data } = await client.storage.from('avatars').createSignedUrl(row.avatar_path, 3600);
+        avatarUrl = data?.signedUrl ?? null;
+      }
+      return {
+        exportedAt: new Date().toISOString(),
+        account: { email },
+        profile: row ? toProfile(row) : null,
+        consents,
+        blocks,
+        reportsMade,
+        notices,
+        avatarUrl,
+      };
+    },
+
+    async deleteAccount() {
+      await me();
+      const { error } = await client.functions.invoke('delete-account', { method: 'POST' });
+      if (error) {
+        if (error instanceof FunctionsHttpError) {
+          const status = (error.context as Response | undefined)?.status ?? 500;
+          if (status === 404) throw new SocialError('unknown', 'The delete-account function is not deployed.');
+          if (status >= 500) throw new SocialError('asleep', 'The community server could not delete the account.');
+          throw new SocialError('unknown', `Delete failed (HTTP ${status}).`);
+        }
+        if (error instanceof FunctionsRelayError) throw new SocialError('asleep', error.message);
+        if (error instanceof FunctionsFetchError) throw new SocialError('offline', error.message);
+        throw mapAuthError(error);
+      }
+      await client.auth.signOut({ scope: 'local' });
+    },
+  };
+}
