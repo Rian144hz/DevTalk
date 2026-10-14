@@ -39,14 +39,14 @@ function memoryVault(initial: string | null = 'sk-ant-test'): KeyVault {
   return { has: () => key !== null, get: () => key, set: (k) => { key = k.trim(); }, clear: () => { key = null; } };
 }
 
-function setup(opts: { provider?: LLMProvider; vault?: KeyVault; onboarded?: boolean } = {}) {
+function setup(opts: { provider?: LLMProvider; vault?: KeyVault; vaults?: Record<string, KeyVault>; onboarded?: boolean } = {}) {
   const store = new MemoryStudyStore();
   if (opts.onboarded !== false) store.saveProfile(profile, t0);
   const provider = opts.provider ?? new FakeProvider([]);
   const progress: [string, ProgressStage][] = [];
   const h = createHandlers({
     store,
-    vault: opts.vault ?? memoryVault(),
+    vaults: (p) => opts.vaults?.[p] ?? (p === profile.provider ? (opts.vault ?? memoryVault()) : memoryVault(null)),
     clock: { now: () => t0 },
     makeProvider: (apiKey) => {
       if (!apiKey) throw new LLMError('no_key', 'no key');
@@ -161,4 +161,49 @@ test('progress summary and history', async () => {
   await h['feedback:submit']({ requestId: 'f1', challengeId: null, text: 'hello' });
   expect(await h['progress:summary']({})).toMatchObject({ ok: true, data: { totalExpressions: 2, mistakes: [{ category: 'verb_tense', total: 1 }] } });
   expect(await h['progress:history']({ before: null })).toMatchObject({ ok: true, data: [{ text: 'hello', correctionCount: 1 }] });
+});
+
+test('keys are stored per provider; status follows the profile provider by default', async () => {
+  const gemini = memoryVault(null);
+  const anthropic = memoryVault(null);
+  const { h } = setup({ vaults: { gemini, anthropic } });
+  expect(await h['keys:set']({ key: 'g-key', provider: 'gemini' })).toEqual({ ok: true, data: { hasKey: true } });
+  expect(gemini.get()).toBe('g-key');
+  expect(anthropic.get()).toBeNull();
+  // profile uses anthropic, which has no key yet
+  expect(await h['keys:status']({})).toEqual({ ok: true, data: { hasKey: false } });
+  expect(await h['keys:status']({ provider: 'gemini' })).toEqual({ ok: true, data: { hasKey: true } });
+  expect(await h['keys:clear']({ provider: 'gemini' })).toEqual({ ok: true, data: { hasKey: false } });
+});
+
+test('the provider for a request uses that provider\'s key', async () => {
+  const keys: (string | null)[] = [];
+  const store = new MemoryStudyStore();
+  store.saveProfile({ ...profile, provider: 'gemini', model: 'gemini-flash-latest' }, t0);
+  const h = createHandlers({
+    store,
+    vaults: (p) => (p === 'gemini' ? memoryVault('g-key') : memoryVault('a-key')),
+    clock: { now: () => t0 },
+    makeProvider: (apiKey) => {
+      keys.push(apiKey);
+      return new FakeProvider([challengeReply]);
+    },
+    templates,
+    emitProgress: () => {},
+  });
+  await h['challenges:next']({ requestId: 'c1' });
+  expect(keys).toEqual(['g-key']);
+});
+
+test('rate_limited has friendly copy', async () => {
+  const { h } = setup({ provider: new FakeProvider([() => { throw new LLMError('rate_limited', 'quota'); }]) });
+  expect(await h['challenges:next']({ requestId: 'c1' })).toMatchObject({
+    ok: false,
+    error: { kind: 'rate_limited', message: expect.stringContaining('limit') },
+  });
+});
+
+test('settings accept gemini as provider', async () => {
+  const { h } = setup();
+  expect(await h['settings:set']({ provider: 'gemini', model: 'gemini-flash-latest' })).toMatchObject({ ok: true, data: { provider: 'gemini' } });
 });

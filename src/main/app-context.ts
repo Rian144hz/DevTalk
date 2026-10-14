@@ -7,8 +7,10 @@ import { openDatabase, type DB } from './db/open';
 import { SqliteStudyStore } from './db/sqlite-store';
 import { createHandlers, type Handlers } from './ipc/handlers';
 import { createAnthropicProvider } from './llm/anthropic-provider';
+import { createGeminiProvider } from './llm/gemini-provider';
+import type { ProviderId } from '../shared/providers';
 import { createFixtureProvider } from './llm/fake-fixtures';
-import { createKeyVault, isKeyringUsable } from './vault/key-vault';
+import { createKeyVault, isKeyringUsable, type KeyVault } from './vault/key-vault';
 
 export interface AppContext {
   handlers: Handlers;
@@ -22,20 +24,27 @@ export function createAppContext(emitProgress: (requestId: string, stage: Progre
   const userData = app.getPath('userData');
   const db: DB = openDatabase(join(userData, 'devtalk.sqlite'));
   const store = new SqliteStudyStore(db);
-  const vault = createKeyVault({
-    safeStorage: {
-      isEncryptionAvailable: () => isKeyringUsable(safeStorage, process.platform),
-      encryptString: (s) => safeStorage.encryptString(s),
-      decryptString: (b) => safeStorage.decryptString(b),
-    },
-    filePath: join(userData, 'api-key.bin'),
-  });
+  const keyring = {
+    isEncryptionAvailable: () => isKeyringUsable(safeStorage, process.platform),
+    encryptString: (s: string) => safeStorage.encryptString(s),
+    decryptString: (b: Buffer) => safeStorage.decryptString(b),
+  };
+  // One encrypted file per provider; the Anthropic key keeps its original file name.
+  const vaults = new Map<ProviderId, KeyVault>();
+  const vaultFor = (provider: ProviderId) => {
+    let vault = vaults.get(provider);
+    if (!vault) {
+      vault = createKeyVault({ safeStorage: keyring, filePath: join(userData, provider === 'anthropic' ? 'api-key.bin' : `api-key-${provider}.bin`) });
+      vaults.set(provider, vault);
+    }
+    return vault;
+  };
   const promptsDir = app.isPackaged ? join(process.resourcesPath, 'prompts') : join(app.getAppPath(), 'prompts');
   const fixtures = createFixtureProvider({ delayMs: 900 });
 
   const handlers = createHandlers({
     store,
-    vault,
+    vaults: vaultFor,
     clock: { now: () => new Date() },
     // Read on every use so prompt edits apply without a rebuild.
     templates: () => ({
@@ -44,9 +53,13 @@ export function createAppContext(emitProgress: (requestId: string, stage: Progre
     }),
     makeProvider: (apiKey, profile) => {
       if (useFixtureLLM()) return fixtures;
-      if (profile.provider !== 'anthropic') throw new LLMError('unavailable', `Provider "${profile.provider}" is not available yet.`);
+      if (profile.provider !== 'anthropic' && profile.provider !== 'gemini') {
+        throw new LLMError('unavailable', `Provider "${profile.provider}" is not available yet.`);
+      }
       if (!apiKey) throw new LLMError('no_key', 'No API key');
-      return createAnthropicProvider({ apiKey, model: profile.model });
+      return profile.provider === 'gemini'
+        ? createGeminiProvider({ apiKey, model: profile.model })
+        : createAnthropicProvider({ apiKey, model: profile.model });
     },
     emitProgress,
   });

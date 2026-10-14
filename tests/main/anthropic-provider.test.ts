@@ -98,7 +98,7 @@ test.each([
 test.each([
   ['AuthenticationError', 'auth'],
   ['PermissionDeniedError', 'auth'],
-  ['RateLimitError', 'unavailable'],
+  ['RateLimitError', 'rate_limited'],
   ['InternalServerError', 'unavailable'],
   ['APIConnectionError', 'unavailable'],
   ['APIConnectionTimeoutError', 'unavailable'],

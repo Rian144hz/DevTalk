@@ -1,13 +1,14 @@
 import { z } from 'zod';
 import type { InvokeChannel } from '../../shared/ipc-contract';
 import { LEVELS } from '../../core/domain/types';
+import { PROVIDERS } from '../../shared/providers';
 
 export const MAX_ANSWER_CHARS = 4000;
 
 const empty = z.object({}).strict();
 const requestId = z.object({ requestId: z.string().min(1).max(100) }).strict();
 const settings = z.object({
-  provider: z.enum(['anthropic', 'ollama']),
+  provider: z.enum(PROVIDERS),
   model: z.string().trim().min(1).max(100),
   theme: z.enum(['system', 'dark', 'light']),
 });
@@ -24,9 +25,9 @@ export const INPUT_SCHEMAS = {
       explanationLanguage: language,
     })
     .strict(),
-  'keys:status': empty,
-  'keys:set': z.object({ key: z.string().trim().min(1).max(500) }).strict(),
-  'keys:clear': empty,
+  'keys:status': z.object({ provider: z.enum(PROVIDERS).optional() }).strict(),
+  'keys:set': z.object({ key: z.string().trim().min(1).max(500), provider: z.enum(PROVIDERS).optional() }).strict(),
+  'keys:clear': z.object({ provider: z.enum(PROVIDERS).optional() }).strict(),
   'challenges:next': requestId,
   'challenges:cancel': requestId,
   'feedback:submit': z

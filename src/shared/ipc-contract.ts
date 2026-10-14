@@ -7,6 +7,7 @@ import type { ProgressStage } from '../core/llm/structured';
 import type { HistoryItem, ProfileInput, StoredProfile, Theme } from '../core/ports';
 import type { ProgressSummary } from '../core/progress/summary';
 import type { ReviewRating, SrsCard } from '../core/srs/srs';
+import type { ProviderId } from './providers';
 
 export type AppErrorKind = LLMErrorKind | 'validation' | 'busy' | 'not_found' | 'keyring_unavailable' | 'internal';
 export interface AppError {
@@ -16,7 +17,7 @@ export interface AppError {
 export type Result<T> = { ok: true; data: T } | { ok: false; error: AppError };
 
 export interface Settings {
-  provider: string;
+  provider: ProviderId;
   model: string;
   theme: Theme;
 }
@@ -38,9 +39,9 @@ export interface ProgressEvent {
 export interface Channels {
   'profile:get': { in: Record<string, never>; out: StoredProfile | null };
   'profile:save': { in: ProfileInput; out: StoredProfile };
-  'keys:status': { in: Record<string, never>; out: KeyStatus };
-  'keys:set': { in: { key: string }; out: KeyStatus };
-  'keys:clear': { in: Record<string, never>; out: KeyStatus };
+  'keys:status': { in: { provider?: ProviderId }; out: KeyStatus };
+  'keys:set': { in: { key: string; provider?: ProviderId }; out: KeyStatus };
+  'keys:clear': { in: { provider?: ProviderId }; out: KeyStatus };
   'challenges:next': { in: { requestId: string }; out: Challenge };
   'challenges:cancel': { in: { requestId: string }; out: null };
   'feedback:submit': { in: { requestId: string; challengeId: number | null; text: string }; out: Feedback };
@@ -67,7 +68,8 @@ type R<C extends InvokeChannel> = Promise<Result<Channels[C]['out']>>;
 /** What the preload exposes as `window.devtalk`. */
 export interface DevtalkApi {
   profile: { get(): R<'profile:get'>; save(p: ProfileInput): R<'profile:save'> };
-  keys: { status(): R<'keys:status'>; set(key: string): R<'keys:set'>; clear(): R<'keys:clear'> };
+  /** `provider` defaults to the one in the profile. */
+  keys: { status(provider?: ProviderId): R<'keys:status'>; set(key: string, provider?: ProviderId): R<'keys:set'>; clear(provider?: ProviderId): R<'keys:clear'> };
   challenges: { next(requestId: string): R<'challenges:next'>; cancel(requestId: string): R<'challenges:cancel'> };
   feedback: {
     submit(input: Channels['feedback:submit']['in']): R<'feedback:submit'>;

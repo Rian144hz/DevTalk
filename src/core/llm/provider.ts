@@ -9,7 +9,7 @@ export interface LLMRequest {
 }
 
 export interface LLMProvider {
-  readonly id: 'anthropic' | 'ollama' | 'fake';
+  readonly id: 'anthropic' | 'gemini' | 'ollama' | 'fake';
   readonly model: string;
   /** Returns the raw model text; validation is the caller's job. */
   generateJson(req: LLMRequest): Promise<string>;

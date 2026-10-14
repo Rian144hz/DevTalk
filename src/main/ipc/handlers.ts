@@ -8,12 +8,14 @@ import type { Clock, StoredProfile, StudyStore } from '../../core/ports';
 import { buildProgressSummary } from '../../core/progress/summary';
 import { previewDue, rate, REVIEW_RATINGS } from '../../core/srs/srs';
 import type { AppError, AppErrorKind, Channels, InvokeChannel, Result, Settings } from '../../shared/ipc-contract';
+import { DEFAULT_PROVIDER, type ProviderId } from '../../shared/providers';
 import { KeyringUnavailableError, type KeyVault } from '../vault/key-vault';
 import { INPUT_SCHEMAS } from './schemas';
 
 export interface HandlerDeps {
   store: StudyStore;
-  vault: KeyVault;
+  /** One key per provider. */
+  vaults: (provider: ProviderId) => KeyVault;
   clock: Clock;
   /** Throws LLMError('no_key') when the provider needs a key and there is none. */
   makeProvider: (apiKey: string | null, profile: StoredProfile) => LLMProvider;
@@ -28,6 +30,7 @@ const MESSAGES: Record<AppErrorKind, string> = {
   auth: 'Your API key was rejected. Check it in Settings.',
   config: 'The coach could not use this model. Check the model name in Settings and your Anthropic account credits.',
   unavailable: 'The coach is unavailable right now. Try again in a moment.',
+  rate_limited: "You reached the provider's usage limit for now. Wait a minute and try again, or come back later today.",
   invalid_output: 'The coach returned something unexpected. Try again.',
   refusal: 'The coach declined to answer this one. Try rewording it.',
   truncated: "The coach's reply was cut off. Try again.",
@@ -59,10 +62,12 @@ function toAppError(err: unknown): AppError {
   return { kind: 'internal', message: MESSAGES.internal };
 }
 
-const settingsOf = (p: StoredProfile): Settings => ({ provider: p.provider, model: p.model, theme: p.theme });
+const settingsOf = (p: StoredProfile): Settings => ({ provider: p.provider as ProviderId, model: p.model, theme: p.theme });
 
 export function createHandlers(deps: HandlerDeps): Handlers {
-  const { store, vault, clock } = deps;
+  const { store, clock } = deps;
+  /** The provider a keys:* call refers to: the explicit one, else the profile's, else the default. */
+  const keyVault = (provider?: ProviderId) => deps.vaults(provider ?? (store.getProfile()?.provider as ProviderId | undefined) ?? DEFAULT_PROVIDER);
   const inFlight = new Map<string, AbortController>();
 
   function handle<C extends InvokeChannel>(
@@ -106,7 +111,7 @@ export function createHandlers(deps: HandlerDeps): Handlers {
     return null;
   };
 
-  const providerFor = (profile: StoredProfile) => deps.makeProvider(vault.get(), profile);
+  const providerFor = (profile: StoredProfile) => deps.makeProvider(deps.vaults(profile.provider as ProviderId).get(), profile);
 
   return {
     'profile:get': handle('profile:get', () => store.getProfile()),
@@ -114,13 +119,14 @@ export function createHandlers(deps: HandlerDeps): Handlers {
       store.saveProfile(p, clock.now());
       return store.getProfile()!;
     }),
-    'keys:status': handle('keys:status', () => ({ hasKey: vault.has() })),
-    'keys:set': handle('keys:set', ({ key }) => {
+    'keys:status': handle('keys:status', ({ provider }) => ({ hasKey: keyVault(provider).has() })),
+    'keys:set': handle('keys:set', ({ key, provider }) => {
+      const vault = keyVault(provider);
       vault.set(key);
       return { hasKey: vault.has() };
     }),
-    'keys:clear': handle('keys:clear', () => {
-      vault.clear();
+    'keys:clear': handle('keys:clear', ({ provider }) => {
+      keyVault(provider).clear();
       return { hasKey: false };
     }),
 

@@ -59,6 +59,9 @@ function toLLMError(err: unknown): LLMError {
   if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError) {
     return new LLMError('auth', 'Your API key was rejected.', { cause: err });
   }
+  if (err instanceof Anthropic.RateLimitError) {
+    return new LLMError('rate_limited', 'Rate limit reached', { cause: err });
+  }
   if (
     err instanceof Anthropic.BadRequestError ||
     err instanceof Anthropic.NotFoundError ||

@@ -58,8 +58,10 @@ influenciam as **interfaces** da fase 1 (ver §4.3).
   do módulo nativo).
 - SQLite com `better-sqlite3`; `ts-fsrs` para o agendamento.
 - `zod` para todos os contratos (JSON do LLM e entrada do IPC).
-- LLM: `@anthropic-ai/sdk` no processo principal. Modelo padrão `claude-opus-5-5`, editável em Settings.
-  Ollama entra no último passo da fase 1.
+- LLM: provedor padrão **Google Gemini** (`@google/genai`, modelo `gemini-flash-latest`), porque o plano gratuito
+  não exige cartão (decisão do usuário em 2026-10-13). Anthropic (`@anthropic-ai/sdk`, `claude-opus-5-5`) continua
+  disponível. Uma chave por provedor no keyring. Ollama entra no último passo da fase 1. No plano gratuito do Gemini o
+  Google pode usar os textos enviados para melhorar modelos.
 - Testes: `vitest` no core; Playwright (`_electron`) para e2e e screenshots.
 
 ## 4. Arquitetura

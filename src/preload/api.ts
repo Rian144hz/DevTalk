@@ -9,7 +9,11 @@ export function buildApi(invoke: Invoke, subscribe: Subscribe): DevtalkApi {
   const call = (channel: InvokeChannel, payload: unknown = {}) => invoke(channel, payload) as Promise<Result<never>>;
   return {
     profile: { get: () => call('profile:get'), save: (p) => call('profile:save', p) },
-    keys: { status: () => call('keys:status'), set: (key) => call('keys:set', { key }), clear: () => call('keys:clear') },
+    keys: {
+      status: (provider) => call('keys:status', provider ? { provider } : {}),
+      set: (key, provider) => call('keys:set', provider ? { key, provider } : { key }),
+      clear: (provider) => call('keys:clear', provider ? { provider } : {}),
+    },
     challenges: {
       next: (requestId) => call('challenges:next', { requestId }),
       cancel: (requestId) => call('challenges:cancel', { requestId }),
