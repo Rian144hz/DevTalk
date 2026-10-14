@@ -1,11 +1,18 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { app, safeStorage } from 'electron';
+import { app, dialog, safeStorage, type BrowserWindow } from 'electron';
 import { LLMError } from '../core/llm/errors';
 import type { ProgressStage } from '../core/llm/structured';
 import { openDatabase, type DB } from './db/open';
 import { SqliteStudyStore } from './db/sqlite-store';
 import { createHandlers, type Handlers } from './ipc/handlers';
+import { createSocialHandlers } from './ipc/social-handlers';
+import { createUnconfiguredBackend, type SocialBackend } from './social/backend';
+import { readSocialConfig } from './social/config';
+import type { SocialErrorKind } from './social/errors';
+import { createFakeSocialBackend } from './social/fake-backend';
+import { createSessionStore } from './social/session-store';
+import { createSupabaseBackend } from './social/supabase-backend';
 import { createAnthropicProvider } from './llm/anthropic-provider';
 import { createGeminiProvider } from './llm/gemini-provider';
 import { checkOllama, createOllamaProvider } from './llm/ollama-provider';
@@ -20,6 +27,29 @@ export interface AppContext {
 
 /** Offline fixtures for UI work and e2e: opt-in, and impossible in packaged builds. */
 export const useFixtureLLM = () => !app.isPackaged && process.env['DEVTALK_FAKE_LLM'] === '1';
+
+/**
+ * Dev/e2e only: DEVTALK_FAKE_SOCIAL=1 (empty) or =moderation (seeded, signed in as a moderator) replaces Supabase;
+ * DEVTALK_FAKE_SOCIAL_FAIL=deleteAccount[:kind] makes that call fail (default kind: offline).
+ */
+function fakeSocialBackend(userData: string): SocialBackend | null {
+  const mode = app.isPackaged ? undefined : process.env['DEVTALK_FAKE_SOCIAL'];
+  if (!mode) return null;
+  const fail: Partial<Record<keyof SocialBackend, SocialErrorKind>> = {};
+  for (const item of (process.env['DEVTALK_FAKE_SOCIAL_FAIL'] ?? '').split(',').filter(Boolean)) {
+    const [name, kind] = item.split(':');
+    fail[name as keyof SocialBackend] = (kind as SocialErrorKind | undefined) ?? 'offline';
+  }
+  return createFakeSocialBackend({ seed: mode === 'moderation' ? 'moderation' : undefined, filePath: join(userData, 'fake-social.json'), fail });
+}
+
+/** Every table of the local study database, as rows. */
+function exportLocalData(db: DB): Record<string, unknown> {
+  const tables = db
+    .prepare(`select name from sqlite_master where type = 'table' and name not like 'sqlite_%' order by name`)
+    .all() as { name: string }[];
+  return Object.fromEntries(tables.map(({ name }) => [name, db.prepare(`select * from "${name.replaceAll('"', '""')}"`).all()]));
+}
 
 /**
  * e2e only (never in packaged builds): DEVTALK_TEST_KEYRING=plain stores fake test keys without the
@@ -40,7 +70,10 @@ function testKeyring(): SafeStorageLike | null {
   return null;
 }
 
-export function createAppContext(emitProgress: (requestId: string, stage: ProgressStage) => void): AppContext {
+export function createAppContext(
+  emitProgress: (requestId: string, stage: ProgressStage) => void,
+  getWindow: () => BrowserWindow | null = () => null,
+): AppContext {
   const userData = app.getPath('userData');
   const db: DB = openDatabase(join(userData, 'devtalk.sqlite'));
   const store = new SqliteStudyStore(db);
@@ -94,5 +127,39 @@ export function createAppContext(emitProgress: (requestId: string, stage: Progre
     emitProgress,
   });
 
-  return { handlers, close: () => db.close() };
+  const config = readSocialConfig(import.meta.env);
+  const backend =
+    fakeSocialBackend(userData) ??
+    (config
+      ? createSupabaseBackend({
+          url: config.url,
+          key: config.key,
+          storage: createSessionStore({ safeStorage: keyring, filePath: join(userData, 'social-session.bin') }),
+        })
+      : createUnconfiguredBackend());
+
+  const socialHandlers = createSocialHandlers({
+    backend,
+    exportLocal: () => exportLocalData(db),
+    chooseSavePath: async (defaultName) => {
+      const win = getWindow();
+      const options = { title: 'Export my data', defaultPath: join(app.getPath('documents'), defaultName), filters: [{ name: 'JSON', extensions: ['json'] }] };
+      const result = win ? await dialog.showSaveDialog(win, options) : await dialog.showSaveDialog(options);
+      return result.canceled || !result.filePath ? null : result.filePath;
+    },
+    writeFile: (path, content) => writeFileSync(path, content, { mode: 0o600 }),
+    deleteLocalData: () => {
+      db.close();
+      const local = /^(devtalk\.sqlite(-wal|-shm)?|api-key.*\.bin|social-session\.bin|fake-social\.json)$/;
+      for (const name of readdirSync(userData)) if (local.test(name)) rmSync(join(userData, name), { force: true });
+      // Let the IPC reply reach the window before restarting.
+      setTimeout(() => {
+        app.relaunch();
+        app.exit(0);
+      }, 300);
+    },
+    today: () => new Date().toISOString().slice(0, 10),
+  });
+
+  return { handlers: { ...handlers, ...socialHandlers }, close: () => db.close() };
 }

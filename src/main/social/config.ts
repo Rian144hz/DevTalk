@@ -18,7 +18,10 @@ function jwtRole(key: string): string | null {
  * Reads the Supabase URL and the public key baked into the build. Returns null when they are missing or
  * malformed — and when the key is a secret one, which must never ship in the app.
  */
-export function readSocialConfig(env: Record<string, string | undefined>): SocialConfig | null {
+export function readSocialConfig(env: {
+  readonly MAIN_VITE_SUPABASE_URL?: string;
+  readonly MAIN_VITE_SUPABASE_PUBLISHABLE_KEY?: string;
+}): SocialConfig | null {
   const rawUrl = env['MAIN_VITE_SUPABASE_URL']?.trim();
   const key = env['MAIN_VITE_SUPABASE_PUBLISHABLE_KEY']?.trim();
   if (!rawUrl || !key) return null;

@@ -29,5 +29,32 @@ export function buildApi(invoke: Invoke, subscribe: Subscribe): DevtalkApi {
     progress: { summary: () => call('progress:summary'), history: (input) => call('progress:history', input) },
     settings: { get: () => call('settings:get'), set: (partial) => call('settings:set', partial) },
     llmCheck: () => call('llm:check'),
+    social: {
+      status: () => call('social:status'),
+      sendCode: (email) => call('social:sendCode', { email }),
+      verifyCode: (email, code) => call('social:verifyCode', { email, code }),
+      acceptDocuments: () => call('social:acceptDocuments'),
+      getProfile: () => call('social:getProfile'),
+      saveProfile: (draft) => call('social:saveProfile', draft),
+      setAvatar: (bytes) => call('social:setAvatar', { bytes }),
+      removeAvatar: () => call('social:removeAvatar'),
+      avatar: (userId) => call('social:avatar', { userId }),
+      notices: () => call('social:notices'),
+      readNotice: (id) => call('social:readNotice', { id }),
+      signOut: () => call('social:signOut'),
+      exportData: (includeLocal) => call('social:export', { includeLocal }),
+      deleteAccount: (input) => call('social:deleteAccount', input),
+    },
+    safety: {
+      block: (userId) => call('safety:block', { userId }),
+      unblock: (userId) => call('safety:unblock', { userId }),
+      report: (input) => call('safety:report', input),
+    },
+    moderation: {
+      isModerator: () => call('moderation:isModerator'),
+      reports: () => call('moderation:reports'),
+      history: (userId) => call('moderation:history', { userId }),
+      decide: (decision) => call('moderation:decide', decision),
+    },
   };
 }

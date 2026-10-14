@@ -1,16 +1,14 @@
-import type { z } from 'zod';
 import { ChallengeGenerator } from '../../core/challenges/generator';
 import { FeedbackEngine } from '../../core/feedback/engine';
-import { LLMError } from '../../core/llm/errors';
 import type { LLMProvider } from '../../core/llm/provider';
 import type { ProgressStage } from '../../core/llm/structured';
 import type { Clock, StoredProfile, StudyStore } from '../../core/ports';
 import { buildProgressSummary } from '../../core/progress/summary';
 import { previewDue, rate, REVIEW_RATINGS } from '../../core/srs/srs';
-import type { AppError, AppErrorKind, Channels, InvokeChannel, Result, Settings } from '../../shared/ipc-contract';
+import type { InvokeChannel, Settings } from '../../shared/ipc-contract';
 import { DEFAULT_PROVIDER, type ProviderId } from '../../shared/providers';
-import { KeyringUnavailableError, type KeyVault } from '../vault/key-vault';
-import { INPUT_SCHEMAS } from './schemas';
+import type { KeyVault } from '../vault/key-vault';
+import { AppFailure, handle, type HandlerMap } from './handle';
 
 export interface HandlerDeps {
   store: StudyStore;
@@ -27,70 +25,17 @@ export interface HandlerDeps {
   emitProgress: (requestId: string, stage: ProgressStage) => void;
 }
 
-export type Handlers = { [C in InvokeChannel]: (input: unknown) => Promise<Result<Channels[C]['out']>> };
-
-const MESSAGES: Record<AppErrorKind, string> = {
-  no_key: 'Add your API key in Settings to use the coach.',
-  auth: 'Your API key was rejected. Check it in Settings.',
-  config: 'The coach could not use this model. Check the model name in Settings and your provider account.',
-  unavailable: 'The coach is unavailable right now. Try again in a moment.',
-  rate_limited: "You reached the provider's usage limit for now. Wait a minute and try again, or come back later today.",
-  invalid_output: 'The coach returned something unexpected. Try again.',
-  refusal: 'The coach declined to answer this one. Try rewording it.',
-  truncated: "The coach's reply was cut off. Try again.",
-  cancelled: 'Cancelled.',
-  validation: 'That input is not valid.',
-  busy: 'This request is already running.',
-  not_found: 'Not found.',
-  keyring_unavailable: 'Your system keyring is not available, so the API key cannot be stored safely.',
-  internal: 'Something went wrong. Try again.',
-};
-
-class AppFailure extends Error {
-  constructor(
-    readonly kind: AppErrorKind,
-    message = MESSAGES[kind],
-  ) {
-    super(message);
-  }
-}
-
-function toAppError(err: unknown): AppError {
-  if (err instanceof AppFailure) return { kind: err.kind, message: err.message };
-  if (err instanceof LLMError) {
-    if (err.kind === 'config' || err.kind === 'unavailable') console.error(`[devtalk] LLM ${err.kind}: ${err.message}`, err.cause ?? '');
-    return { kind: err.kind, message: err.userMessage ?? MESSAGES[err.kind] };
-  }
-  if (err instanceof KeyringUnavailableError) return { kind: 'keyring_unavailable', message: MESSAGES.keyring_unavailable };
-  console.error('[devtalk] unexpected error', err);
-  return { kind: 'internal', message: MESSAGES.internal };
-}
+export type SocialChannel = Extract<InvokeChannel, `social:${string}` | `safety:${string}` | `moderation:${string}`>;
+export type CoreChannel = Exclude<InvokeChannel, SocialChannel>;
+export type Handlers = HandlerMap<InvokeChannel>;
 
 const settingsOf = (p: StoredProfile): Settings => ({ provider: p.provider as ProviderId, model: p.model, theme: p.theme });
 
-export function createHandlers(deps: HandlerDeps): Handlers {
+export function createHandlers(deps: HandlerDeps): HandlerMap<CoreChannel> {
   const { store, clock } = deps;
   /** The provider a keys:* call refers to: the explicit one, else the profile's, else the default. */
   const keyVault = (provider?: ProviderId) => deps.vaults(provider ?? (store.getProfile()?.provider as ProviderId | undefined) ?? DEFAULT_PROVIDER);
   const inFlight = new Map<string, AbortController>();
-
-  function handle<C extends InvokeChannel>(
-    channel: C,
-    fn: (input: z.output<(typeof INPUT_SCHEMAS)[C]>) => Promise<Channels[C]['out']> | Channels[C]['out'],
-  ) {
-    return async (raw: unknown): Promise<Result<Channels[C]['out']>> => {
-      const parsed = INPUT_SCHEMAS[channel].safeParse(raw ?? {});
-      if (!parsed.success) {
-        const issue = parsed.error.issues[0];
-        return { ok: false, error: { kind: 'validation', message: issue ? `${issue.path.join('.') || 'input'}: ${issue.message}` : MESSAGES.validation } };
-      }
-      try {
-        return { ok: true, data: await fn(parsed.data as z.output<(typeof INPUT_SCHEMAS)[C]>) };
-      } catch (err) {
-        return { ok: false, error: toAppError(err) };
-      }
-    };
-  }
 
   function requireProfile(): StoredProfile {
     const profile = store.getProfile();

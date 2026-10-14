@@ -56,7 +56,10 @@ function createMainWindow(): BrowserWindow {
 
 function openContext(): AppContext | null {
   try {
-    return createAppContext((requestId, stage) => mainWindow?.webContents.send(PROGRESS_EVENT, { requestId, stage }));
+    return createAppContext(
+      (requestId, stage) => mainWindow?.webContents.send(PROGRESS_EVENT, { requestId, stage }),
+      () => mainWindow,
+    );
   } catch (err) {
     const message = err instanceof DatabaseTooNewError ? err.message : `DevTalk could not open its data: ${String(err)}`;
     if (isCliMode(process.argv)) process.stderr.write(`${message}\n`);

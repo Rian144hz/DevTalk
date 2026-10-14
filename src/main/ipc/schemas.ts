@@ -2,6 +2,8 @@ import { z } from 'zod';
 import type { InvokeChannel } from '../../shared/ipc-contract';
 import { LEVELS } from '../../core/domain/types';
 import { PROVIDERS } from '../../shared/providers';
+import { PROFILE_LIMITS, REPORT_CONTEXTS, REPORT_REASONS } from '../../core/social/types';
+import { ProfileDraftSchema } from '../../core/social/validate';
 
 export const MAX_ANSWER_CHARS = 4000;
 
@@ -13,6 +15,24 @@ const settings = z.object({
   theme: z.enum(['system', 'dark', 'light']),
 });
 const language = z.string().trim().min(1).max(60);
+const email = z.string().trim().toLowerCase().max(254).regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Enter a valid e-mail address.');
+const userId = z.string().min(1).max(64);
+const MAX_AVATAR_INPUT = 8 * 1024 * 1024;
+const reportId = z.number().int().positive();
+const decision = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('dismiss'), reportId }).strict(),
+  z.object({ kind: z.literal('warn'), reportId: reportId.nullable(), target: userId, message: z.string().trim().min(1).max(1000) }).strict(),
+  z
+    .object({
+      kind: z.literal('suspend'),
+      reportId: reportId.nullable(),
+      target: userId,
+      days: z.union([z.literal(1), z.literal(7), z.literal(30), z.null()]),
+      reason: z.string().trim().min(1).max(1000),
+    })
+    .strict(),
+  z.object({ kind: z.literal('unsuspend'), target: userId }).strict(),
+]);
 
 /** Every invoke payload is validated here before any handler logic runs. */
 export const INPUT_SCHEMAS = {
@@ -47,4 +67,33 @@ export const INPUT_SCHEMAS = {
   'settings:get': empty,
   'settings:set': settings.partial().strict(),
   'llm:check': empty,
+  'social:status': empty,
+  'social:sendCode': z.object({ email }).strict(),
+  'social:verifyCode': z.object({ email, code: z.string().regex(/^\d{6,10}$/, 'The code has 6 to 10 digits.') }).strict(),
+  'social:acceptDocuments': empty,
+  'social:getProfile': empty,
+  'social:saveProfile': ProfileDraftSchema.strict(),
+  'social:setAvatar': z.object({ bytes: z.instanceof(Uint8Array).refine((b) => b.byteLength <= MAX_AVATAR_INPUT) }).strict(),
+  'social:removeAvatar': empty,
+  'social:avatar': z.object({ userId }).strict(),
+  'social:notices': empty,
+  'social:readNotice': z.object({ id: z.number().int().positive() }).strict(),
+  'social:signOut': empty,
+  'social:export': z.object({ includeLocal: z.boolean() }).strict(),
+  'social:deleteAccount': z.object({ confirmEmail: z.string().max(254), deleteLocal: z.boolean() }).strict(),
+  'safety:block': z.object({ userId }).strict(),
+  'safety:unblock': z.object({ userId }).strict(),
+  'safety:report': z
+    .object({
+      reported: userId,
+      contextType: z.enum(REPORT_CONTEXTS),
+      contextId: z.string().max(100).nullable(),
+      reason: z.enum(REPORT_REASONS),
+      details: z.string().max(PROFILE_LIMITS.reportDetails),
+    })
+    .strict(),
+  'moderation:isModerator': empty,
+  'moderation:reports': empty,
+  'moderation:history': z.object({ userId }).strict(),
+  'moderation:decide': decision,
 } satisfies Record<InvokeChannel, z.ZodType>;

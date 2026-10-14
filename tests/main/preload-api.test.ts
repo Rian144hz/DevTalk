@@ -3,7 +3,9 @@ import { PROGRESS_EVENT } from '../../src/shared/ipc-contract';
 
 test('exposes exactly the spec groups', () => {
   const api = buildApi(async () => ({ ok: true, data: null }), () => () => {});
-  expect(Object.keys(api).sort()).toEqual(['challenges', 'feedback', 'keys', 'llm', 'llmCheck', 'profile', 'progress', 'review', 'settings']);
+  expect(Object.keys(api).sort()).toEqual([
+    'challenges', 'feedback', 'keys', 'llm', 'llmCheck', 'moderation', 'profile', 'progress', 'review', 'safety', 'settings', 'social',
+  ]);
 });
 
 test('methods invoke the right channel with the right payload', async () => {
@@ -45,4 +47,53 @@ test('onProgress subscribes to the progress event and returns the unsubscribe', 
   });
   expect(api.llm.onProgress(() => {})).toBe(unsubscribe);
   expect(subscribed).toBe(PROGRESS_EVENT);
+});
+
+test('social, safety and moderation methods map to their channels', async () => {
+  const calls: [string, unknown][] = [];
+  const api = buildApi(async (channel, payload) => {
+    calls.push([channel, payload]);
+    return { ok: true, data: null };
+  }, () => () => {});
+  const bytes = new Uint8Array([1, 2]);
+  await api.social.status();
+  await api.social.sendCode('a@b.co');
+  await api.social.verifyCode('a@b.co', '123456');
+  await api.social.acceptDocuments();
+  await api.social.getProfile();
+  await api.social.setAvatar(bytes);
+  await api.social.removeAvatar();
+  await api.social.avatar('u1');
+  await api.social.notices();
+  await api.social.readNotice(3);
+  await api.social.signOut();
+  await api.social.exportData(true);
+  await api.social.deleteAccount({ confirmEmail: 'a@b.co', deleteLocal: false });
+  await api.safety.block('u2');
+  await api.safety.unblock('u2');
+  await api.moderation.isModerator();
+  await api.moderation.reports();
+  await api.moderation.history('u3');
+  await api.moderation.decide({ kind: 'dismiss', reportId: 4 });
+  expect(calls).toEqual([
+    ['social:status', {}],
+    ['social:sendCode', { email: 'a@b.co' }],
+    ['social:verifyCode', { email: 'a@b.co', code: '123456' }],
+    ['social:acceptDocuments', {}],
+    ['social:getProfile', {}],
+    ['social:setAvatar', { bytes }],
+    ['social:removeAvatar', {}],
+    ['social:avatar', { userId: 'u1' }],
+    ['social:notices', {}],
+    ['social:readNotice', { id: 3 }],
+    ['social:signOut', {}],
+    ['social:export', { includeLocal: true }],
+    ['social:deleteAccount', { confirmEmail: 'a@b.co', deleteLocal: false }],
+    ['safety:block', { userId: 'u2' }],
+    ['safety:unblock', { userId: 'u2' }],
+    ['moderation:isModerator', {}],
+    ['moderation:reports', {}],
+    ['moderation:history', { userId: 'u3' }],
+    ['moderation:decide', { kind: 'dismiss', reportId: 4 }],
+  ]);
 });
