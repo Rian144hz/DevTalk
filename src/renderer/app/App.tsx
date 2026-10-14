@@ -12,6 +12,8 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { PracticeScreen } from '../screens/PracticeScreen';
 import { FeedbackRoute } from '../screens/FeedbackScreen';
 import { ReviewScreen } from '../screens/ReviewScreen';
+import { ProgressScreen } from '../screens/ProgressScreen';
+import { LaterScreen } from '../screens/LaterScreen';
 
 /** The component gallery ships only in dev builds (or a build made for screenshots). */
 const GALLERY = import.meta.env.DEV || import.meta.env['VITE_COMPONENT_GALLERY'] === '1';
@@ -53,6 +55,8 @@ function Shell() {
         : name === 'practice' ? <PracticeScreen />
         : name === 'feedback' && route.id ? <FeedbackRoute id={route.id} onNext={() => { window.location.hash = '#/practice'; }} />
         : name === 'review' ? <ReviewScreen />
+        : name === 'progress' ? <ProgressScreen />
+        : name === 'people' || name === 'rooms' ? <LaterScreen which={name} />
         : name === 'settings' ? <SettingsScreen profile={profile} />
         : <Placeholder title={SCREEN_TITLES[name]} />}
     </div>
