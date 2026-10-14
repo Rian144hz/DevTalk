@@ -5,6 +5,7 @@ import { DEFAULT_MODELS, PROVIDER_LABELS, type ProviderId } from '../../shared/p
 import { useAppData } from '../app/AppData';
 import { AppErrorException, api, unwrap } from '../lib/api';
 import { Button, Notice, PasswordField, Segmented, Select, TextField } from '../design-system';
+import { AccountSection } from './AccountSection';
 import { CURRENT_LEVELS, KEY_LINKS, PROVIDER_OPTIONS, languageOptions, TARGET_ERROR, TARGET_LEVELS, isTargetAbove } from './forms';
 
 const message = (e: unknown) => (e instanceof AppErrorException ? e.message : 'Something went wrong. Try again.');
@@ -151,6 +152,8 @@ export function SettingsScreen({ profile }: { profile: StoredProfile }) {
           options={[{ value: 'system', label: 'System' }, { value: 'dark', label: 'Dark' }, { value: 'light', label: 'Light' }]}
           onChange={(t) => void setSettings({ theme: t })} />
       </section>
+
+      <AccountSection />
 
       <p className="muted small settings-foot">Your practice data stays on this computer. Only the text you submit is sent to the coach you chose.</p>
     </main>
