@@ -12,10 +12,11 @@
     "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit && tsc -p tsconfig.e2e.json --noEmit",
     "test:core": "vitest run --project core",
     "test:main": "cross-env ELECTRON_RUN_AS_NODE=1 electron node_modules/vitest/vitest.mjs run --project main",
-    "test": "npm run test:core && npm run test:renderer && npm run test:main",
+    "test": "npm run test:core && npm run test:renderer && npm run test:supabase && npm run test:main",
     "postinstall": "electron-builder install-app-deps",
     "cli": "electron-vite build && electron .",
     "test:renderer": "vitest run --project renderer",
+    "test:supabase": "vitest run --project supabase",
     "test:e2e": "electron-vite build && playwright test"
   },
   "license": "UNLICENSED",
@@ -32,6 +33,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.9",
     "@playwright/test": "1.64.0",
     "@types/better-sqlite3": "9.6.0",
     "@types/node": "26.6.5",
