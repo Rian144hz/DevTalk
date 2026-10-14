@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevTalk mockup: Home</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  .home { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--s10); align-items: start; }
+  .next { display: flex; justify-content: space-between; align-items: center; gap: var(--s6); margin-top: var(--s6); padding: var(--s5) 0 0; border-top: 1px solid var(--rule); }
+  .next h2 { margin: 2px 0 var(--s1); }
+  .next p { color: var(--ink-2); max-width: var(--measure); }
+  .need { display: flex; gap: var(--s2); align-items: center; flex-wrap: wrap; margin-top: var(--s3); font-size: var(--text-sm); color: var(--ink-3); }
+  .side h2 { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--s3); }
+  .due li { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: var(--s3); padding: var(--s3) 0; }
+  .due { padding: 0; }
+  .due .chip { border: 0; padding: 0; font-size: var(--text-md); }
+  .side .btn { width: 100%; justify-content: center; margin-top: var(--s4); }
+  .watch { margin-top: var(--s10); }
+  .watch li { list-style: none; display: flex; justify-content: space-between; align-items: center; padding: var(--s2) 0; font-size: var(--text-md); }
+  .watch ul { padding: 0; margin-top: var(--s2); }
+  .tally { display: inline-flex; gap: 3px; align-items: center; color: var(--pencil); }
+  .tally i { width: 2px; height: 14px; background: currentColor; border-radius: 1px; transform: skewX(-12deg); }
+  .tally i.five { width: 18px; height: 2px; margin-left: -20px; transform: rotate(-28deg); }
+  @media (max-width: 1180px) { .home { grid-template-columns: minmax(0, 1fr); } .side { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s8); } .watch { margin-top: 0; } }
+  @media (max-width: 1040px) { .line { grid-template-columns: minmax(0, 1fr) 200px; } .page { padding-inline: var(--s8); } }
+</style>
+</head>
+<body data-active="Home">
+<div class="app">
+  <aside class="rail"></aside>
+  <main class="page">
+    <header class="page-head">
+      <div>
+        <h1>Today</h1>
+        <p class="lede">6 expressions to review and one challenge ready. About 15 minutes.</p>
+      </div>
+    </header>
+
+    <div class="home">
+      <section aria-labelledby="last">
+        <article class="galley">
+          <div class="galley-head">
+            <h2 id="last">Your last answer, marked by the coach</h2>
+            <span class="track">Stand-up update, yesterday</span>
+          </div>
+          <div class="galley-rows">
+            <div class="line">
+              <p class="text">Yesterday I <del>have worked</del> <ins>worked</ins> on the login bug.<span class="mark-n">1</span></p>
+              <p class="note"><b>verb tense</b>“Yesterday” pede o passado simples.</p>
+            </div>
+            <div class="line">
+              <p class="text">The problem was that the token <del>expire</del> <ins>expired</ins> too fast.<span class="mark-n">2</span></p>
+              <p class="note"><b>verb tense</b>A frase toda está no passado.</p>
+            </div>
+            <div class="line">
+              <p class="text">I changed the configuration and now it works <del>good</del> <ins>well</ins>.<span class="mark-n">3</span></p>
+              <p class="note"><b>word choice</b>Para descrever um verbo, use o advérbio “well”.</p>
+            </div>
+            <div class="line">
+              <p class="text">Today I<span class="caret" aria-hidden="true">‸</span><ins>'ll</ins> write tests for it.<span class="mark-n">4</span></p>
+              <p class="note"><b>missing word</b>Plano para hoje: “I'll write”.</p>
+            </div>
+          </div>
+        </article>
+
+        <div class="next">
+          <div>
+            <span class="track">Next: explain a bug</span>
+            <h2>Orders showed up one day early</h2>
+            <p>Users in Brazil saw orders dated one day early. Tell Priya, the product manager, what caused it and how you fixed it.</p>
+            <div class="need">Use in your answer <span class="chip">root cause</span><span class="chip">track down</span></div>
+          </div>
+          <button class="btn btn-primary" type="button">Write it <kbd>Enter</kbd></button>
+        </div>
+      </section>
+
+      <aside class="side" aria-label="Review and patterns">
+        <section aria-labelledby="due">
+          <h2 id="due">Due for review <span class="muted small num">6</span></h2>
+          <ul class="due ruled">
+            <li><span class="chip">push back on</span><span class="badge" data-type="phrasal_verb">phrasal verb</span></li>
+            <li><span class="chip">root cause</span><span class="badge" data-type="collocation">collocation</span></li>
+            <li><span class="chip">on my plate</span><span class="badge" data-type="chunk">chunk</span></li>
+            <li><span class="chip">roll out</span><span class="badge" data-type="phrasal_verb">phrasal verb</span></li>
+            <li><span class="chip">track down</span><span class="badge" data-type="phrasal_verb">phrasal verb</span></li>
+            <li><span class="chip">make a trade-off</span><span class="badge" data-type="collocation">collocation</span></li>
+          </ul>
+          <button class="btn btn-secondary" type="button">Review now</button>
+        </section>
+        <section class="watch" aria-labelledby="watch">
+          <h2 id="watch">Keeps coming back</h2>
+          <ul class="ruled">
+            <li>Verb tense <span class="tally" aria-label="7 times this month"><i></i><i></i><i></i><i></i><i class="five"></i><i></i><i></i></span></li>
+            <li>Prepositions <span class="tally" aria-label="4 times this month"><i></i><i></i><i></i><i></i></span></li>
+            <li>Articles <span class="tally" aria-label="2 times this month"><i></i><i></i></span></li>
+          </ul>
+        </section>
+      </aside>
+    </div>
+  </main>
+</div>
+<script src="mockup.js"></script>
+</body>
+</html>

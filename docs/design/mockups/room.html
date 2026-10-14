@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevTalk mockup: Voice room</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  .room { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--s10); align-items: start; }
+  .head-actions { display: flex; gap: var(--s2); }
+  .turn { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r-sheet); padding: var(--s6); }
+  .turn-top { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--s6); }
+  .speaker { font-size: var(--text-xl); font-weight: 600; }
+  .speaker .muted { display: block; font-size: var(--text-sm); font-weight: 400; }
+  .clock { font: 500 3.5rem/1 var(--font-mono); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .clock small { font-size: var(--text-md); color: var(--ink-3); letter-spacing: 0; margin-left: var(--s2); }
+  .meter { margin-top: var(--s5); height: 4px; background: var(--rule); border-radius: 4px; overflow: hidden; }
+  .meter i { display: block; height: 100%; width: 52%; background: var(--pencil); border-radius: 4px; transition: width 1s linear; }
+  .queue { display: flex; gap: var(--s6); margin-top: var(--s5); font-size: var(--text-md); color: var(--ink-2); flex-wrap: wrap; }
+  .queue b { color: var(--ink); font-weight: 600; }
+  .you { display: flex; justify-content: space-between; align-items: center; gap: var(--s4); margin-top: var(--s5); padding-top: var(--s5); border-top: 1px solid var(--rule); }
+  .card { margin-top: var(--s8); }
+  .card .galley { padding: var(--s5) var(--s6); }
+  .card h3 { font-size: var(--text-lg); margin: var(--s1) 0 var(--s2); }
+  .card p { color: var(--ink-2); max-width: var(--measure); }
+  .card .chips { display: flex; gap: var(--s2); flex-wrap: wrap; margin-top: var(--s4); }
+  .people { padding: 0; }
+  .people li { list-style: none; display: flex; align-items: center; gap: var(--s3); padding: var(--s3) 0; position: relative; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--bg-rail); border: 1px solid var(--rule-strong); display: grid; place-items: center; font-size: var(--text-sm); font-weight: 600; color: var(--ink-2); flex: none; }
+  .speaking .avatar { border-color: var(--pencil); color: var(--pencil); box-shadow: 0 0 0 3px var(--pencil-wash); }
+  .who { flex: 1; min-width: 0; }
+  .who b { font-weight: 600; font-size: var(--text-md); }
+  .who span { display: block; font-size: var(--text-xs); color: var(--ink-3); }
+  .mic { width: 16px; height: 16px; color: var(--ink-3); }
+  .more { width: 28px; height: 28px; border-radius: var(--r-control); border: 1px solid transparent; background: transparent; color: var(--ink-2); display: grid; place-items: center; }
+  .more:hover, .more[aria-expanded="true"] { border-color: var(--rule-strong); }
+  .menu { position: absolute; right: 0; top: 46px; z-index: 5; background: var(--sheet); border: 1px solid var(--rule-strong); border-radius: var(--r-control); box-shadow: var(--shadow-float); padding: var(--s1); min-width: 180px; transform-origin: top right; }
+  .menu button { display: block; width: 100%; text-align: left; background: none; border: 0; border-radius: 4px; padding: 6px var(--s3); font-size: var(--text-md); }
+  .menu button:hover { background: var(--sheet-hover); }
+  .privacy { display: flex; gap: var(--s2); align-items: flex-start; margin-top: var(--s6); font-size: var(--text-sm); color: var(--ink-3); }
+  .privacy svg { width: 14px; height: 14px; flex: none; margin-top: 3px; }
+  .privacy a { color: var(--ink-2); }
+  @media (max-width: 1180px) { .room { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 1040px) { .page { padding-inline: var(--s8); } }
+</style>
+</head>
+<body data-active="Rooms">
+<div class="app">
+  <aside class="rail"></aside>
+  <main class="page">
+    <header class="page-head">
+      <div>
+        <a class="crumb small muted" href="#" style="text-decoration:none">Rooms</a>
+        <h1>Mock stand-up</h1>
+        <p class="lede">Tuesday 14 October, 19:00 to 19:30 your time. Hosted by Ana. 5 of 6 places taken.</p>
+      </div>
+      <div class="head-actions">
+        <button class="btn btn-secondary" type="button" aria-pressed="false">Mute <kbd>M</kbd></button>
+        <button class="btn btn-quiet" type="button">Leave room</button>
+      </div>
+    </header>
+
+    <div class="room">
+      <div>
+        <section class="turn" aria-labelledby="turn">
+          <h2 id="turn" class="visually-hidden">Current turn</h2>
+          <div class="turn-top">
+            <p class="speaker">Marco is speaking<span class="muted">Backend developer, B2</span></p>
+            <p class="clock" role="timer" aria-label="47 seconds left of 1 minute 30">0:47<small>left of 1:30</small></p>
+          </div>
+          <div class="meter" aria-hidden="true"><i></i></div>
+          <p class="queue"><span>Up next <b>You</b></span><span>Then Priya, Daniel, Ana</span></p>
+          <div class="you">
+            <p>Your turn starts when Marco finishes. Take a breath and glance at the card.</p>
+            <button class="btn btn-quiet" type="button">Skip my turn</button>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="card">
+          <article class="galley">
+            <span class="track">Card from the coach</span>
+            <h3 id="card">The release slipped a day</h3>
+            <p>Yesterday's deploy was rolled back after an error spike. Give your stand-up: what happened, what you are doing today, and what is blocking you.</p>
+            <div class="chips"><span class="chip">roll back</span><span class="chip">on my plate</span><span class="chip">blocked on</span><span class="chip">a heads-up</span></div>
+          </article>
+        </section>
+      </div>
+
+      <aside aria-labelledby="ppl">
+        <h2 id="ppl" style="margin-bottom:var(--s2)">In the room</h2>
+        <ul class="people ruled">
+          <li class="speaking"><span class="avatar" aria-hidden="true">M</span><span class="who"><b>Marco</b><span>Backend, B2, speaking</span></span>
+            <button class="more" type="button" aria-label="More for Marco"><svg class="icon mic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="12.5" cy="8" r="1"/></svg></button></li>
+          <li><span class="avatar" aria-hidden="true">R</span><span class="who"><b>You</b><span>Backend, B1</span></span></li>
+          <li><span class="avatar" aria-hidden="true">P</span><span class="who"><b>Priya</b><span>Data, B1</span></span>
+            <button class="more" type="button" aria-label="More for Priya"><svg class="icon mic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="12.5" cy="8" r="1"/></svg></button></li>
+          <li><span class="avatar" aria-hidden="true">D</span><span class="who"><b>Daniel</b><span>Mobile, B2, muted</span></span>
+            <button class="more" type="button" aria-label="More for Daniel" aria-expanded="true" aria-controls="m-daniel"><svg class="icon mic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="12.5" cy="8" r="1"/></svg></button>
+            <div class="menu" id="m-daniel" role="menu"><button role="menuitem">View profile</button><button role="menuitem">Block Daniel</button><button role="menuitem">Report…</button></div></li>
+          <li><span class="avatar" aria-hidden="true">A</span><span class="who"><b>Ana</b><span>Frontend, C1, host</span></span>
+            <button class="more" type="button" aria-label="More for Ana"><svg class="icon mic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="12.5" cy="8" r="1"/></svg></button></li>
+        </ul>
+        <p class="privacy"><svg class="icon" viewBox="0 0 14 14" aria-hidden="true"><rect x="3" y="6" width="8" height="6" rx="1"/><path d="M5 6V4.5a2 2 0 0 1 4 0V6"/></svg>
+          <span>Voices are never recorded or transcribed. Anyone can be blocked or reported from their menu. <a href="#">Code of conduct</a></span></p>
+      </aside>
+    </div>
+  </main>
+</div>
+<script src="mockup.js"></script>
+</body>
+</html>

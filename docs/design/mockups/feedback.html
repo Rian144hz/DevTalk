@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevTalk mockup: Feedback</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  .fb { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: var(--s10); align-items: start; }
+  .crumb { font-size: var(--text-sm); color: var(--ink-3); text-decoration: none; }
+  .crumb:hover { color: var(--ink); }
+  .situation { color: var(--ink-2); max-width: var(--measure); margin-top: var(--s2); }
+  section + section { margin-top: var(--s8); }
+  .sec-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--s3); }
+  .rewrite { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r-sheet); padding: var(--s5) var(--s6); font-size: var(--text-lg); line-height: 1.75; max-width: 100%; }
+  .rewrite mark { background: none; color: inherit; text-decoration: underline; text-decoration-color: var(--pencil); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+  .exprs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s4); }
+  .side { position: sticky; top: var(--s10); }
+  .req li { list-style: none; padding: var(--s3) 0; }
+  .req { padding: 0; }
+  .req-top { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); }
+  .req .chip { border: 0; padding: 0; font-size: var(--text-md); }
+  .status { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); }
+  .status svg { width: 14px; height: 14px; }
+  .status.ok { color: var(--pencil); }
+  .status.open { color: var(--ink-2); }
+  .req p { font-size: var(--text-sm); color: var(--ink-2); margin-top: var(--s1); }
+  .actions { display: flex; flex-direction: column; gap: var(--s2); margin-top: var(--s6); }
+  .actions .btn { justify-content: center; }
+  /* States (mockup switch) */
+  body:not([data-state="Waiting"]) .when-waiting, body:not([data-state="Error"]) .when-error,
+  body[data-state="Waiting"] .when-ready, body[data-state="Error"] .when-ready { display: none !important; }
+  .progress { display: flex; align-items: center; gap: var(--s4); font-size: var(--text-sm); color: var(--ink-2); }
+  .steps { display: flex; gap: var(--s3); list-style: none; padding: 0; }
+  .steps li[data-s="done"] { color: var(--ink-3); }
+  .steps li[data-s="now"] { color: var(--pencil); }
+  .bar { height: 2px; background: var(--rule); overflow: hidden; border-radius: 2px; }
+  .bar i { display: block; height: 100%; width: 40%; background: var(--pencil); animation: slide 1.4s var(--ease-out) infinite; }
+  @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+  @media (prefers-reduced-motion: reduce) { .bar i { animation: none; width: 100%; opacity: .5; } }
+  .skel { height: 12px; border-radius: 4px; background: var(--sheet); margin: 10px 0; }
+  .error-box { display: flex; justify-content: space-between; align-items: center; gap: var(--s4); padding: var(--s4) var(--s6); border-bottom: 1px solid var(--rule); }
+  .error-box p { color: var(--ink); }
+  .error-box .muted { display: block; font-size: var(--text-sm); }
+  @media (max-width: 1180px) { .fb { grid-template-columns: minmax(0, 1fr); } .side { position: static; } .exprs { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 1040px) { .line { grid-template-columns: minmax(0, 1fr) 200px; } .page { padding-inline: var(--s8); } }
+</style>
+</head>
+<body data-active="Practice" data-states="Ready,Waiting,Error" data-state="Ready">
+<div class="app">
+  <aside class="rail"></aside>
+  <main class="page">
+    <header class="page-head">
+      <div>
+        <a class="crumb" href="home.html">Practice</a>
+        <h1>Push back on a Redis cache</h1>
+        <p class="situation"><span class="track">Code review, with Leo, the developer who wrote the PR.</span> Leo's PR puts a Redis cache in front of the profile endpoint, which already answers in 40 ms. Disagree politely and suggest an alternative.</p>
+      </div>
+    </header>
+
+    <div class="fb">
+      <div>
+        <section aria-labelledby="answer">
+          <article class="galley">
+            <div class="galley-head when-ready"><h2 id="answer">Your answer</h2><span class="muted small">4 edits</span></div>
+            <div class="galley-head when-waiting" role="status">
+              <div class="progress"><span>The coach is reading your answer</span>
+                <ol class="steps"><li data-s="done">Sent</li><li data-s="now">Reading</li><li>Checking</li></ol>
+                <span class="num muted">6 s</span></div>
+              <button class="btn btn-quiet" type="button">Cancel <kbd>Esc</kbd></button>
+            </div>
+            <div class="bar when-waiting" aria-hidden="true"><i></i></div>
+            <div class="error-box when-error" role="alert">
+              <p>The coach is unavailable right now.<span class="muted">Your answer is saved. Check your connection and try again.</span></p>
+              <button class="btn btn-secondary" type="button">Try again</button>
+            </div>
+            <div class="galley-rows when-ready">
+              <div class="line">
+                <p class="text">I think we don't need the cache <del>in this moment</del> <ins>right now</ins>.<span class="mark-n">1</span></p>
+                <p class="note"><b>collocation</b>“In this moment” soa traduzido; diga “right now” ou “at this point”.</p>
+              </div>
+              <div class="line">
+                <p class="text">The endpoint already <del>answer</del> <ins>answers</ins> in 40 ms and the cache <del>can bring problems with invalidation</del> <ins>adds invalidation risk</ins>.<span class="mark-n">2</span><span class="mark-n">3</span></p>
+                <p class="note"><b>subject–verb agreement</b>“The endpoint” é singular: answers.<br><b>collocation</b>Em code review, “adds risk” é o natural.</p>
+              </div>
+              <div class="line">
+                <p class="text">I would push back on this change, because <ins>it adds</ins> <del>is</del> more complexity for little gain.<span class="mark-n">4</span></p>
+                <p class="note"><b>missing word</b>O sujeito não pode sumir: “because it adds”.</p>
+              </div>
+              <div class="line">
+                <p class="text">Maybe we can measure first with real traffic?</p>
+                <p class="note muted">No edits.</p>
+              </div>
+            </div>
+            <div class="galley-rows when-waiting">
+              <div class="line"><p class="text">I think we don't need the cache in this moment. The endpoint already answer in 40 ms and the cache can bring problems with invalidation. I would push back on this change, because is more complexity for little gain. Maybe we can measure first with real traffic?</p><p class="note"></p></div>
+            </div>
+          </article>
+        </section>
+
+        <section aria-labelledby="rw" class="when-ready">
+          <div class="sec-head"><h2 id="rw">How a fluent developer might say it</h2><button class="btn btn-quiet" type="button">Copy</button></div>
+          <p class="rewrite">I'd <mark>push back on</mark> adding the cache right now. The endpoint already answers in 40 ms, and a cache adds invalidation risk <mark>for very little gain</mark>. It's <mark>a trade-off I wouldn't make</mark> yet. Could we <mark>hold off on</mark> it until we measure with real traffic?</p>
+        </section>
+        <section aria-labelledby="ne" class="when-ready">
+          <div class="sec-head"><h2 id="ne">New expressions</h2><span class="muted small">Added to your review queue</span></div>
+          <div class="exprs">
+            <article class="expr"><div class="expr-top"><span class="expr-phrase">hold off on</span><span class="badge" data-type="phrasal_verb">phrasal verb</span></div>
+              <p class="expr-meaning">Adiar algo de propósito, esperando o momento certo.</p><p class="expr-example">Let's hold off on the migration until the release is out.</p><p class="expr-foot">First review tomorrow</p></article>
+            <article class="expr"><div class="expr-top"><span class="expr-phrase">make a trade-off</span><span class="badge" data-type="collocation">collocation</span></div>
+              <p class="expr-meaning">Aceitar perder algo para ganhar outra coisa.</p><p class="expr-example">We made a trade-off: more memory for fewer queries.</p><p class="expr-foot">First review tomorrow</p></article>
+            <article class="expr"><div class="expr-top"><span class="expr-phrase">for very little gain</span><span class="badge" data-type="chunk">chunk</span></div>
+              <p class="expr-meaning">Com pouco benefício em troca do esforço.</p><p class="expr-example">That rewrite adds risk for very little gain.</p><p class="expr-foot">First review tomorrow</p></article>
+          </div>
+        </section>
+        <section class="when-waiting" aria-hidden="true"><div class="skel" style="width:40%"></div><div class="skel"></div><div class="skel" style="width:80%"></div></section>
+      </div>
+
+      <aside class="side" aria-labelledby="req">
+        <h2 id="req">Required expressions</h2>
+        <ul class="req ruled when-ready">
+          <li><div class="req-top"><span class="chip">push back on</span><span class="status ok"><svg class="icon" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5 5.5 10.5 11.5 3.5"/></svg>Used well</span></div>
+            <p>Natural and in the right place.</p></li>
+          <li><div class="req-top"><span class="chip">trade-off</span><span class="status open"><svg class="icon" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/></svg>Not used yet</span></div>
+            <p>You could close with “It's a trade-off I wouldn't make yet.” It comes back in a later challenge.</p></li>
+        </ul>
+        <ul class="req ruled when-waiting"><li><span class="chip">push back on</span></li><li><span class="chip">trade-off</span></li></ul>
+        <div class="actions when-ready">
+          <button class="btn btn-primary" type="button">Next challenge <kbd>Enter</kbd></button>
+          <button class="btn btn-secondary" type="button">Write it again</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+<script src="mockup.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>DevTalk — Category standard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--b0:#101113;--b1:#141518;--b2:#1C1D21;--b3:#2A2B30;--t6:#8B8D96;--t8:#B6B8C0;--t10:#ECECEE;--acc:#7C7FF2;--sans:Inter,system-ui,sans-serif;--mono:"JetBrains Mono",monospace}
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;background:var(--b1);color:var(--t10);font:14px/1.6 var(--sans);display:grid;grid-template-columns:232px 1fr}
+aside{background:var(--b0);border-right:1px solid var(--b3);padding:18px 12px}
+.brand{font-weight:600;padding:4px 10px 14px}
+.search{display:flex;justify-content:space-between;border:1px solid var(--b3);border-radius:6px;padding:7px 10px;color:var(--t6);font-size:13px;margin-bottom:12px}
+kbd{font:12px var(--mono);color:var(--t8)}
+nav a{display:flex;padding:6px 10px;border-radius:6px;color:var(--t8);text-decoration:none}
+nav a.on{background:var(--b2);color:var(--t10)}
+nav .count{margin-left:auto;font:12px var(--mono)}
+main{padding:36px 48px}
+h1{font-size:22px;font-weight:600}
+.sub{color:var(--t8);margin:4px 0 24px}
+.card{background:var(--b2);border:1px solid var(--b3);border-radius:12px;padding:24px;display:flex;justify-content:space-between;gap:24px}
+.tag{color:#A3A5F7;font-size:13px;font-weight:500}
+.card h2{font-size:18px;margin:4px 0}.card p{color:var(--t8);max-width:70ch}
+.btn{background:#5B5ED8;color:#fff;border:0;border-radius:6px;padding:9px 14px;font:500 14px var(--sans);align-self:center}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+.stat{background:var(--b2);border:1px solid var(--b3);border-radius:12px;padding:18px}
+.stat b{font-size:26px;font-weight:600;display:block}.stat span{color:var(--t8)}
+</style></head>
+<body>
+<aside><div class="brand">DevTalk</div><div class="search">Search… <kbd>Ctrl K</kbd></div>
+<nav><a class="on" href="#">Home</a><a href="#">Practice</a><a href="#">Review<span class="count">6</span></a><a href="#">People</a><a href="#">Rooms</a><a href="#">Progress</a><a href="#">Settings</a></nav></aside>
+<main>
+  <h1>Welcome back</h1><p class="sub">Keep your streak of practice going.</p>
+  <div class="card"><div><span class="tag">Code review</span><h2>Push back on a Redis cache</h2><p>Leo opened a PR that adds a Redis cache in front of the profile endpoint. Write a review comment that disagrees politely.</p></div><button class="btn">Start challenge</button></div>
+  <div class="grid"><div class="stat"><b>6</b><span>Reviews due</span></div><div class="stat"><b>24</b><span>Expressions learned</span></div><div class="stat"><b>9</b><span>Expressions reused</span></div></div>
+</main>
+</body></html>

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>DevTalk — Terminal Wayfinding</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--k0:#0D0F12;--k1:#111317;--k2:#1A1D23;--k3:#2A2E36;--k6:#8F95A1;--k8:#B9BEC8;--paper:#F4F2EC;--sign:#F2C230;--sans:"Hanken Grotesk",system-ui,sans-serif;--mono:"JetBrains Mono",monospace}
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;background:var(--k1);color:var(--paper);font:15px/1.6 var(--sans);display:grid;grid-template-columns:232px 1fr}
+aside{background:var(--k0);border-right:1px solid var(--k3);padding:18px 12px}
+.brand{font-weight:800;padding:4px 10px 14px}
+.search{display:flex;justify-content:space-between;border:1px solid var(--k3);border-radius:6px;padding:7px 10px;color:var(--k6);font-size:13px;margin-bottom:12px}
+kbd{font:12px var(--mono);color:var(--k8)}
+nav a{display:flex;padding:7px 10px;border-radius:6px;color:var(--k8);text-decoration:none;font-size:14px}
+nav a.on{background:var(--k2);color:var(--paper)}
+nav .count{margin-left:auto;font:12px var(--mono)}
+main{display:flex;flex-direction:column}
+.band{background:var(--sign);color:#14120A;display:grid;grid-template-columns:96px 1fr auto;align-items:center;gap:28px;padding:30px 56px}
+.pict{width:72px;height:72px;background:#14120A;border-radius:6px;display:grid;place-items:center}
+.pict svg{width:40px;height:40px;stroke:var(--sign);fill:none;stroke-width:2.4}
+.band h1{font-size:40px;line-height:1.1;font-weight:800;letter-spacing:-.02em}
+.band p{font-size:17px;font-weight:500}
+.mins{text-align:right}.mins b{display:block;font-size:56px;line-height:1;font-weight:800}.mins span{font-weight:500}
+.go{margin-top:10px;background:#14120A;color:var(--sign);border:0;border-radius:6px;padding:9px 16px;font:700 15px var(--sans)}
+.after{padding:36px 56px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px}
+.after h2{font-size:14px;color:var(--k8);font-weight:500;margin-bottom:10px}
+.step{border-top:1px solid var(--k3);padding:14px 0}
+.step b{display:block;font-size:17px}.step span{color:var(--k6);font-size:14px}
+</style></head>
+<body>
+<aside><div class="brand">DevTalk</div><div class="search">Search or jump to… <kbd>Ctrl K</kbd></div>
+<nav><a class="on" href="#">Home</a><a href="#">Practice</a><a href="#">Review<span class="count">6</span></a><a href="#">People</a><a href="#">Rooms</a><a href="#">Progress</a><a href="#">Settings</a></nav></aside>
+<main>
+  <div class="band">
+    <div class="pict"><svg viewBox="0 0 40 40"><rect x="7" y="8" width="26" height="24" rx="3"/><path d="M13 16h14M13 22h9"/></svg></div>
+    <div><h1>Review 6 expressions</h1><p>Then write one code review comment. Left sidebar, Review.</p><button class="go">Start now</button></div>
+    <div class="mins"><b>4</b><span>minutes</span></div>
+  </div>
+  <div class="after">
+    <div><h2>After that</h2><div class="step"><b>Push back on a Redis cache</b><span>Code review, about 8 minutes</span></div><div class="step"><b>Stand-up update</b><span>Optional, about 5 minutes</span></div></div>
+    <div><h2>Keep an eye on</h2><div class="step"><b>Verb tense</b><span>Came back in 4 of your last 5 answers</span></div><div class="step"><b>Prepositions</b><span>3 of 5</span></div></div>
+    <div><h2>Learned last time</h2><div class="step"><b>track down</b><span>It took me a day to track down the memory leak.</span></div></div>
+  </div>
+</main>
+</body></html>
