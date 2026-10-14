@@ -6,6 +6,8 @@ export interface SessionStore {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
+  /** Forgets the session entirely (sign out without the network). */
+  clear(): void;
 }
 
 /**
@@ -51,6 +53,10 @@ export function createSessionStore(deps: { safeStorage: SafeStorageLike; filePat
     removeItem(key) {
       delete load()[key];
       save();
+    },
+    clear() {
+      items = {};
+      rmSync(filePath, { force: true });
     },
   };
 }

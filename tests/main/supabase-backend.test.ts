@@ -7,6 +7,7 @@ const URL_BASE = 'https://proj.supabase.co';
 interface Recorded {
   method: string;
   path: string;
+  query: string;
   body: unknown;
   auth: string | null;
 }
@@ -23,6 +24,7 @@ function fakeFetch(routes: Record<string, Reply>) {
     calls.push({
       method: req.method,
       path: u.pathname,
+      query: decodeURIComponent(u.search),
       body: text ? (() => { try { return JSON.parse(text); } catch { return text; } })() : null,
       auth: req.headers.get('Authorization'),
     });
@@ -39,7 +41,13 @@ const json = (status: number, body: unknown) =>
 
 function memoryStorage() {
   const m = new Map<string, string>();
-  return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k) };
+  return {
+    map: m,
+    getItem: (k: string) => m.get(k) ?? null,
+    setItem: (k: string, v: string) => void m.set(k, v),
+    removeItem: (k: string) => void m.delete(k),
+    clear: () => m.clear(),
+  };
 }
 
 function token(sub: string) {
@@ -59,10 +67,10 @@ function sessionBody(sub = 'user-1', email = 'rian@example.com') {
   };
 }
 
-function backend(routes: Record<string, Reply>) {
+function backend(routes: Record<string, Reply>, storage = memoryStorage()) {
   const f = fakeFetch(routes);
-  const b = createSupabaseBackend({ url: URL_BASE, key: 'sb_publishable_test', storage: memoryStorage(), fetch: f.fetch, autoRefreshToken: false });
-  return { b, calls: f.calls };
+  const b = createSupabaseBackend({ url: URL_BASE, key: 'sb_publishable_test', storage, fetch: f.fetch, autoRefreshToken: false });
+  return { b, calls: f.calls, storage };
 }
 
 async function errorOf(p: Promise<unknown>): Promise<SocialError> {
@@ -151,11 +159,11 @@ test('deleteAccount while offline keeps the session', async () => {
 test('saveProfile upserts the row in snake_case and maps it back', async () => {
   const row = {
     id: 'user-1', display_name: 'Rian', native_language: 'Portuguese (Brazil)', level: 'B1', timezone: 'America/Bahia',
-    area: 'backend', stack: ['python'], availability: [], bio: '', avatar_path: null, suspended_until: null,
+    area: 'backend', stack: ['python'], availability: [], bio: '', avatar_path: null,
   };
   const { b, calls } = backend({
     'POST /auth/v1/verify': json(200, sessionBody()),
-    'GET /rest/v1/profiles': json(200, []),
+    'POST /rest/v1/rpc/my_suspension': json(200, null),
     'POST /rest/v1/profiles': json(201, row),
   });
   await b.verifyCode('rian@example.com', '123456');
@@ -170,6 +178,51 @@ test('saveProfile upserts the row in snake_case and maps it back', async () => {
   const post = calls.find((c) => c.method === 'POST' && c.path === '/rest/v1/profiles')!;
   expect(post.body).toMatchObject({ id: 'user-1', display_name: 'Rian', native_language: 'Portuguese (Brazil)' });
   expect(post.body).not.toHaveProperty('suspended_until');
+  // suspended_until is not a readable column: every profile read names its columns.
+  expect(post.query).toMatch(/select=id,display_name/);
+  expect(post.query).not.toMatch(/select=\*|suspended_until/);
+});
+
+test('the own suspension comes from my_suspension(), not from the profile row', async () => {
+  const row = {
+    id: 'user-1', display_name: 'Rian', native_language: 'Portuguese (Brazil)', level: 'B1', timezone: 'America/Bahia',
+    area: 'backend', stack: [], availability: [], bio: '', avatar_path: null,
+  };
+  const { b, calls } = backend({
+    'POST /auth/v1/verify': json(200, sessionBody()),
+    'GET /rest/v1/profiles': json(200, row),
+    'POST /rest/v1/rpc/my_suspension': json(200, '2099-01-31T12:00:00+00:00'),
+  });
+  await b.verifyCode('rian@example.com', '123456');
+  expect((await b.getOwnProfile())?.suspendedUntil).toBe('2099-01-31T12:00:00+00:00');
+  const read = calls.find((c) => c.method === 'GET' && c.path === '/rest/v1/profiles')!;
+  expect(read.query).not.toMatch(/select=\*|suspended_until/);
+});
+
+test('the export includes the moderation actions about the person', async () => {
+  const { b } = backend({
+    'POST /auth/v1/verify': json(200, sessionBody()),
+    'GET /rest/v1/profiles': json(200, null),
+    'POST /rest/v1/rpc/my_suspension': json(200, null),
+    'GET /rest/v1/consents': json(200, []),
+    'GET /rest/v1/blocks': json(200, []),
+    'GET /rest/v1/reports': json(200, []),
+    'GET /rest/v1/notices': json(200, []),
+    'POST /rest/v1/rpc/my_moderation_actions': json(200, [{ action: 'warn', reason: 'Be kind', until: null, created_at: '2026-10-14T10:00:00Z' }]),
+  });
+  await b.verifyCode('rian@example.com', '123456');
+  const data = await b.exportOwnData();
+  expect(data['moderationActions']).toEqual([{ action: 'warn', reason: 'Be kind', until: null, created_at: '2026-10-14T10:00:00Z' }]);
+});
+
+test('sign out clears the stored session even when the expired token cannot be refreshed offline', async () => {
+  const storage = memoryStorage();
+  const expired = { ...sessionBody(), expires_at: Math.floor(Date.now() / 1000) - 600, expires_in: -600 };
+  storage.setItem('sb-proj-auth-token', JSON.stringify(expired));
+  const { b } = backend({ 'POST /auth/v1/token': new TypeError('fetch failed'), 'POST /auth/v1/logout': new TypeError('fetch failed') }, storage);
+  await b.signOut();
+  expect(storage.map.size).toBe(0);
+  expect(await b.session()).toBeNull();
 });
 
 describe('mapSupabaseError', () => {

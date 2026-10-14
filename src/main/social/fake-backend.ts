@@ -163,6 +163,11 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
     const until = suspendedUntil(userId);
     if (until) throw new SocialError('suspended', `Suspended until ${until}`, until);
   };
+  /** Mirrors viewer_is_member(): active and the documents accepted. */
+  const assertMember = (userId: string) => {
+    if (!hasAccepted(userId)) throw new SocialError('forbidden', 'Accept the community rules first.');
+    assertActive(userId);
+  };
   const assertModerator = () => {
     if (!isModerator(me().userId)) throw new SocialError('forbidden', 'Only moderators can do this.');
   };
@@ -242,14 +247,16 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       const viewer = me().userId;
       const data = state.avatars[userId];
       if (!data) return null;
+      const member = isActive(viewer) && hasAccepted(viewer);
       const visible =
-        userId === viewer || isModerator(viewer) || (isActive(viewer) && isActive(userId) && !blockedBetween(viewer, userId));
+        userId === viewer || (member && (isModerator(viewer) || (isActive(userId) && !blockedBetween(viewer, userId))));
       return visible ? `data:image/webp;base64,${data}` : null;
     },
 
     async block(userId) {
       const { userId: blocker } = me();
       if (userId === blocker) throw new SocialError('forbidden', 'You cannot block yourself.');
+      assertMember(blocker);
       if (!state.blocks.some((k) => k.blocker === blocker && k.blocked === userId)) state.blocks.push({ blocker, blocked: userId });
       save();
     },
@@ -269,6 +276,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       failIf('report');
       const { userId } = me();
       if (input.reported === userId) throw new SocialError('forbidden', 'You cannot report yourself.');
+      if (!hasAccepted(userId)) throw new SocialError('forbidden', 'Accept the community rules first.');
       assertActive(userId);
       const recent = state.reports.filter((r) => r.reporter === userId && Date.parse(r.createdAt) > now() - DAY_MS);
       if (recent.length >= 20) throw new SocialError('rate_limited', 'report limit reached');
@@ -358,6 +366,10 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
         blocks: state.blocks.filter((k) => k.blocker === userId).map((k) => ({ blocked: k.blocked })),
         reportsMade: state.reports.filter((r) => r.reporter === userId).map(({ reporter: _r, ...r }) => r),
         notices: noticesFor(userId),
+        moderationActions: state.actions
+          .filter((a) => a.target === userId)
+          .reverse()
+          .map((a) => ({ action: a.action, reason: a.reason, until: a.until, created_at: a.createdAt })),
         avatarUrl: userId in state.avatars ? 'fake://avatars/avatar.webp' : null,
       };
     },

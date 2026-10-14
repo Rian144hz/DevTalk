@@ -19,6 +19,9 @@ const DAY_MS = 86_400_000;
 const REQUIRED = [...LEGAL_DOCUMENTS, 'age_18'] as const;
 const avatarPath = (userId: string) => `${userId}/avatar.webp`;
 
+/** suspended_until is not a readable column (see 0001_profiles.sql): always name the columns. */
+const PROFILE_COLUMNS = 'id, display_name, native_language, level, timezone, area, stack, availability, bio, avatar_path';
+
 interface ProfileRow {
   id: string;
   display_name: string;
@@ -30,10 +33,9 @@ interface ProfileRow {
   availability: AvailabilitySlot[];
   bio: string;
   avatar_path: string | null;
-  suspended_until: string | null;
 }
 
-function toProfile(row: ProfileRow): SocialProfile {
+function toProfile(row: ProfileRow, suspendedUntil: string | null): SocialProfile {
   return {
     id: row.id,
     displayName: row.display_name,
@@ -45,7 +47,7 @@ function toProfile(row: ProfileRow): SocialProfile {
     availability: row.availability ?? [],
     bio: row.bio ?? '',
     hasAvatar: row.avatar_path !== null,
-    suspendedUntil: row.suspended_until,
+    suspendedUntil,
   };
 }
 
@@ -119,13 +121,23 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
   }
 
   async function ownRow(userId: string): Promise<ProfileRow | null> {
-    return check(await client.from('profiles').select('*').eq('id', userId).maybeSingle<ProfileRow>());
+    return check(await client.from('profiles').select(PROFILE_COLUMNS).eq('id', userId).maybeSingle<ProfileRow>());
   }
 
-  async function assertActive(userId: string): Promise<void> {
-    const row = await ownRow(userId);
-    const until = activeSuspension(row?.suspended_until ?? null);
+  /** The caller's suspension end while it lasts, else null. */
+  async function mySuspension(): Promise<string | null> {
+    return activeSuspension((check(await client.rpc('my_suspension')) as string | null) ?? null);
+  }
+
+  async function assertActive(): Promise<void> {
+    const until = await mySuspension();
     if (until) throw new SocialError('suspended', `Suspended until ${until}`, until);
+  }
+
+  /** Signing out never needs the network: forget the stored session first, then tell the client. */
+  async function forgetSession(): Promise<void> {
+    opts.storage.clear();
+    await client.auth.signOut({ scope: 'local' }).catch(() => undefined);
   }
 
   return {
@@ -146,7 +158,7 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
     session,
 
     async signOut() {
-      await client.auth.signOut({ scope: 'local' });
+      await forgetSession();
     },
 
     async hasAcceptedCurrentDocuments() {
@@ -167,12 +179,12 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
     async getOwnProfile() {
       const { userId } = await me();
       const row = await ownRow(userId);
-      return row ? toProfile(row) : null;
+      return row ? toProfile(row, await mySuspension()) : null;
     },
 
     async saveProfile(draft: ProfileDraft) {
       const { userId } = await me();
-      await assertActive(userId);
+      await assertActive();
       const row = {
         id: userId,
         display_name: draft.displayName,
@@ -184,9 +196,9 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
         availability: draft.availability,
         bio: draft.bio,
       };
-      const saved = check(await client.from('profiles').upsert(row, { onConflict: 'id' }).select('*').single<ProfileRow>());
+      const saved = check(await client.from('profiles').upsert(row, { onConflict: 'id' }).select(PROFILE_COLUMNS).single<ProfileRow>());
       if (!saved) throw new SocialError('unknown', 'The profile was not saved.');
-      return toProfile(saved);
+      return toProfile(saved, null);
     },
 
     async uploadAvatar(webp) {
@@ -231,7 +243,7 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
 
     async report(input) {
       const { userId } = await me();
-      await assertActive(userId);
+      await assertActive();
       check(
         await client.from('reports').insert({
           reporter: userId,
@@ -344,6 +356,7 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
         await client.from('reports').select('id, reported, context_type, context_id, reason, details, status, created_at').eq('reporter', userId),
       );
       const notices = await this.listNotices();
+      const moderationActions = check(await client.rpc('my_moderation_actions'));
       let avatarUrl: string | null = null;
       if (row?.avatar_path) {
         const { data } = await client.storage.from('avatars').createSignedUrl(row.avatar_path, 3600);
@@ -352,11 +365,12 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
       return {
         exportedAt: new Date().toISOString(),
         account: { email },
-        profile: row ? toProfile(row) : null,
+        profile: row ? toProfile(row, await mySuspension()) : null,
         consents,
         blocks,
         reportsMade,
         notices,
+        moderationActions,
         avatarUrl,
       };
     },
@@ -375,7 +389,7 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
         if (error instanceof FunctionsFetchError) throw new SocialError('offline', error.message);
         throw mapAuthError(error);
       }
-      await client.auth.signOut({ scope: 'local' });
+      await forgetSession();
     },
   };
 }

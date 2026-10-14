@@ -91,6 +91,15 @@ describe('session store', () => {
     expect(createSessionStore({ safeStorage: fakeSafeStorage(), filePath: file }).getItem('sb-auth-token')).toBeNull();
   });
 
+  test('clear forgets the session and removes the file', () => {
+    const file = join(dir, 'social-session.bin');
+    const store = createSessionStore({ safeStorage: fakeSafeStorage(), filePath: file });
+    store.setItem('k', 'v');
+    store.clear();
+    expect(store.getItem('k')).toBeNull();
+    expect(createSessionStore({ safeStorage: fakeSafeStorage(), filePath: file }).getItem('k')).toBeNull();
+  });
+
   test('without a keyring the session lives only in memory', () => {
     const file = join(dir, 'social-session.bin');
     const store = createSessionStore({ safeStorage: fakeSafeStorage(false), filePath: file });
@@ -206,6 +215,17 @@ describe('fake social backend', () => {
     expect((await b.actionsAbout(second!.reported!.id))[0]).toMatchObject({ action: 'unsuspend', until: null });
   });
 
+  test('an account that has not accepted the documents cannot report, block or see others', async () => {
+    const b = createFakeSocialBackend({ seed: 'moderation' });
+    const [sam] = b.seededUserIds();
+    await b.signOut();
+    await b.sendCode('new@example.com');
+    await b.verifyCode('new@example.com', '123456');
+    expect(await b.avatarDataUrl(sam!)).toBeNull();
+    expect(await kindOf(b.block(sam!))).toBe('forbidden');
+    expect(await kindOf(b.report({ reported: sam!, contextType: 'profile', contextId: null, reason: 'spam', details: '' }))).toBe('forbidden');
+  });
+
   test('a suspended account cannot edit its profile or report', async () => {
     const b = await signUp();
     const me = (await b.session())!.userId;
@@ -228,7 +248,7 @@ describe('fake social backend', () => {
     const b = await signUp();
     const data = await b.exportOwnData();
     expect(data).toMatchObject({ account: { email: 'rian@example.com' }, profile: { displayName: 'Rian' } });
-    expect(Object.keys(data).sort()).toEqual(['account', 'avatarUrl', 'blocks', 'consents', 'exportedAt', 'notices', 'profile', 'reportsMade']);
+    expect(Object.keys(data).sort()).toEqual(['account', 'avatarUrl', 'blocks', 'consents', 'exportedAt', 'moderationActions', 'notices', 'profile', 'reportsMade']);
     await b.deleteAccount();
     expect(await b.session()).toBeNull();
     await b.sendCode('rian@example.com');
