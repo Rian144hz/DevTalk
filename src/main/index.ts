@@ -1,14 +1,24 @@
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { app, BrowserWindow, dialog, shell } from 'electron';
 import { PROGRESS_EVENT } from '../shared/ipc-contract';
 import { createAppContext, type AppContext } from './app-context';
 import { isCliMode, runCli } from './cli';
 import { DatabaseTooNewError } from './db/open';
 import { registerIpc } from './ipc/register';
-import { secureWebPreferences } from './security';
+import { linuxPasswordStoreSwitch } from './vault/key-vault';
+import { isAppUrl, secureWebPreferences } from './security';
 
 const DEV_URL = process.env['ELECTRON_RENDERER_URL'];
+const RENDERER_FILE = join(__dirname, '../renderer/index.html');
+const APP_URL = DEV_URL ?? pathToFileURL(RENDERER_FILE).href;
 let mainWindow: BrowserWindow | null = null;
+
+// Electron falls back to an unencrypted store on desktops it does not recognise (sway, i3, Hyprland…).
+if (process.platform === 'linux') {
+  const store = linuxPasswordStoreSwitch(process.env, process.argv);
+  if (store) app.commandLine.appendSwitch('password-store', store);
+}
 
 // Dev/e2e only: keep test data out of the real profile directory.
 const overrideUserData = process.env['DEVTALK_USER_DATA'];
@@ -33,20 +43,15 @@ function createMainWindow(): BrowserWindow {
     return { action: 'deny' };
   });
   win.webContents.on('will-navigate', (event, url) => {
-    if (!isAppUrl(url)) event.preventDefault();
+    if (!isAppUrl(url, APP_URL)) event.preventDefault();
   });
   win.on('closed', () => {
     if (mainWindow === win) mainWindow = null;
   });
 
   if (DEV_URL) void win.loadURL(DEV_URL);
-  else void win.loadFile(join(__dirname, '../renderer/index.html'));
+  else void win.loadFile(RENDERER_FILE);
   return win;
-}
-
-function isAppUrl(url: string): boolean {
-  if (DEV_URL) return url.startsWith(DEV_URL);
-  return url.startsWith('file://');
 }
 
 function openContext(): AppContext | null {

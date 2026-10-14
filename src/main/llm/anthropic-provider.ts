@@ -44,7 +44,9 @@ export function createAnthropicProvider(opts: {
 
       if (message.stop_reason === 'refusal') throw new LLMError('refusal', 'The model declined to answer this request.');
       if (message.stop_reason === 'max_tokens') throw new LLMError('truncated', 'The model reply was cut off.');
-      const text = message.content.find((b) => b.type === 'text');
+      // After a server-side fallback, only the blocks after the last `fallback` block are the answer.
+      const lastFallback = message.content.findLastIndex((b) => b.type === 'fallback');
+      const text = message.content.slice(lastFallback + 1).find((b) => b.type === 'text');
       if (!text || text.type !== 'text') throw new LLMError('invalid_output', 'The model reply had no text.');
       return text.text;
     },
@@ -56,6 +58,13 @@ function toLLMError(err: unknown): LLMError {
   if (err instanceof Anthropic.APIUserAbortError) return new LLMError('cancelled', 'Request cancelled', { cause: err });
   if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError) {
     return new LLMError('auth', 'Your API key was rejected.', { cause: err });
+  }
+  if (
+    err instanceof Anthropic.BadRequestError ||
+    err instanceof Anthropic.NotFoundError ||
+    err instanceof Anthropic.UnprocessableEntityError
+  ) {
+    return new LLMError('config', `The API rejected the request: ${err.message}`, { cause: err });
   }
   // Connection errors are APIError subclasses in the TS SDK, so they need no separate branch.
   return new LLMError('unavailable', 'The coach is unavailable right now.', { cause: err });

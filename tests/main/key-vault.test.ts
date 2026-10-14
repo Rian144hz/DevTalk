@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createKeyVault, isKeyringUsable, KeyringUnavailableError, type SafeStorageLike } from '../../src/main/vault/key-vault';
+import { createKeyVault, isKeyringUsable, KeyringUnavailableError, linuxPasswordStoreSwitch, type SafeStorageLike } from '../../src/main/vault/key-vault';
 
 let dir: string;
 let file: string;
@@ -72,5 +72,21 @@ describe('isKeyringUsable', () => {
   test('other platforms rely on isEncryptionAvailable', () => {
     expect(isKeyringUsable(ss(true, 'unknown'), 'darwin')).toBe(true);
     expect(isKeyringUsable(ss(false, 'gnome_libsecret'), 'linux')).toBe(false);
+  });
+});
+
+describe('linuxPasswordStoreSwitch', () => {
+  test('unrecognised desktops (tiling WMs) are pointed at the secret service', () => {
+    expect(linuxPasswordStoreSwitch({ XDG_CURRENT_DESKTOP: 'sway' }, [])).toBe('gnome-libsecret');
+    expect(linuxPasswordStoreSwitch({ XDG_CURRENT_DESKTOP: 'Hyprland' }, [])).toBe('gnome-libsecret');
+    expect(linuxPasswordStoreSwitch({}, [])).toBe('gnome-libsecret');
+  });
+  test('recognised desktops keep Electron’s own choice', () => {
+    expect(linuxPasswordStoreSwitch({ XDG_CURRENT_DESKTOP: 'ubuntu:GNOME' }, [])).toBeNull();
+    expect(linuxPasswordStoreSwitch({ XDG_CURRENT_DESKTOP: 'KDE' }, [])).toBeNull();
+    expect(linuxPasswordStoreSwitch({ XDG_CURRENT_DESKTOP: 'XFCE' }, [])).toBeNull();
+  });
+  test('an explicit --password-store flag wins', () => {
+    expect(linuxPasswordStoreSwitch({ XDG_CURRENT_DESKTOP: 'sway' }, ['--password-store=kwallet5'])).toBeNull();
   });
 });

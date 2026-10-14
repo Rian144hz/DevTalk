@@ -28,3 +28,21 @@ export function secureWebPreferences(preloadPath: string): WebPreferences {
     webSecurity: true,
   };
 }
+
+/**
+ * True only for the app's own page. In packaged builds that is the exact index.html file
+ * (any other file:// page — e.g. one dropped onto the window — is foreign); on the dev
+ * server it is the server's origin.
+ */
+export function isAppUrl(url: string, appUrl: string): boolean {
+  let target: URL;
+  let app: URL;
+  try {
+    target = new URL(url);
+    app = new URL(appUrl);
+  } catch {
+    return false;
+  }
+  if (app.protocol === 'file:') return target.protocol === 'file:' && target.pathname === app.pathname;
+  return target.origin === app.origin;
+}

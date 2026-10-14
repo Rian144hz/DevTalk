@@ -64,3 +64,16 @@ export function isKeyringUsable(
   const backend = safeStorage.getSelectedStorageBackend?.() ?? 'unknown';
   return backend !== 'basic_text' && backend !== 'unknown';
 }
+
+// Desktops for which Chromium already picks a real secret store (libsecret or kwallet).
+const RECOGNISED_DESKTOPS = ['GNOME', 'KDE', 'UNITY', 'XFCE', 'CINNAMON', 'X-CINNAMON', 'PANTHEON', 'DEEPIN', 'UKUI'];
+
+/**
+ * On an unrecognised Linux desktop Electron silently uses "basic_text"; point it at the
+ * Secret Service instead (gnome-keyring, KeePassXC…). Returns null to keep Electron's choice.
+ */
+export function linuxPasswordStoreSwitch(env: Record<string, string | undefined>, argv: string[]): string | null {
+  if (argv.some((a) => a.startsWith('--password-store'))) return null;
+  const desktops = (env['XDG_CURRENT_DESKTOP'] ?? '').toUpperCase().split(':');
+  return desktops.some((d) => RECOGNISED_DESKTOPS.includes(d)) ? null : 'gnome-libsecret';
+}

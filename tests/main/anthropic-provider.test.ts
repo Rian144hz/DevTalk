@@ -66,6 +66,20 @@ test('returns the first text block', async () => {
   expect(await createAnthropicProvider({ apiKey: 'k', model: 'm', client }).generateJson(req())).toBe('{"n":1}');
 });
 
+test('after a server-side fallback, reads the fallback model’s text', async () => {
+  const { client } = fakeClient(() =>
+    message({
+      content: [
+        { type: 'thinking', thinking: '' },
+        { type: 'text', text: '{"par' },
+        { type: 'fallback', model: 'claude-opus-4-8' },
+        { type: 'text', text: '{"n":2}' },
+      ],
+    }),
+  );
+  expect(await createAnthropicProvider({ apiKey: 'k', model: 'm', client }).generateJson(req())).toBe('{"n":2}');
+});
+
 test('no text block → invalid_output', async () => {
   const { client } = fakeClient(() => message({ content: [] }));
   await expect(createAnthropicProvider({ apiKey: 'k', model: 'm', client }).generateJson(req())).rejects.toMatchObject({ kind: 'invalid_output' });
@@ -89,6 +103,9 @@ test.each([
   ['APIConnectionError', 'unavailable'],
   ['APIConnectionTimeoutError', 'unavailable'],
   ['APIUserAbortError', 'cancelled'],
+  ['BadRequestError', 'config'],
+  ['NotFoundError', 'config'],
+  ['UnprocessableEntityError', 'config'],
 ] as const)('%s → %s', async (cls, kind) => {
   const { client } = fakeClient(() => {
     throw Object.create(Anthropic[cls].prototype);

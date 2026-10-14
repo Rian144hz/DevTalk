@@ -26,6 +26,7 @@ export type Handlers = { [C in InvokeChannel]: (input: unknown) => Promise<Resul
 const MESSAGES: Record<AppErrorKind, string> = {
   no_key: 'Add your API key in Settings to use the coach.',
   auth: 'Your API key was rejected. Check it in Settings.',
+  config: 'The coach could not use this model. Check the model name in Settings and your Anthropic account credits.',
   unavailable: 'The coach is unavailable right now. Try again in a moment.',
   invalid_output: 'The coach returned something unexpected. Try again.',
   refusal: 'The coach declined to answer this one. Try rewording it.',
@@ -49,7 +50,10 @@ class AppFailure extends Error {
 
 function toAppError(err: unknown): AppError {
   if (err instanceof AppFailure) return { kind: err.kind, message: err.message };
-  if (err instanceof LLMError) return { kind: err.kind, message: MESSAGES[err.kind] };
+  if (err instanceof LLMError) {
+    if (err.kind === 'config' || err.kind === 'unavailable') console.error(`[devtalk] LLM ${err.kind}: ${err.message}`, err.cause ?? '');
+    return { kind: err.kind, message: MESSAGES[err.kind] };
+  }
   if (err instanceof KeyringUnavailableError) return { kind: 'keyring_unavailable', message: MESSAGES.keyring_unavailable };
   console.error('[devtalk] unexpected error', err);
   return { kind: 'internal', message: MESSAGES.internal };
