@@ -24,9 +24,11 @@ membros passam a ver quando a 2B trouxer o diretório de pessoas.
 - Gráfico de prática: **verde, como no GitHub** (um verde próprio do gráfico, diferente do verde das correções).
 - Banner: **animado**, posição **estilo Discord** (banner alto 3:1 no topo, foto sobreposta na borda de baixo).
   Anima sozinho; para com "reduzir movimento" do sistema e com a opção "Play animated banners" em Settings.
-- Mascotes: quem não pôs foto ganha **um de 8 mascotes**, sorteado pelo id da conta (sempre o mesmo), e pode
-  **trocar** no Edit profile. Desenhos próprios em SVG no estilo das regras do `ip-as-logo-skill` (MIT; só as regras
-  de estilo foram usadas — a skill não foi instalada, porque depende de um gerador de imagem pago).
+- Mascotes: quem não pôs foto ganha **um de 9 mascotes** — **pato, urso e axolote, 3 versões de cada** — sorteado
+  pelo id da conta (sempre o mesmo), e pode **trocar** no Edit profile. As imagens vêm da biblioteca grátis
+  **ipaslogo.com** ("Free to download and use commercially"), feita com o `ip-as-logo-skill` (MIT). A skill foi
+  instalada em `~/.claude/skills/ip-as-logo`, mas não gera aqui: exige um modelo de imagem pago e a conta Higgsfield
+  tem só 1,4 crédito (plano grátis). Arquivos e origem em `docs/design/mascots/` (`SOURCE.md`).
 - Abordagem A: o servidor guarda os fatos (dias, marcos, selos manuais) e calcula os selos; gráfico e selos nunca
   discordam.
 
@@ -45,7 +47,7 @@ membros passam a ver quando a 2B trouxer o diretório de pessoas.
    um aviso.
 5. Banner animado (GIF/WebP) e parado (JPEG/PNG/WebP) funcionam; metadados são removidos; reduzir movimento e a
    opção de Settings param a animação.
-6. Quem não tem foto aparece com o seu mascote em todo lugar onde há avatar; dá para trocar de mascote.
+6. Quem não tem foto aparece com o seu mascote (um dos 9) em todo lugar onde há avatar; dá para trocar.
 7. As regras novas têm testes no PGlite; o app tem e2e com o backend falso; as telas passaram pela conferência
    visual e pelas revisões de design e de código.
 
@@ -112,18 +114,17 @@ Selos de evolução e o gráfico respeitam `show_progress`: desligado, os outros
 
 ## 4b. Mascotes (foto padrão)
 
-- **Conjunto:** 8 bichos — `duck`, `cat`, `owl`, `frog`, `fox`, `bear`, `rabbit`, `axolotl` (sem polvo, baleia nem
-  pinguim, para não lembrar os logos do GitHub, do Docker e do Linux).
-- **Estilo** (regras do ip-as-logo): personagem fofo de 4–7 formas grandes e redondas, dois olhos simples, no máximo
-  uma boca pequena, sem contorno nem textura; 3 cores (duas do bicho + fundo liso e suave); o bicho "sai" de um canto
-  de baixo e ocupa ~90% do quadrado; legível em 32 × 32 px. Pontas sempre arredondadas.
-- **Onde vivem:** componentes SVG dentro do app (sem upload, servidor ou rede).
-- **Qual aparece:** `profiles.mascot` quando escolhido; senão o sorteio estável `fnv1a(user id) mod 8`. A foto, quando
+- **Conjunto (9):** `duck-1` Rubber Duck, `duck-2` Duck, `duck-3` Yellow Duckling, `bear-1` Brown Bear, `bear-2` Cream
+  Brown Bear, `bear-3` Giant Panda Bear, `axolotl-1` Axolotl, `axolotl-2` Baby Axolotl, `axolotl-3` Axolotl — WebP
+  512 × 512 (6–9 KB cada), escolhidos pelo dono do projeto. Origem registrada em `docs/design/mascots/SOURCE.md`.
+- **Onde vivem:** copiados para `src/renderer/assets/mascots/` e empacotados no app (sem upload, servidor ou rede;
+  a CSP `img-src 'self' data:` já permite). Mostrados em círculo, como as fotos.
+- **Qual aparece:** `profiles.mascot` quando escolhido; senão o sorteio estável `fnv1a(user id) mod 9`. A foto, quando
   existe, sempre ganha do mascote.
 - **Onde aparecem:** em todo `Avatar` sem foto (perfil, Edit profile, fila de moderação, busca de membros), no lugar da
-  inicial — que fica só para quando não há id (casos de teste e telas sem conta).
-- **Edit profile:** uma fileira com os 8 mascotes para escolher (o atual marcado); escolher um mascote não apaga a foto,
-  mas a foto continua aparecendo enquanto existir ("Remove photo" para usar o mascote).
+  inicial — que fica só para quando não há id.
+- **Edit profile:** uma fileira com os 9 para escolher (o atual marcado); a foto continua aparecendo enquanto existir
+  ("Remove photo" para usar o mascote).
 
 ## 5. Banco — migration `0004_profile_extras.sql`
 
@@ -132,7 +133,7 @@ novos).
 
 - `profiles`: `main_stack text[] not null default '{}'` (≤ 2, `main_stack <@ stack`), `uses_linux boolean not null
   default false`, `show_progress boolean not null default true`, `banner_path text` (só `{id}/banner.gif|webp`),
-  `mascot text` (nulo ou um dos 8 ids).
+  `mascot text` (nulo ou um dos 9 ids).
   Grants de select/insert/update para essas colunas.
 - `practice_days (user_id, day date, answers int 0–500, reviews int 0–2000, updated_at)`, pk (`user_id`, `day`).
   O dono insere/atualiza só as próprias linhas, com `day` entre hoje−400 e hoje+1. Leitura: o dono; outros, se
@@ -177,7 +178,8 @@ novos).
 ## 7. Documentos e sistema visual
 
 - **PRODUCT.md:** "sem gamificação" passa a "marcos públicos de evolução, sem pontos, ranking ou placar"; "sem
-  mascotes" passa a "mascotes só como foto padrão de quem não pôs foto; o app em si não tem mascote"; a exceção dos
+  mascotes" passa a "mascotes só como foto padrão de quem não pôs foto; o app em si não tem mascote"; nova exceção a
+  "não usar assets de terceiros": os 9 mascotes da biblioteca ipaslogo.com (uso comercial livre, origem registrada); a exceção dos
   logos passa a permitir as cores reais das linguagens nos selos.
 - **DESIGN.md / design.json:** tokens violeta, cobre e a rampa verde do gráfico (dois temas); regras de uso (nunca
   perto de um diff; azul/âmbar/rosa/sálvia mantêm o sentido); componentes Badge, Practice graph, Banner.
@@ -190,7 +192,7 @@ novos).
 - `tests/supabase/` (PGlite): tudo da §5.
 - `tests/core/` ou `tests/renderer/`: níveis do gráfico, cálculo de sequência local, mapa de cores das linguagens
   (contraste ≥ 3:1 nos dois temas), preparo do banner parado, sorteio estável do mascote (mesmo id → mesmo mascote;
-  os 8 aparecem numa amostra de ids) e escolha explícita ganhando do sorteio.
+  os 9 aparecem numa amostra de ids) e escolha explícita ganhando do sorteio.
 - `tests/main/`: limpeza de metadados de GIF/WebP com arquivos montados byte a byte (comentário removido, laço mantido,
   EXIF/XMP removidos, flags e tamanho corretos), detecção animado/parado, limites de tamanho e dimensão, contagem
   diária a partir do SQLite, envio só dos dias alterados, marcos, IPC.
