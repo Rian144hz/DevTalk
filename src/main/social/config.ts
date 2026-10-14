@@ -37,3 +37,17 @@ export function readSocialConfig(env: {
   if (!publishable) return null;
   return { url: url.origin, key };
 }
+
+/** Prefixes electron-vite bundles into main, preload or renderer code. */
+const BUNDLED_PREFIXES = ['MAIN_VITE_', 'PRELOAD_VITE_', 'RENDERER_VITE_', 'VITE_'];
+
+/**
+ * Build guard: the names of bundled variables holding a secret Supabase key (sb_secret_… or a service_role JWT).
+ * electron.vite.config.ts refuses to build when this is not empty, so a secret pasted into .env never ships.
+ */
+export function findShippedSecrets(env: Record<string, string | undefined>): string[] {
+  return Object.entries(env)
+    .filter(([name, value]) => BUNDLED_PREFIXES.some((p) => name.startsWith(p)) && value)
+    .filter(([, value]) => value!.trim().startsWith('sb_secret_') || jwtRole(value!.trim()) === 'service_role')
+    .map(([name]) => name);
+}

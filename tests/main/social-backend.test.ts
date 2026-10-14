@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import type { ProfileDraft } from '../../src/core/social/types';
 import type { SocialErrorKind } from '../../src/main/social/errors';
 import { SocialError } from '../../src/main/social/errors';
-import { readSocialConfig } from '../../src/main/social/config';
+import { findShippedSecrets, readSocialConfig } from '../../src/main/social/config';
 import { createFakeSocialBackend } from '../../src/main/social/fake-backend';
 import { createSessionStore } from '../../src/main/social/session-store';
 import type { SafeStorageLike } from '../../src/main/vault/key-vault';
@@ -76,6 +76,24 @@ describe('readSocialConfig', () => {
 
   test('trims a trailing slash from the URL', () => {
     expect(readSocialConfig({ MAIN_VITE_SUPABASE_URL: `${url}/`, MAIN_VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_abc' })?.url).toBe(url);
+  });
+});
+
+describe('findShippedSecrets (build guard)', () => {
+  test('names every bundled variable that holds a secret key', () => {
+    expect(
+      findShippedSecrets({
+        MAIN_VITE_SUPABASE_URL: 'https://x.supabase.co',
+        MAIN_VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_secret_abc',
+        VITE_OTHER: jwt({ role: 'service_role' }),
+        RENDERER_VITE_FINE: 'sb_publishable_abc',
+        SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_not_bundled',
+      }).sort(),
+    ).toEqual(['MAIN_VITE_SUPABASE_PUBLISHABLE_KEY', 'VITE_OTHER']);
+  });
+
+  test('a publishable key or an anon JWT is fine', () => {
+    expect(findShippedSecrets({ MAIN_VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_abc', MAIN_VITE_X: jwt({ role: 'anon' }) })).toEqual([]);
   });
 });
 
