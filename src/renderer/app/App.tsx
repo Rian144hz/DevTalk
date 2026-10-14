@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DEFAULT_MODELS, type ProviderId } from '../../shared/providers';
 import { useRoute } from '../lib/useRoute';
 import { useThemeEffect } from '../lib/useTheme';
 import type { RouteName } from '../lib/router';
 import { AppDataProvider, useAppData } from './AppData';
 import { Rail } from './Rail';
+import { CommandPalette } from './CommandPalette';
+import type { Command } from '../lib/commands';
+import { api } from '../lib/api';
+import type { Theme } from '../../core/ports';
 import { ComponentsScreen } from '../screens/ComponentsScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
@@ -31,11 +35,51 @@ const SCREEN_TITLES: Record<RouteName, string> = {
   progress: 'Progress', settings: 'Settings', people: 'People', rooms: 'Rooms', components: 'Components',
 };
 
+const SHORTCUT_ROUTES: RouteName[] = ['home', 'practice', 'review', 'progress', 'settings', 'rooms'];
+
 function Shell() {
-  const { profile, dueCount } = useAppData();
-  const [route] = useRoute();
-  const [, setPaletteOpen] = useState(false);
+  const { profile, dueCount, refresh } = useAppData();
+  const [route, navigate] = useRoute();
+  const [paletteOpen, setPaletteOpen] = useState(false);
   useThemeEffect(profile?.theme ?? 'dark');
+
+  const commands = useMemo<Command[]>(() => {
+    const go = (name: RouteName) => () => navigate({ name });
+    const theme = (t: Theme) => () => void api().settings.set({ theme: t }).then(() => refresh());
+    return [
+      { id: 'go-home', label: 'Go to Today', keywords: ['home'], shortcut: 'Ctrl 1', run: go('home') },
+      { id: 'go-practice', label: 'Go to Practice', keywords: ['write', 'answer'], shortcut: 'Ctrl 2', run: go('practice') },
+      { id: 'go-review', label: 'Go to Review', keywords: ['cards', 'expressions'], shortcut: 'Ctrl 3', run: go('review') },
+      { id: 'go-progress', label: 'Go to Progress', keywords: ['history', 'stats'], shortcut: 'Ctrl 4', run: go('progress') },
+      { id: 'go-settings', label: 'Go to Settings', keywords: ['preferences', 'key', 'model', 'coach'], shortcut: 'Ctrl 5', run: go('settings') },
+      { id: 'go-rooms', label: 'Go to Rooms', keywords: ['voice'], shortcut: 'Ctrl 6', run: go('rooms') },
+      { id: 'new-challenge', label: 'Get a new challenge', keywords: ['practice'], run: go('practice') },
+      { id: 'start-review', label: 'Start review', keywords: ['cards'], run: go('review') },
+      { id: 'theme-dark', label: 'Switch to dark theme', keywords: ['appearance'], run: theme('dark') },
+      { id: 'theme-light', label: 'Switch to light theme', keywords: ['appearance'], run: theme('light') },
+      { id: 'theme-system', label: 'Use the system theme', keywords: ['appearance', 'dark', 'light'], run: theme('system') },
+    ];
+  }, [navigate, refresh]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.ctrlKey || e.altKey || e.metaKey || e.repeat) return;
+      if (e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+        return;
+      }
+      const n = Number(e.key);
+      const target = SHORTCUT_ROUTES[n - 1];
+      if (Number.isInteger(n) && target) {
+        e.preventDefault();
+        setPaletteOpen(false);
+        navigate({ name: target });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [navigate]);
 
   useEffect(() => {
     document.title = 'DevTalk';
@@ -59,6 +103,7 @@ function Shell() {
         : name === 'people' || name === 'rooms' ? <LaterScreen which={name} />
         : name === 'settings' ? <SettingsScreen profile={profile} />
         : <Placeholder title={SCREEN_TITLES[name]} />}
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={commands} />
     </div>
   );
 }

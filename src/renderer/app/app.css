@@ -22,3 +22,13 @@
 .gallery-row { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; }
 .gallery-row.stack { flex-direction: column; align-items: stretch; gap: var(--s6); }
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s5); align-items: start; }
+
+/* Command palette (no open/close animation on purpose) */
+.palette { margin: 14vh auto auto; width: min(560px, 90vw); padding: 0; background: var(--sheet); color: var(--ink); border: 1px solid var(--rule-strong); border-radius: var(--r-sheet); box-shadow: var(--shadow-float); }
+.palette::backdrop { background: rgb(0 0 0 / 0.35); }
+.palette-input { width: 100%; background: transparent; border: 0; border-bottom: 1px solid var(--rule); padding: var(--s4) var(--s5); font-size: var(--text-lg); color: var(--ink); }
+.palette-input:focus-visible { outline: none; }
+.palette-list { list-style: none; padding: var(--s2); margin: 0; max-height: 50vh; overflow: auto; }
+.palette-list li { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); padding: var(--s2) var(--s3); border-radius: var(--r-control); cursor: pointer; }
+.palette-list li[aria-selected="true"] { background: var(--sheet-hover); box-shadow: inset 0 0 0 1px var(--rule-strong); }
+.palette-empty { color: var(--ink-3); cursor: default; }
