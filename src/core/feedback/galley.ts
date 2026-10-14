@@ -39,8 +39,8 @@ export function buildGalley(text: string, corrections: Correction[]): Galley {
   let cursor = 0;
 
   for (const correction of corrections) {
-    const span = correction.category === 'off_task' ? null : locate(text, correction.original, cursor);
-    if (!span || found.some((f) => span.start < f.end && f.start < span.end)) {
+    const span = correction.category === 'off_task' ? null : locate(text, correction.original, cursor, found);
+    if (!span) {
       general.push({ n: null, category: correction.category, explanation: correction.explanation });
       continue;
     }
@@ -73,13 +73,35 @@ export function buildGalley(text: string, corrections: Correction[]): Galley {
   };
 }
 
-function locate(text: string, original: string, from: number): { start: number; end: number } | null {
+const WORD = /[\p{L}\p{N}_']/u;
+
+/**
+ * Finds `original` as whole words (an edit of "a" must not land inside "have"), skipping spans
+ * already taken. Prefers matches after the previous edit, then anywhere; exact case first.
+ */
+function locate(
+  text: string,
+  original: string,
+  from: number,
+  taken: { start: number; end: number }[],
+): { start: number; end: number } | null {
   if (!original.trim() || original.length >= text.length * WHOLE_ANSWER_RATIO) return null;
-  const lower = text.toLowerCase();
-  const needle = original.toLowerCase();
-  const candidates = [text.indexOf(original, from), text.indexOf(original), lower.indexOf(needle, from), lower.indexOf(needle)];
-  const start = candidates.find((i) => i >= 0);
-  return start === undefined ? null : { start, end: start + original.length };
+  const boundedStart = WORD.test(original[0]!);
+  const boundedEnd = WORD.test(original[original.length - 1]!);
+  const ok = (start: number) => {
+    const end = start + original.length;
+    if (boundedStart && start > 0 && WORD.test(text[start - 1]!)) return false;
+    if (boundedEnd && end < text.length && WORD.test(text[end]!)) return false;
+    return !taken.some((t) => start < t.end && t.start < end);
+  };
+  for (const [hay, needle] of [[text, original], [text.toLowerCase(), original.toLowerCase()]] as const) {
+    for (const begin of [from, 0]) {
+      for (let i = hay.indexOf(needle, begin); i >= 0; i = hay.indexOf(needle, i + 1)) {
+        if (ok(i)) return { start: i, end: i + original.length };
+      }
+    }
+  }
+  return null;
 }
 
 /** Sentences joined by an edit that crosses their boundary become one row. */

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ProgressStage } from '../../core/llm/structured';
 import { Button } from './Button';
+import { isInDialog } from '../lib/keys';
 
 const STEPS = ['Sending', 'Reading', 'Checking'] as const;
 const STEP_OF: Record<ProgressStage, number> = { sending: 0, waiting: 1, retrying: 1, validating: 2 };
@@ -16,7 +17,8 @@ export function CoachProgress({ stage, startedAt, onCancel, label }: {
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
+      // Esc inside the command palette closes the palette, not the coach's request.
+      if (e.key === 'Escape' && !e.defaultPrevented && !isInDialog(e.target)) onCancel();
     };
     window.addEventListener('keydown', onKey);
     return () => {

@@ -52,3 +52,15 @@ test('an answer over 4000 characters cannot be submitted', async ({ page }) => {
   await expect(page.getByText('Keep it under 4000 characters (now 4001).')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Get feedback' })).toBeDisabled();
 });
+
+test('the answer survives a trip to Settings to fix the key', async ({ page }) => {
+  await getChallenge(page);
+  await page.evaluate(() => window.devtalk.keys.clear('gemini'));
+  await page.getByRole('textbox', { name: 'Your answer' }).fill(SAMPLE_ANSWER);
+  await page.keyboard.press('Control+Enter');
+  await page.getByRole('button', { name: 'Open Settings' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Settings' })).toBeVisible();
+  await page.evaluate(() => window.devtalk.keys.set('test-key', 'gemini'));
+  await page.getByRole('link', { name: 'Practice' }).click();
+  await expect(page.getByRole('textbox', { name: 'Your answer' })).toHaveValue(SAMPLE_ANSWER);
+});

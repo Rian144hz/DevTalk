@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { setRetryDraft } from '../lib/draft';
 import { copyText } from '../lib/clipboard';
+import { isTypingTarget } from '../lib/keys';
 import { errorAction } from './errorCopy';
 import { buildGalley } from '../../core/feedback/galley';
 import type { Challenge } from '../../core/domain/types';
@@ -125,8 +126,7 @@ function CopyButton({ text }: { text: string }) {
 function ReadyActions({ view, onNext }: { view: FeedbackView; onNext(): void }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const typing = e.target instanceof HTMLElement && e.target.closest('input, textarea, select, button, a, [role="radio"]');
-      if (e.key === 'Enter' && !e.ctrlKey && !typing) onNext();
+      if (e.key === 'Enter' && !e.ctrlKey && !isTypingTarget(e.target)) onNext();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

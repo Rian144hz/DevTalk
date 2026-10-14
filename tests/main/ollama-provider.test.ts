@@ -36,12 +36,12 @@ test('posts a non-streaming chat with the JSON schema as format and the abort si
 
 test('connection refused → unavailable with a hint to start Ollama', async () => {
   const { f } = fakeFetch(() => { throw new TypeError('fetch failed'); });
-  await expect(createOllamaProvider({ model: 'm', fetch: f }).generateJson(req())).rejects.toMatchObject({ kind: 'unavailable', message: expect.stringContaining('Ollama is not running') });
+  await expect(createOllamaProvider({ model: 'm', fetch: f }).generateJson(req())).rejects.toMatchObject({ kind: 'unavailable', userMessage: expect.stringContaining('Ollama is not running') });
 });
 
 test('unknown model → config with the pull command', async () => {
   const { f } = fakeFetch(() => json({ error: "model 'm' not found" }, 404));
-  await expect(createOllamaProvider({ model: 'm', fetch: f }).generateJson(req())).rejects.toMatchObject({ kind: 'config', message: expect.stringContaining('ollama pull m') });
+  await expect(createOllamaProvider({ model: 'm', fetch: f }).generateJson(req())).rejects.toMatchObject({ kind: 'config', userMessage: expect.stringContaining('ollama pull m') });
 });
 
 test('abort → cancelled', async () => {

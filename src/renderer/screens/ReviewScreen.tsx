@@ -4,6 +4,7 @@ import type { ReviewQueue } from '../../shared/ipc-contract';
 import { useAppData } from '../app/AppData';
 import { api, unwrap } from '../lib/api';
 import { formatDueIn } from '../lib/format';
+import { isTextEntry } from '../lib/keys';
 import { Button, EmptyState, ExpressionCard, Kbd, Notice, Skeleton } from '../design-system';
 
 const LABELS: Record<ReviewRating, string> = { again: 'Again', hard: 'Hard', good: 'Good', easy: 'Easy' };
@@ -44,7 +45,7 @@ export function ReviewScreen() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.repeat || !item || e.ctrlKey || e.altKey || e.metaKey) return;
+      if (e.repeat || !item || e.ctrlKey || e.altKey || e.metaKey || isTextEntry(e.target)) return;
       if (e.key === ' ' && !revealed) {
         e.preventDefault();
         setRevealed(true);

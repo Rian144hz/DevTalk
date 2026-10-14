@@ -5,7 +5,7 @@ import type { FeedbackView } from '../../shared/ipc-contract';
 import { useAppData } from '../app/AppData';
 import { api, unwrap } from '../lib/api';
 import { useCoachRequest } from '../lib/useCoachRequest';
-import { takeRetryDraft } from '../lib/draft';
+import { clearAnswer, loadAnswer, saveAnswer, takeRetryDraft } from '../lib/draft';
 import { Button, EmptyState, Notice, Skeleton, TextArea } from '../design-system';
 import { ChallengeBrief } from './ChallengeBrief';
 import { FeedbackScreen } from './FeedbackScreen';
@@ -25,21 +25,30 @@ export function PracticeScreen() {
   const [retry] = useState(takeRetryDraft);
   const [challenge, setChallenge] = useState<Challenge | null | undefined>(retry?.challenge);
   const [failed, setFailed] = useState(false);
-  const [text, setText] = useState(retry?.text ?? '');
+  const [text, setTextState] = useState(retry?.text ?? '');
+  const setText = useCallback((t: string) => {
+    setTextState(t);
+    if (challenge) saveAnswer(challenge.id, t);
+  }, [challenge]);
   const req = useCoachRequest<FeedbackView>((id) => api().feedback.cancel(id));
 
   const load = useCallback(() => {
     if (retry) return;
     setFailed(false);
-    api().challenges.pending().then((r) => setChallenge(unwrap(r)), () => setFailed(true));
+    api().challenges.pending().then((r) => {
+      const pending = unwrap(r);
+      setChallenge(pending);
+      if (pending) setTextState(loadAnswer(pending.id));
+    }, () => setFailed(true));
   }, [retry]);
   useEffect(load, [load]);
 
   useEffect(() => {
     if (req.state.status !== 'done') return;
+    if (challenge) clearAnswer(challenge.id);
     window.location.hash = `#/feedback/${req.state.data.feedbackId}`;
     void refresh();
-  }, [req.state, refresh]);
+  }, [req.state, refresh, challenge]);
 
   const tooLong = text.length > MAX_ANSWER;
   const canSubmit = !!challenge && text.trim().length > 0 && !tooLong && req.state.status !== 'running';

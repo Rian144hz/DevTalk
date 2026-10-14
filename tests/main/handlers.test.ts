@@ -258,3 +258,11 @@ test('llm:check reports the provider check for the current profile', async () =>
   expect(await h['llm:check']({})).toEqual({ ok: true, data: { ok: false, detail: 'Ollama is not running. Start it, then check again.' } });
   expect(seen).toEqual(['ollama:qwen3:4b']);
 });
+
+test('a provider-specific message reaches the person; the generic config copy names no provider', async () => {
+  const { h } = setup({ provider: new FakeProvider([() => { throw new LLMError('config', 'raw', { userMessage: 'Model not found. Run: ollama pull m' }); }]) });
+  expect(await h['challenges:next']({ requestId: 'c1' })).toMatchObject({ ok: false, error: { kind: 'config', message: 'Model not found. Run: ollama pull m' } });
+  const { h: h2 } = setup({ provider: new FakeProvider([() => { throw new LLMError('config', 'raw'); }]) });
+  const r = await h2['challenges:next']({ requestId: 'c2' });
+  expect(r.ok ? '' : r.error.message).not.toMatch(/Anthropic/);
+});

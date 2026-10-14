@@ -68,3 +68,19 @@ test('rows reproduce the original text', () => {
 test('empty originals are general notes', () => {
   expect(buildGalley('Hello there.', [c('', 'Hi')]).general).toHaveLength(1);
 });
+
+test('a one-word edit is matched on word boundaries, not inside other words', () => {
+  const g = buildGalley('I have a idea about it.', [c('a', 'an', 'articles')]);
+  expect(g.rows[0]!.segments).toEqual([
+    { kind: 'text', text: 'I have ' }, { kind: 'del', text: 'a' }, { kind: 'ins', text: 'an' }, { kind: 'mark', n: 1 },
+    { kind: 'text', text: ' idea about it.' },
+  ]);
+  const h = buildGalley('It is working in prod.', [c('in', 'on', 'prepositions')]);
+  expect(h.rows[0]!.segments[0]).toEqual({ kind: 'text', text: 'It is working ' });
+});
+
+test('when the first occurrence is taken, a later occurrence is used', () => {
+  const g = buildGalley('The test is the test.', [c('test', 'tests'), c('test', 'check')]);
+  expect(g.general).toEqual([]);
+  expect(g.rows[0]!.segments.filter((s) => s.kind === 'del')).toHaveLength(2);
+});

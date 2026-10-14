@@ -3,6 +3,7 @@ import type { Challenge } from '../../core/domain/types';
 import { CHALLENGE_CATEGORY_LABELS } from '../../core/domain/categories';
 import { api } from '../lib/api';
 import { challengeTitle } from './ChallengeBrief';
+import { errorAction } from './errorCopy';
 import { useCoachRequest } from '../lib/useCoachRequest';
 import { Button, Chip, CoachProgress, Notice } from '../design-system';
 
@@ -38,7 +39,9 @@ export function NextChallenge({ pending, onReady, onWrite }: { pending: Challeng
     <div className="next">
       {req.state.status === 'error' ? (
         <Notice tone="error" title={req.state.error.message}
-          action={<Button variant="secondary" onClick={() => req.run((id) => api().challenges.next(id))}>Try again</Button>} />
+          action={errorAction(req.state.error.kind) === 'settings'
+            ? <Button variant="secondary" onClick={() => { window.location.hash = '#/settings'; }}>Open Settings</Button>
+            : <Button variant="secondary" onClick={() => req.run((id) => api().challenges.next(id))}>Try again</Button>} />
       ) : (
         <>
           <div><h2>Ready for a challenge?</h2><p>The coach writes a short work situation for you to answer in 3 to 5 sentences.</p></div>

@@ -114,6 +114,10 @@ test('long content does not overflow at 960 px', async ({ page }) => {
   await page.keyboard.press('Control+Enter');
   await page.locator('.rewrite').waitFor();
   await noOverflow();
+  // Coach text can hold long identifiers or URLs: every free-text block must be allowed to break anywhere.
+  for (const sel of ['.line-notes', '.expr-meaning', '.expr-example', '.brief-situation', '.rewrite', '.line-text']) {
+    expect(await page.locator(sel).first().evaluate((el) => getComputedStyle(el).overflowWrap), sel).toBe('anywhere');
+  }
   await page.evaluate(() => { location.hash = '#/settings'; });
   await page.getByRole('heading', { level: 1, name: 'Settings' }).waitFor();
   await noOverflow();

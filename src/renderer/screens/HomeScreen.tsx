@@ -6,6 +6,7 @@ import type { ProgressSummary } from '../../core/progress/summary';
 import type { FeedbackView, ReviewItem } from '../../shared/ipc-contract';
 import { api, unwrap } from '../lib/api';
 import { formatRelativeDay } from '../lib/format';
+import { isTypingTarget } from '../lib/keys';
 import { CHALLENGE_CATEGORY_LABELS } from '../../core/domain/categories';
 import { Button, EmptyState, Galley, Notice, Skeleton, Tally, TypeBadge } from '../design-system';
 import { NextChallenge } from './NextChallenge';
@@ -53,8 +54,7 @@ export function HomeScreen() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const typing = e.target instanceof HTMLElement && e.target.closest('input, textarea, select, button, a, [role="radio"]');
-      if (e.key === 'Enter' && !e.ctrlKey && !typing && data?.pending) write();
+      if (e.key === 'Enter' && !e.ctrlKey && !isTypingTarget(e.target) && data?.pending) write();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

@@ -48,3 +48,15 @@ test('each rating shows when the card comes back', async ({ page }) => {
     await expect(page.getByRole('button', { name: new RegExp(`^${name}`) })).toContainText(/now|min|h|tomorrow|days/);
   }
 });
+
+test('typing in the palette on Review does not reveal or rate the card', async ({ page }) => {
+  await answerOnce(page);
+  await page.getByRole('link', { name: 'Review' }).click();
+  await expect(page.getByText('1 of 2')).toBeVisible();
+  await page.keyboard.press('Control+k');
+  await page.keyboard.type('go to settings 3');
+  await expect(page.getByRole('combobox')).toHaveValue('go to settings 3');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.review-card .expr-meaning')).toBeHidden();
+  expect(await queueSize(page)).toBe(2);
+});

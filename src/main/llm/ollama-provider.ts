@@ -38,10 +38,11 @@ export function createOllamaProvider(opts: { model: string; baseUrl?: string; fe
         });
       } catch (err) {
         if (req.signal.aborted) throw new LLMError('cancelled', 'Request cancelled', { cause: err });
-        throw new LLMError('unavailable', NOT_RUNNING, { cause: err });
+        throw new LLMError('unavailable', NOT_RUNNING, { cause: err, userMessage: NOT_RUNNING });
       }
       if (res.status === 404) {
-        throw new LLMError('config', `Model not found. Run: ollama pull ${opts.model}`);
+        const pull = `Model not found. Run: ollama pull ${opts.model}`;
+        throw new LLMError('config', pull, { userMessage: pull });
       }
       if (!res.ok) throw new LLMError('unavailable', `Ollama answered ${res.status}.`);
       const body = (await res.json()) as { message?: { content?: string } };

@@ -31,6 +31,10 @@ test('the key can be added later', async ({ page }) => {
   await page.getByRole('button', { name: 'Start practising' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toBeVisible();
   expect(await page.evaluate(() => window.devtalk.keys.status('gemini'))).toEqual({ ok: true, data: { hasKey: false } });
+  await page.getByRole('button', { name: 'Get a challenge' }).click();
+  await expect(page.getByRole('alert').filter({ hasText: 'Add your API key in Settings' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open Settings' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Settings' })).toBeVisible();
 });
 
 test.describe('without a system keyring', () => {

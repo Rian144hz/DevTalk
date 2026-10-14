@@ -1,4 +1,4 @@
-import { expect, onboard, test } from './fixtures';
+import { expect, onboard, SAMPLE_ANSWER, test } from './fixtures';
 
 test.beforeEach(async ({ page }) => {
   await onboard(page);
@@ -43,4 +43,15 @@ test('the theme can be switched from the palette', async ({ page }) => {
   await page.keyboard.type('light');
   await page.keyboard.press('Enter');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+});
+
+test('Esc in the palette does not cancel the coach', async ({ page }) => {
+  await page.getByRole('button', { name: 'Get a challenge' }).click();
+  await page.getByRole('button', { name: 'Write it' }).click();
+  await page.getByRole('textbox', { name: 'Your answer' }).fill(SAMPLE_ANSWER);
+  await page.keyboard.press('Control+Enter');
+  await expect(page.getByRole('status').filter({ hasText: 'The coach is reading your answer' })).toBeVisible();
+  await page.keyboard.press('Control+k');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.galley .line-text .mark-n')).toHaveCount(2);
 });
