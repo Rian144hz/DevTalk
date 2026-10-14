@@ -46,6 +46,7 @@ The loop closes on the learner's own output: corrections are shown as a code-sty
 - Corrections shown as a diff: removed in red, added in green, never labelled "wrong".
 - Expressions shown as cards with a type badge (chunk, phrasal verb, collocation).
 - Interface copy in simple English.
+- Exception to "no third-party brands or assets" (confirmed 2026-10-14): technology logos from Simple Icons (CC0) may identify a profile's stack, drawn in one colour (the text tone), never as decoration.
 
 ## Evidence on Hand
 
