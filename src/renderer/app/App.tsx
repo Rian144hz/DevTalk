@@ -8,6 +8,9 @@ import { Rail } from './Rail';
 import { ComponentsScreen } from '../screens/ComponentsScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { HomeScreen } from '../screens/HomeScreen';
+import { PracticeScreen } from '../screens/PracticeScreen';
+import { FeedbackRoute } from '../screens/FeedbackScreen';
 
 /** The component gallery ships only in dev builds (or a build made for screenshots). */
 const GALLERY = import.meta.env.DEV || import.meta.env['VITE_COMPONENT_GALLERY'] === '1';
@@ -45,6 +48,9 @@ function Shell() {
       <Rail active={name} dueCount={dueCount} provider={provider} model={profile.model || DEFAULT_MODELS[provider]}
         onOpenPalette={() => setPaletteOpen(true)} />
       {name === 'components' && GALLERY ? <ComponentsScreen />
+        : name === 'home' ? <HomeScreen key={route.id ?? 0} />
+        : name === 'practice' ? <PracticeScreen />
+        : name === 'feedback' && route.id ? <FeedbackRoute id={route.id} onNext={() => { window.location.hash = '#/home'; }} />
         : name === 'settings' ? <SettingsScreen profile={profile} />
         : <Placeholder title={SCREEN_TITLES[name]} />}
     </div>

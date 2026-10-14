@@ -40,3 +40,13 @@ export async function onboard(page: Page, key = 'test-key'): Promise<void> {
   await page.getByRole('button', { name: 'Start practising' }).click();
   await page.getByRole('heading', { level: 1, name: 'Today' }).waitFor();
 }
+
+/** An answer the fixture coach marks twice ("have fixed", "discuss about"). */
+export const SAMPLE_ANSWER =
+  'Yesterday I have fixed the flaky test in the payments service. We need to discuss about the shared database row. Today I will add a fixture per test.';
+
+export const historyCount = (page: Page) =>
+  page.evaluate(async () => {
+    const r = await window.devtalk.progress.history({ before: null });
+    return r.ok ? r.data.length : -1;
+  });

@@ -1,6 +1,13 @@
 export const CHALLENGE_CATEGORIES = ['daily_update', 'code_review', 'bug_explanation', 'tech_interview'] as const;
 export type ChallengeCategory = (typeof CHALLENGE_CATEGORIES)[number];
 
+export const CHALLENGE_CATEGORY_LABELS: Record<ChallengeCategory, string> = {
+  daily_update: 'Stand-up update',
+  code_review: 'Code review',
+  bug_explanation: 'Explain a bug',
+  tech_interview: 'Interview',
+};
+
 export const MISTAKE_CATEGORIES = [
   'articles',
   'verb_tense',

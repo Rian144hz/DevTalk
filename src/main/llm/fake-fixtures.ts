@@ -81,7 +81,7 @@ function feedbackReply(req: LLMRequest, turn: number): string {
   const first = (turn * 2) % EXPRESSIONS.length;
   return JSON.stringify({
     corrections: [
-      { original: 'I have fixed the bug yesterday', corrected: 'I fixed the bug yesterday', explanation: 'Com "yesterday" usamos o passado simples, não o present perfect.', category: 'verb_tense' },
+      { original: 'have fixed', corrected: 'fixed', explanation: 'Com "yesterday" usamos o passado simples, não o present perfect.', category: 'verb_tense' },
       { original: 'discuss about', corrected: 'discuss', explanation: '"Discuss" não leva preposição.', category: 'prepositions' },
     ],
     natural_rewrite:
