@@ -17,6 +17,7 @@
     "cli": "electron-vite build && electron .",
     "test:renderer": "vitest run --project renderer",
     "test:supabase": "vitest run --project supabase",
+    "build:setup-sql": "node scripts/build-setup-sql.mts",
     "test:e2e": "electron-vite build && playwright test"
   },
   "license": "UNLICENSED",

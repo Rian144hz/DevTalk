@@ -1,53 +1,17 @@
 import { createDb } from './harness';
 import type { TestDb } from './harness';
+import * as P from './people';
 
 let t: TestDb;
 beforeAll(async () => {
   t = await createDb();
 }, 30_000);
 
-const DOCS = ['terms', 'privacy', 'conduct', 'age_18'];
-
-async function accept(uid: string) {
-  await t.as(uid);
-  for (const d of DOCS) await t.db.query(`insert into consents (user_id, document, version) values ($1, $2, '2026-10-14')`, [uid, d]);
-}
-
-async function insertProfile(uid: string, over: Record<string, unknown> = {}) {
-  const row = {
-    id: uid,
-    display_name: 'Rian',
-    native_language: 'Portuguese (Brazil)',
-    level: 'B1',
-    timezone: 'America/Bahia',
-    area: 'backend',
-    stack: ['python'],
-    availability: JSON.stringify([{ day: 1, from: '19:00', to: '21:00' }]),
-    bio: '',
-    ...over,
-  };
-  const cols = Object.keys(row);
-  await t.db.query(
-    `insert into profiles (${cols.join(', ')}) values (${cols.map((_, i) => `$${i + 1}`).join(', ')})`,
-    Object.values(row),
-  );
-}
-
-/** A signed-up user with consents and a profile; leaves the session as that user. */
-async function member(over: Record<string, unknown> = {}) {
-  const uid = await t.newUser();
-  await accept(uid);
-  await insertProfile(uid, over);
-  return uid;
-}
-
-async function suspend(uid: string, interval = '7 days') {
-  await t.owner(() => t.db.query(`update profiles set suspended_until = now() + $2::interval where id = $1`, [uid, interval]));
-}
-
-async function visibleIds(): Promise<string[]> {
-  return (await t.db.query<{ id: string }>('select id from profiles')).rows.map((r) => r.id);
-}
+const accept = (uid: string) => P.accept(t, uid);
+const insertProfile = (uid: string, over: Record<string, unknown> = {}) => P.insertProfile(t, uid, over);
+const member = (over: Record<string, unknown> = {}) => P.member(t, over);
+const suspend = (uid: string, interval?: string) => P.suspend(t, uid, interval);
+const visibleIds = () => P.visibleIds(t);
 
 test('anon cannot read profiles or consents', async () => {
   await member();
