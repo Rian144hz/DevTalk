@@ -31,3 +31,11 @@ test('profile changes are saved', async ({ page }) => {
   await expect(page.getByText('Saved.')).toBeVisible();
   expect(await page.evaluate(() => window.devtalk.profile.get())).toMatchObject({ ok: true, data: { targetLevel: 'C1' } });
 });
+
+test('choosing Ollama hides the key and checks the local connection', async ({ page }) => {
+  await page.getByRole('radiogroup', { name: 'Provider' }).getByRole('radio', { name: 'Ollama (on this computer)' }).click();
+  await expect(page.getByLabel('Model')).toHaveValue('qwen3:4b');
+  await expect(page.getByLabel('API key')).toBeHidden();
+  await page.getByRole('button', { name: 'Check connection' }).click();
+  await expect(page.getByRole('status').filter({ hasText: /Ollama is (not running|running)/ })).toBeVisible();
+});

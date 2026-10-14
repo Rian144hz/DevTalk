@@ -46,4 +46,5 @@ export const INPUT_SCHEMAS = {
   'progress:history': z.object({ before: z.string().nullable(), limit: z.number().int().min(1).max(100).default(20) }).strict(),
   'settings:get': empty,
   'settings:set': settings.partial().strict(),
+  'llm:check': empty,
 } satisfies Record<InvokeChannel, z.ZodType>;

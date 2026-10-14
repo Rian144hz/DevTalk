@@ -28,5 +28,6 @@ export function buildApi(invoke: Invoke, subscribe: Subscribe): DevtalkApi {
     review: { queue: () => call('review:queue'), rate: (input) => call('review:rate', input) },
     progress: { summary: () => call('progress:summary'), history: (input) => call('progress:history', input) },
     settings: { get: () => call('settings:get'), set: (partial) => call('settings:set', partial) },
+    llmCheck: () => call('llm:check'),
   };
 }

@@ -3,7 +3,7 @@ import { PROGRESS_EVENT } from '../../src/shared/ipc-contract';
 
 test('exposes exactly the spec groups', () => {
   const api = buildApi(async () => ({ ok: true, data: null }), () => () => {});
-  expect(Object.keys(api).sort()).toEqual(['challenges', 'feedback', 'keys', 'llm', 'profile', 'progress', 'review', 'settings']);
+  expect(Object.keys(api).sort()).toEqual(['challenges', 'feedback', 'keys', 'llm', 'llmCheck', 'profile', 'progress', 'review', 'settings']);
 });
 
 test('methods invoke the right channel with the right payload', async () => {

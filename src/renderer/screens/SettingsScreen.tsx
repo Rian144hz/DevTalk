@@ -9,6 +9,24 @@ import { CURRENT_LEVELS, KEY_LINKS, PROVIDER_OPTIONS, languageOptions, TARGET_ER
 
 const message = (e: unknown) => (e instanceof AppErrorException ? e.message : 'Something went wrong. Try again.');
 
+function OllamaCheck() {
+  const [result, setResult] = useState<{ ok: boolean; detail: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="settings-key">
+      <p className="muted">Ollama runs on this computer and needs no key. Nothing you write leaves the machine.</p>
+      <div className="settings-actions">
+        <Button variant="secondary" busy={busy} onClick={async () => {
+          setBusy(true);
+          setResult(unwrap(await api().llmCheck()));
+          setBusy(false);
+        }}>Check connection</Button>
+        {result && <span role="status" className={result.ok ? 'small' : 'small field-error'}>{result.detail}</span>}
+      </div>
+    </div>
+  );
+}
+
 export function SettingsScreen({ profile }: { profile: StoredProfile }) {
   const { refresh } = useAppData();
   const provider = profile.provider as ProviderId;
@@ -110,7 +128,7 @@ export function SettingsScreen({ profile }: { profile: StoredProfile }) {
           </div>
         </div>
         {provider === 'ollama' ? (
-          <p className="muted">Ollama needs no key. It must be running on this computer.</p>
+          <OllamaCheck />
         ) : (
           <div className="settings-key">
             <p role="status">{hasKey === null ? '' : hasKey ? `Key saved for ${PROVIDER_LABELS[provider]}` : `No key saved for ${PROVIDER_LABELS[provider]}`}</p>

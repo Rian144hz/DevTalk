@@ -52,6 +52,7 @@ function setup(opts: { provider?: LLMProvider; vault?: KeyVault; vaults?: Record
       if (!apiKey) throw new LLMError('no_key', 'no key');
       return provider;
     },
+    checkProvider: async () => ({ ok: true, detail: 'ok' }),
     templates,
     emitProgress: (requestId, stage) => progress.push([requestId, stage]),
   });
@@ -217,6 +218,7 @@ test('the provider for a request uses that provider\'s key', async () => {
       keys.push(apiKey);
       return new FakeProvider([challengeReply]);
     },
+    checkProvider: async () => ({ ok: true, detail: 'ok' }),
     templates,
     emitProgress: () => {},
   });
@@ -235,4 +237,24 @@ test('rate_limited has friendly copy', async () => {
 test('settings accept gemini as provider', async () => {
   const { h } = setup();
   expect(await h['settings:set']({ provider: 'gemini', model: 'gemini-flash-latest' })).toMatchObject({ ok: true, data: { provider: 'gemini' } });
+});
+
+test('llm:check reports the provider check for the current profile', async () => {
+  const store = new MemoryStudyStore();
+  store.saveProfile({ ...profile, provider: 'ollama', model: 'qwen3:4b' }, t0);
+  const seen: string[] = [];
+  const h = createHandlers({
+    store,
+    vaults: () => memoryVault(null),
+    clock: { now: () => t0 },
+    makeProvider: () => new FakeProvider([]),
+    checkProvider: async (p) => {
+      seen.push(`${p.provider}:${p.model}`);
+      return { ok: false, detail: 'Ollama is not running. Start it, then check again.' };
+    },
+    templates,
+    emitProgress: () => {},
+  });
+  expect(await h['llm:check']({})).toEqual({ ok: true, data: { ok: false, detail: 'Ollama is not running. Start it, then check again.' } });
+  expect(seen).toEqual(['ollama:qwen3:4b']);
 });

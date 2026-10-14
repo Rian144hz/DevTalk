@@ -8,6 +8,7 @@ import { SqliteStudyStore } from './db/sqlite-store';
 import { createHandlers, type Handlers } from './ipc/handlers';
 import { createAnthropicProvider } from './llm/anthropic-provider';
 import { createGeminiProvider } from './llm/gemini-provider';
+import { checkOllama, createOllamaProvider } from './llm/ollama-provider';
 import type { ProviderId } from '../shared/providers';
 import { createFixtureProvider } from './llm/fake-fixtures';
 import { createKeyVault, isKeyringUsable, type KeyVault, type SafeStorageLike } from './vault/key-vault';
@@ -76,14 +77,19 @@ export function createAppContext(emitProgress: (requestId: string, stage: Progre
         if (!apiKey && profile.provider !== 'ollama') throw new LLMError('no_key', 'No API key');
         return fixtures;
       }
+      if (profile.provider === 'ollama') return createOllamaProvider({ model: profile.model });
       if (profile.provider !== 'anthropic' && profile.provider !== 'gemini') {
-        throw new LLMError('unavailable', `Provider "${profile.provider}" is not available yet.`);
+        throw new LLMError('unavailable', `Provider "${profile.provider}" is not available.`);
       }
       if (!apiKey) throw new LLMError('no_key', 'No API key');
       return profile.provider === 'gemini'
         ? createGeminiProvider({ apiKey, model: profile.model })
         : createAnthropicProvider({ apiKey, model: profile.model });
     },
+    checkProvider: async (profile) =>
+      profile.provider === 'ollama'
+        ? checkOllama({ model: profile.model })
+        : { ok: true, detail: 'Cloud coaches are checked when you ask for feedback.' },
     emitProgress,
   });
 

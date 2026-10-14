@@ -19,6 +19,8 @@ export interface HandlerDeps {
   clock: Clock;
   /** Throws LLMError('no_key') when the provider needs a key and there is none. */
   makeProvider: (apiKey: string | null, profile: StoredProfile) => LLMProvider;
+  /** Reachability check for the chosen coach (Ollama: running and model installed). */
+  checkProvider: (profile: StoredProfile) => Promise<{ ok: boolean; detail: string }>;
   templates: () => { coach: string; challenge: string };
   emitProgress: (requestId: string, stage: ProgressStage) => void;
 }
@@ -188,6 +190,7 @@ export function createHandlers(deps: HandlerDeps): Handlers {
       const p = store.getProfile();
       return p ? settingsOf(p) : null;
     }),
+    'llm:check': handle('llm:check', () => deps.checkProvider(requireProfile())),
     'settings:set': handle('settings:set', (partial) => {
       const { onboardedAt: _, ...p } = requireProfile();
       store.saveProfile({ ...p, ...partial }, clock.now());

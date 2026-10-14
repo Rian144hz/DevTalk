@@ -62,13 +62,14 @@ export interface Channels {
   'progress:history': { in: { before: string | null; limit?: number }; out: HistoryItem[] };
   'settings:get': { in: Record<string, never>; out: Settings | null };
   'settings:set': { in: Partial<Settings>; out: Settings };
+  'llm:check': { in: Record<string, never>; out: { ok: boolean; detail: string } };
 }
 export type InvokeChannel = keyof Channels;
 
 export const INVOKE_CHANNELS = [
   'profile:get', 'profile:save', 'keys:status', 'keys:set', 'keys:clear', 'challenges:next', 'challenges:cancel',
   'challenges:pending', 'feedback:submit', 'feedback:cancel', 'feedback:get', 'review:queue', 'review:rate', 'progress:summary', 'progress:history',
-  'settings:get', 'settings:set',
+  'settings:get', 'settings:set', 'llm:check',
 ] as const satisfies readonly InvokeChannel[];
 
 export const PROGRESS_EVENT = 'llm:progress';
@@ -94,4 +95,6 @@ export interface DevtalkApi {
   review: { queue(): R<'review:queue'>; rate(input: Channels['review:rate']['in']): R<'review:rate'> };
   progress: { summary(): R<'progress:summary'>; history(input: Channels['progress:history']['in']): R<'progress:history'> };
   settings: { get(): R<'settings:get'>; set(partial: Partial<Settings>): R<'settings:set'> };
+  /** Checks that the chosen coach can be reached (used for Ollama). */
+  llmCheck(): R<'llm:check'>;
 }
