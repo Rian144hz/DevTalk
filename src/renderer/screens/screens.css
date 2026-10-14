@@ -155,3 +155,28 @@
 .delete-confirm { display: flex; flex-direction: column; gap: var(--s3); max-width: 480px; padding: var(--s4) var(--s5); border: 1px solid color-mix(in srgb, var(--warn) 55%, var(--rule)); border-radius: var(--r-sheet); background: var(--sheet); }
 .btn.btn-destructive:not([disabled]) { border-color: var(--warn); color: var(--warn); }
 .account-docs { display: flex; gap: var(--s4); flex-wrap: wrap; }
+
+/* Moderation: a ruled queue beside the selected report */
+.moderation { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: var(--s10); align-items: start; }
+.report-list { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--rule); }
+.report-list li { border-bottom: 1px solid var(--rule); }
+.report-list button { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--s3); align-items: center; padding: var(--s3) var(--s2); background: transparent; border: 0; border-radius: var(--r-control); color: var(--ink); text-align: left; }
+.report-list button:hover { background: var(--sheet); }
+.report-list button[aria-current="true"] { background: var(--sheet-hover); box-shadow: inset 0 0 0 1px var(--rule-strong); }
+.report-main { display: flex; flex-direction: column; min-width: 0; }
+.report-who { font-weight: 600; overflow-wrap: anywhere; }
+.report-meta { font-size: var(--text-sm); color: var(--ink-2); }
+.report-date { font-size: var(--text-sm); color: var(--ink-3); white-space: nowrap; align-self: start; }
+.report-detail { display: flex; flex-direction: column; gap: var(--s5); max-width: 720px; min-width: 0; }
+.report-saved { color: var(--ink-2); }
+.decision { display: flex; flex-direction: column; gap: var(--s3); padding-top: var(--s5); border-top: 1px solid var(--rule); }
+.decision .field { max-width: 560px; }
+.history-list { list-style: none; padding: 0; display: flex; flex-direction: column; }
+.history-list li { display: grid; grid-template-columns: minmax(160px, auto) minmax(0, 1fr) auto; gap: var(--s4); padding: var(--s2) 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
+.history-what { font-weight: 600; }
+.history-why { color: var(--ink-2); overflow-wrap: anywhere; }
+.history-when { color: var(--ink-3); font-size: var(--text-sm); white-space: nowrap; }
+
+@media (max-width: 1180px) {
+  .moderation { grid-template-columns: minmax(0, 1fr); }
+}

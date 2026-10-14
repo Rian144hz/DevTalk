@@ -12,7 +12,15 @@ const NAV: { route: RouteName; label: string; icon: IconName }[] = [
   { route: 'settings', label: 'Settings', icon: 'settings' },
 ];
 
-export function Rail(props: { active: RouteName; dueCount: number; provider: ProviderId; model: string; onOpenPalette(): void }) {
+export function Rail(props: {
+  active: RouteName;
+  dueCount: number;
+  provider: ProviderId;
+  model: string;
+  moderator?: boolean;
+  onOpenPalette(): void;
+}) {
+  const nav = props.moderator ? [...NAV, { route: 'moderation' as const, label: 'Moderation', icon: 'shield' as const }] : NAV;
   return (
     <aside className="rail">
       <div className="brand"><Icon name="pencil" size={18} />DevTalk</div>
@@ -21,7 +29,7 @@ export function Rail(props: { active: RouteName; dueCount: number; provider: Pro
       </button>
       <nav aria-label="Main">
         <ul className="nav">
-          {NAV.map((item) => (
+          {nav.map((item) => (
             <li key={item.route}>
               <a href={`#/${item.route}`} aria-current={props.active === item.route ? 'page' : undefined}>
                 <Icon name={item.icon} />

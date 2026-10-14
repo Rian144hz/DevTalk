@@ -21,6 +21,7 @@ import { LaterScreen } from '../screens/LaterScreen';
 import { JoinScreen } from '../screens/JoinScreen';
 import { LegalScreen, type LegalDoc } from '../screens/LegalScreen';
 import { PeopleScreen } from '../screens/PeopleScreen';
+import { ModerationScreen } from '../screens/ModerationScreen';
 
 /** The component gallery ships only in dev builds (or a build made for screenshots). */
 const GALLERY = import.meta.env.DEV || import.meta.env['VITE_COMPONENT_GALLERY'] === '1';
@@ -46,7 +47,14 @@ function Shell() {
   const { profile, dueCount, refresh } = useAppData();
   const [route, navigate] = useRoute();
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [moderator, setModerator] = useState(false);
   useThemeEffect(profile?.theme ?? 'dark');
+
+  // Re-checked on navigation: signing in, out or deleting the account changes it.
+  useEffect(() => {
+    if (!profile) return;
+    void api().moderation.isModerator().then((r) => setModerator(r.ok && r.data));
+  }, [profile, route.name]);
 
   const commands = useMemo<Command[]>(() => {
     const go = (name: RouteName) => () => navigate({ name });
@@ -64,8 +72,10 @@ function Shell() {
       { id: 'theme-dark', label: 'Switch to dark theme', keywords: ['appearance'], run: theme('dark') },
       { id: 'theme-light', label: 'Switch to light theme', keywords: ['appearance'], run: theme('light') },
       { id: 'theme-system', label: 'Use the system theme', keywords: ['appearance', 'dark', 'light'], run: theme('system') },
+      { id: 'edit-profile', label: 'Edit my profile', keywords: ['people', 'photo', 'stack'], run: () => navigate({ name: 'people', sub: 'edit' }) },
+      ...(moderator ? [{ id: 'go-moderation', label: 'Go to Moderation', keywords: ['reports', 'safety'], run: go('moderation') }] : []),
     ];
-  }, [navigate, refresh]);
+  }, [navigate, refresh, moderator]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -99,7 +109,7 @@ function Shell() {
   return (
     <div className="app">
       <Rail active={name === 'join' ? 'people' : name} dueCount={dueCount} provider={provider} model={profile.model || DEFAULT_MODELS[provider]}
-        onOpenPalette={() => setPaletteOpen(true)} />
+        moderator={moderator} onOpenPalette={() => setPaletteOpen(true)} />
       {name === 'components' && GALLERY ? <ComponentsScreen />
         : name === 'home' ? <HomeScreen key={route.id ?? 0} />
         : name === 'practice' ? <PracticeScreen />
@@ -110,6 +120,7 @@ function Shell() {
         : name === 'join' ? <JoinScreen />
         : name === 'legal' ? <LegalScreen doc={(route.sub ?? 'terms') as LegalDoc} />
         : name === 'rooms' ? <LaterScreen which="rooms" />
+        : name === 'moderation' ? <ModerationScreen />
         : name === 'settings' ? <SettingsScreen profile={profile} />
         : <Placeholder title={SCREEN_TITLES[name]} />}
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} commands={commands} />

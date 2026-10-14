@@ -33,18 +33,23 @@ export const test = base.extend<{
   keyring: 'plain' | 'unavailable';
   social: '' | '1' | 'moderation';
   socialFail: string;
+  /** The throwaway user-data directory of this test's app. */
+  dataDir: string;
   app: ElectronApplication;
   page: Page;
 }>({
   keyring: ['plain', { option: true }],
   social: ['', { option: true }],
   socialFail: ['', { option: true }],
-  app: async ({ keyring, social, socialFail }, use) => {
-    const dataDir = newDataDir();
+  dataDir: async ({}, use) => {
+    const dir = newDataDir();
+    await use(dir);
+    rmSync(dir, { recursive: true, force: true });
+  },
+  app: async ({ keyring, social, socialFail, dataDir }, use) => {
     const app = await launchApp({ dataDir, keyring, social, socialFail });
     await use(app);
     await app.close();
-    rmSync(dataDir, { recursive: true, force: true });
   },
   page: async ({ app }, use) => {
     const page = await app.firstWindow();
