@@ -7,6 +7,7 @@ import type {
   ProfileInput,
   SaveFeedbackInput,
   SavedFeedback,
+  StoredFeedback,
   StoredProfile,
   StudyStore,
   Theme,
@@ -250,6 +251,60 @@ export class SqliteStudyStore implements StudyStore {
 
   countDue(before: Date): number {
     return (this.db.prepare('SELECT COUNT(*) AS n FROM review_cards WHERE due <= ?').get(before.toISOString()) as { n: number }).n;
+  }
+
+  getFeedback(feedbackId: number): StoredFeedback | null {
+    const row = this.db
+      .prepare(
+        `SELECT f.id AS feedbackId, a.id AS attemptId, f.created_at AS createdAt, a.text AS text, a.challenge_id AS challengeId,
+                f.natural_rewrite AS naturalRewrite
+         FROM feedbacks f JOIN attempts a ON a.id = f.attempt_id WHERE f.id = ?`,
+      )
+      .get(feedbackId) as
+      | { feedbackId: number; attemptId: number; createdAt: string; text: string; challengeId: number | null; naturalRewrite: string }
+      | undefined;
+    if (!row) return null;
+    const corrections = this.db
+      .prepare('SELECT original, corrected, explanation, category FROM corrections WHERE feedback_id = ? ORDER BY position')
+      .all(feedbackId) as StoredFeedback['corrections'];
+    const expressions = this.db
+      .prepare(
+        `SELECT e.id, e.text, e.type, e.meaning, e.example FROM feedback_expressions fe
+         JOIN expressions e ON e.id = fe.expression_id WHERE fe.feedback_id = ? ORDER BY fe.position`,
+      )
+      .all(feedbackId) as ExpressionRow[];
+    const checks = this.db
+      .prepare(
+        `SELECT e.id, e.text, e.type, e.meaning, e.example, ec.used, ec.used_correctly, ec.note FROM expression_checks ec
+         JOIN expressions e ON e.id = ec.expression_id WHERE ec.feedback_id = ? ORDER BY ec.rowid`,
+      )
+      .all(feedbackId) as (ExpressionRow & { used: number; used_correctly: number; note: string })[];
+    return {
+      feedbackId: row.feedbackId,
+      attemptId: row.attemptId,
+      createdAt: row.createdAt,
+      text: row.text,
+      challenge: row.challengeId === null ? null : this.getChallenge(row.challengeId),
+      corrections,
+      naturalRewrite: row.naturalRewrite,
+      expressions: expressions.map(toExpression),
+      requiredChecks: checks.map((c) => ({ expression: toExpression(c), used: c.used === 1, usedCorrectly: c.used_correctly === 1, note: c.note })),
+    };
+  }
+
+  pendingChallenge(): Challenge | null {
+    const row = this.db
+      .prepare(
+        `SELECT c.id FROM challenges c WHERE NOT EXISTS (SELECT 1 FROM attempts a WHERE a.challenge_id = c.id)
+         ORDER BY c.created_at DESC, c.id DESC LIMIT 1`,
+      )
+      .get() as { id: number } | undefined;
+    return row ? this.getChallenge(row.id) : null;
+  }
+
+  nextDueAt(): Date | null {
+    const row = this.db.prepare('SELECT MIN(due) AS due FROM review_cards').get() as { due: string | null };
+    return row.due ? new Date(row.due) : null;
   }
 
   history(opts: { before: string | null; limit: number }): HistoryItem[] {

@@ -135,6 +135,59 @@ export function runStudyStoreContract(name: string, makeStore: () => StudyStore)
       expect(store.reusedExpressionCount()).toBe(1);
     });
 
+    test('getFeedback returns everything saveFeedback stored', () => {
+      const seed = store.saveFeedback(feedbackInput());
+      const [x] = seed.expressions.map((e) => e.expression);
+      const ch = store.saveChallenge(
+        { category: 'code_review', situation: 's', interlocutor: 'i', task: 't', summary: 'sum', required: [{ expressionId: x!.id, hint: 'h' }] },
+        at(1),
+      );
+      const saved = store.saveFeedback(
+        feedbackInput({
+          attempt: { challengeId: ch.id, text: 'My answer.', source: 'typed' },
+          corrections: [
+            { original: 'a', corrected: 'b', explanation: 'first', category: 'articles' },
+            { original: 'c', corrected: 'd', explanation: 'second', category: 'verb_tense' },
+          ],
+          newExpressions: [
+            { text: 'zero in on', normalizedText: 'zero in on', type: 'phrasal_verb', meaning: 'm', example: 'e' },
+            { text: 'push back on', normalizedText: 'push back on', type: 'phrasal_verb', meaning: 'm', example: 'e' },
+          ],
+          checks: [{ expressionId: x!.id, used: true, usedCorrectly: false, note: 'close' }],
+          now: at(2),
+        }),
+      );
+      const fb = store.getFeedback(saved.feedbackId)!;
+      expect(fb).toMatchObject({
+        feedbackId: saved.feedbackId, attemptId: saved.attemptId, createdAt: at(2).toISOString(),
+        text: 'My answer.', naturalRewrite: 'I fixed the bug yesterday.',
+      });
+      expect(fb.challenge).toEqual(store.getChallenge(ch.id));
+      expect(fb.corrections.map((c) => c.explanation)).toEqual(['first', 'second']);
+      expect(fb.expressions.map((e) => e.text)).toEqual(['zero in on', 'Push back on']);
+      expect(fb.requiredChecks).toEqual([{ expression: x, used: true, usedCorrectly: false, note: 'close' }]);
+      expect(store.getFeedback(9999)).toBeNull();
+    });
+
+    test('pendingChallenge is the newest challenge without an answer', () => {
+      expect(store.pendingChallenge()).toBeNull();
+      store.saveChallenge({ category: 'daily_update', situation: 's', interlocutor: 'i', task: 't', summary: 'old', required: [] }, t0);
+      const newer = store.saveChallenge({ category: 'code_review', situation: 's', interlocutor: 'i', task: 't', summary: 'new', required: [] }, at(1));
+      expect(store.pendingChallenge()?.id).toBe(newer.id);
+      store.saveFeedback(feedbackInput({ attempt: { challengeId: newer.id, text: 'x', source: 'typed' }, newExpressions: [] }));
+      expect(store.pendingChallenge()?.summary).toBe('old');
+    });
+
+    test('nextDueAt is the earliest due card', () => {
+      expect(store.nextDueAt()).toBeNull();
+      const saved = store.saveFeedback(feedbackInput());
+      const [a, b] = saved.expressions.map((e) => e.expression.id);
+      const r = rate(newCard(t0), 'good', t0);
+      store.saveReview(a!, { ...r.card, due: at(5) }, r.log);
+      store.saveReview(b!, { ...r.card, due: at(3) }, r.log);
+      expect(store.nextDueAt()).toEqual(at(3));
+    });
+
     test('history newest first with cursor pagination', () => {
       const ch = store.saveChallenge({ category: 'bug_explanation', situation: 's', interlocutor: 'i', task: 't', summary: 'x', required: [] }, t0);
       store.saveFeedback(feedbackInput({ now: at(1) }));

@@ -7,6 +7,7 @@ import type {
   ProfileInput,
   SaveFeedbackInput,
   SavedFeedback,
+  StoredFeedback,
   StoredProfile,
   StudyStore,
 } from '../ports';
@@ -26,17 +27,24 @@ interface AttemptRow {
 interface FeedbackRow {
   id: number;
   attemptId: number;
+  naturalRewrite: string;
+  expressionIds: number[];
   createdAt: string;
 }
 interface CorrectionRow {
   feedbackId: number;
+  original: string;
+  corrected: string;
+  explanation: string;
   category: MistakeCategory;
   createdAt: string;
 }
 interface CheckRow {
   feedbackId: number;
   expressionId: number;
+  used: boolean;
   usedCorrectly: boolean;
+  note: string;
 }
 
 /** In-memory StudyStore for core tests; behaviour is pinned by the shared contract suite. */
@@ -90,9 +98,10 @@ export class MemoryStudyStore implements StudyStore {
     const attemptId = this.nextId++;
     const feedbackId = this.nextId++;
     this.attempts.push({ id: attemptId, ...input.attempt, createdAt });
-    this.feedbacks.push({ id: feedbackId, attemptId, createdAt });
-    for (const c of input.corrections) this.corrections.push({ feedbackId, category: c.category, createdAt });
-    for (const c of input.checks) this.checks.push({ feedbackId, expressionId: c.expressionId, usedCorrectly: c.usedCorrectly });
+    const feedback: FeedbackRow = { id: feedbackId, attemptId, naturalRewrite: input.feedback.naturalRewrite, expressionIds: [], createdAt };
+    this.feedbacks.push(feedback);
+    for (const c of input.corrections) this.corrections.push({ feedbackId, ...c, createdAt });
+    for (const c of input.checks) this.checks.push({ feedbackId, ...c });
 
     const expressions = input.newExpressions.map((e) => {
       const existing = this.expressions.find((x) => x.normalizedText === e.normalizedText);
@@ -102,7 +111,42 @@ export class MemoryStudyStore implements StudyStore {
       this.cards.set(created.id, { ...input.initialCard });
       return { expression: stripNormalized(created), isNew: true };
     });
+    feedback.expressionIds = expressions.map((e) => e.expression.id);
     return { feedbackId, attemptId, expressions };
+  }
+
+  getFeedback(feedbackId: number): StoredFeedback | null {
+    const f = this.feedbacks.find((x) => x.id === feedbackId);
+    if (!f) return null;
+    const attempt = this.attempts.find((a) => a.id === f.attemptId)!;
+    return {
+      feedbackId: f.id,
+      attemptId: attempt.id,
+      createdAt: f.createdAt,
+      text: attempt.text,
+      challenge: attempt.challengeId === null ? null : this.getChallenge(attempt.challengeId),
+      corrections: this.corrections
+        .filter((c) => c.feedbackId === f.id)
+        .map(({ original, corrected, explanation, category }) => ({ original, corrected, explanation, category })),
+      naturalRewrite: f.naturalRewrite,
+      expressions: f.expressionIds.map((id) => this.expressionById(id)),
+      requiredChecks: this.checks
+        .filter((c) => c.feedbackId === f.id)
+        .map((c) => ({ expression: this.expressionById(c.expressionId), used: c.used, usedCorrectly: c.usedCorrectly, note: c.note })),
+    };
+  }
+
+  pendingChallenge(): Challenge | null {
+    const answered = new Set(this.attempts.map((a) => a.challengeId));
+    const row = [...this.challenges]
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id)
+      .find((c) => !answered.has(c.id));
+    return row ? this.toChallenge(row) : null;
+  }
+
+  nextDueAt(): Date | null {
+    const dues = [...this.cards.values()].map((c) => c.due.getTime());
+    return dues.length ? new Date(Math.min(...dues)) : null;
   }
 
   dueCards(now: Date, opts: { excludeNew: boolean; limit: number }): DueCard[] {

@@ -36,6 +36,21 @@ export interface SavedFeedback {
   expressions: { expression: Expression; isNew: boolean }[];
 }
 
+/** A saved feedback with everything needed to show it again. */
+export interface StoredFeedback {
+  feedbackId: number;
+  attemptId: number;
+  createdAt: string;
+  text: string;
+  challenge: Challenge | null;
+  /** In the order the coach returned them. */
+  corrections: { original: string; corrected: string; explanation: string; category: MistakeCategory }[];
+  naturalRewrite: string;
+  /** The new expressions this feedback suggested, in order (including ones that already existed). */
+  expressions: Expression[];
+  requiredChecks: { expression: Expression; used: boolean; usedCorrectly: boolean; note: string }[];
+}
+
 export interface DueCard {
   expression: Expression;
   card: SrsCard;
@@ -71,4 +86,9 @@ export interface StudyStore {
   countDue(before: Date): number;
   /** Newest first; `before` is a createdAt cursor (exclusive). */
   history(opts: { before: string | null; limit: number }): HistoryItem[];
+  getFeedback(feedbackId: number): StoredFeedback | null;
+  /** The newest challenge that has no answer yet. */
+  pendingChallenge(): Challenge | null;
+  /** The earliest due date of any card, or null when there are no cards. */
+  nextDueAt(): Date | null;
 }
