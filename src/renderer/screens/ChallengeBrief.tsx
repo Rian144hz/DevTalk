@@ -9,7 +9,7 @@ export function ChallengeBrief({ challenge, compact = false }: { challenge: Chal
   return (
     <div className="brief">
       <span className="track">{CHALLENGE_CATEGORY_LABELS[challenge.category]}</span>
-      {compact ? <h2>{challengeTitle(challenge)}</h2> : <h1>{challengeTitle(challenge)}</h1>}
+      <h1>{challengeTitle(challenge)}</h1>
       <p className="brief-situation">{challenge.situation}</p>
       {!compact && <p className="brief-who"><span className="muted">With</span> {challenge.interlocutor}</p>}
       {!compact && <p className="brief-task">{challenge.task}</p>}

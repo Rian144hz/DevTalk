@@ -22,5 +22,6 @@ export function useCoachRequest<T>(cancel: (requestId: string) => Promise<unknow
     state,
     run: (call: (requestId: string) => Promise<Result<T>>) => controller.run(call),
     cancel: () => controller.cancel(),
+    reset: () => controller.reset(),
   };
 }

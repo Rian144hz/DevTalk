@@ -50,7 +50,7 @@ function Shell() {
       {name === 'components' && GALLERY ? <ComponentsScreen />
         : name === 'home' ? <HomeScreen key={route.id ?? 0} />
         : name === 'practice' ? <PracticeScreen />
-        : name === 'feedback' && route.id ? <FeedbackRoute id={route.id} onNext={() => { window.location.hash = '#/home'; }} />
+        : name === 'feedback' && route.id ? <FeedbackRoute id={route.id} onNext={() => { window.location.hash = '#/practice'; }} />
         : name === 'settings' ? <SettingsScreen profile={profile} />
         : <Placeholder title={SCREEN_TITLES[name]} />}
     </div>

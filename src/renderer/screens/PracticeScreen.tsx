@@ -5,6 +5,7 @@ import type { FeedbackView } from '../../shared/ipc-contract';
 import { useAppData } from '../app/AppData';
 import { api, unwrap } from '../lib/api';
 import { useCoachRequest } from '../lib/useCoachRequest';
+import { takeRetryDraft } from '../lib/draft';
 import { Button, EmptyState, Notice, Skeleton, TextArea } from '../design-system';
 import { ChallengeBrief } from './ChallengeBrief';
 import { FeedbackScreen } from './FeedbackScreen';
@@ -20,15 +21,18 @@ export function sentenceHint(text: string): string {
 
 export function PracticeScreen() {
   const { refresh } = useAppData();
-  const [challenge, setChallenge] = useState<Challenge | null | undefined>(undefined);
+  // "Write it again" hands over an answered challenge and its text.
+  const [retry] = useState(takeRetryDraft);
+  const [challenge, setChallenge] = useState<Challenge | null | undefined>(retry?.challenge);
   const [failed, setFailed] = useState(false);
-  const [text, setText] = useState('');
+  const [text, setText] = useState(retry?.text ?? '');
   const req = useCoachRequest<FeedbackView>((id) => api().feedback.cancel(id));
 
   const load = useCallback(() => {
+    if (retry) return;
     setFailed(false);
     api().challenges.pending().then((r) => setChallenge(unwrap(r)), () => setFailed(true));
-  }, []);
+  }, [retry]);
   useEffect(load, [load]);
 
   useEffect(() => {
@@ -63,7 +67,7 @@ export function PracticeScreen() {
     const error = req.state.error;
     return (
       <FeedbackScreen onNext={() => {}}
-        mode={{ kind: 'error', text, challenge, error, onRetry: submit, onEdit: () => req.cancel() }} />
+        mode={{ kind: 'error', text, challenge, error, onRetry: submit, onEdit: () => req.reset() }} />
     );
   }
 

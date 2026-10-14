@@ -84,3 +84,11 @@ test('dispose cancels a running request', () => {
   c.dispose();
   expect(cancelled).toEqual(['r1']);
 });
+
+test('reset leaves an error state for idle', async () => {
+  const { c, last } = setup();
+  c.run(async () => ({ ok: false, error: { kind: 'unavailable', message: 'down' } }));
+  await Promise.resolve(); await Promise.resolve();
+  c.reset();
+  expect(last()).toEqual({ status: 'idle' });
+});

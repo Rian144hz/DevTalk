@@ -55,6 +55,11 @@ export function createCoachRequestController<T>(deps: {
       if (state.status === 'running' && state.requestId === requestId) set({ ...state, stage });
     },
     cancel,
+    /** Back to idle after a finished or failed call (a running call is cancelled first). */
+    reset() {
+      cancel();
+      if (state.status !== 'idle') set({ status: 'idle' });
+    },
     dispose: cancel,
   };
 }

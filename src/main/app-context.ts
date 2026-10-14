@@ -71,7 +71,11 @@ export function createAppContext(emitProgress: (requestId: string, stage: Progre
       challenge: readFileSync(join(promptsDir, 'challenge.md'), 'utf8'),
     }),
     makeProvider: (apiKey, profile) => {
-      if (useFixtureLLM()) return fixtures;
+      // Fixture mode still needs a key for cloud providers, so the no-key path can be tested.
+      if (useFixtureLLM()) {
+        if (!apiKey && profile.provider !== 'ollama') throw new LLMError('no_key', 'No API key');
+        return fixtures;
+      }
       if (profile.provider !== 'anthropic' && profile.provider !== 'gemini') {
         throw new LLMError('unavailable', `Provider "${profile.provider}" is not available yet.`);
       }

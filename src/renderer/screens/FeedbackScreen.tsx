@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+import { setRetryDraft } from '../lib/draft';
+import { copyText } from '../lib/clipboard';
+import { errorAction } from './errorCopy';
 import { buildGalley } from '../../core/feedback/galley';
 import type { Challenge } from '../../core/domain/types';
 import type { ProgressStage } from '../../core/llm/structured';
@@ -52,7 +55,9 @@ export function FeedbackScreen({ mode, onNext }: { mode: FeedbackMode; onNext():
           {mode.kind === 'error' && (
             <>
               <Notice tone="error" title={mode.error.message} detail="Your answer is kept."
-                action={<Button variant="secondary" onClick={mode.onRetry}>Try again</Button>} />
+                action={errorAction(mode.error.kind) === 'settings'
+                  ? <Button variant="secondary" onClick={() => { window.location.hash = '#/settings'; }}>Open Settings</Button>
+                  : <Button variant="secondary" onClick={mode.onRetry}>Try again</Button>} />
               <Galley galley={galley} title="Your answer" marked={false} meta={<Button variant="quiet" onClick={mode.onEdit}>Edit answer</Button>} />
             </>
           )}
@@ -60,7 +65,7 @@ export function FeedbackScreen({ mode, onNext }: { mode: FeedbackMode; onNext():
             <>
               <Galley galley={galley} title="Your answer" meta={editsLabel(mode.view.corrections.length)} />
               <section aria-labelledby="rw" className="fb-section">
-                <div className="sec-head"><h2 id="rw">How a fluent developer might say it</h2></div>
+                <div className="sec-head"><h2 id="rw">How a fluent developer might say it</h2><CopyButton text={mode.view.naturalRewrite} /></div>
                 <p className="rewrite">{markExpressions(mode.view.naturalRewrite, mode.view.expressions.map((e) => e.text))}</p>
               </section>
               <section aria-labelledby="ne" className="fb-section">
@@ -96,14 +101,46 @@ export function FeedbackScreen({ mode, onNext }: { mode: FeedbackMode; onNext():
               </ul>
             </>
           )}
-          {mode.kind === 'ready' && (
-            <div className="fb-actions">
-              <Button variant="primary" shortcut="Enter" onClick={onNext}>Next challenge</Button>
-            </div>
-          )}
+          {mode.kind === 'ready' && <ReadyActions view={mode.view} onNext={onNext} />}
         </aside>
       </div>
     </main>
+  );
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(t);
+  }, [copied]);
+  return (
+    <Button variant="quiet" onClick={() => void copyText(text).then(() => setCopied(true))}>
+      <Icon name="copy" size={14} />{copied ? 'Copied' : 'Copy'}
+    </Button>
+  );
+}
+
+function ReadyActions({ view, onNext }: { view: FeedbackView; onNext(): void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const typing = e.target instanceof HTMLElement && e.target.closest('input, textarea, select, button, a, [role="radio"]');
+      if (e.key === 'Enter' && !e.ctrlKey && !typing) onNext();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onNext]);
+  return (
+    <div className="fb-actions">
+      <Button variant="primary" shortcut="Enter" onClick={onNext}>Next challenge</Button>
+      {view.challenge && (
+        <Button variant="secondary" onClick={() => {
+          setRetryDraft({ challenge: view.challenge!, text: view.text });
+          window.location.hash = '#/practice';
+        }}>Write it again</Button>
+      )}
+    </div>
   );
 }
 
