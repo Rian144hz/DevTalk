@@ -5,6 +5,10 @@ import { useThemeEffect } from '../lib/useTheme';
 import type { RouteName } from '../lib/router';
 import { AppDataProvider, useAppData } from './AppData';
 import { Rail } from './Rail';
+import { ComponentsScreen } from '../screens/ComponentsScreen';
+
+/** The component gallery ships only in dev builds (or a build made for screenshots). */
+const GALLERY = import.meta.env.DEV || import.meta.env['VITE_COMPONENT_GALLERY'] === '1';
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -38,7 +42,7 @@ function Shell() {
     <div className="app">
       <Rail active={name} dueCount={dueCount} provider={provider} model={profile.model || DEFAULT_MODELS[provider]}
         onOpenPalette={() => setPaletteOpen(true)} />
-      <Placeholder title={SCREEN_TITLES[name]} />
+      {name === 'components' && GALLERY ? <ComponentsScreen /> : <Placeholder title={SCREEN_TITLES[name]} />}
     </div>
   );
 }

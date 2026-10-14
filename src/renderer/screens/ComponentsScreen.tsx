@@ -1,0 +1,70 @@
+// Dev-only gallery: every base component in its states, with real DevTalk content.
+import { useState } from 'react';
+import { buildGalley } from '../../core/feedback/galley';
+import type { Expression } from '../../core/domain/types';
+import {
+  Button, Chip, CoachProgress, EmptyState, ExpressionCard, Galley, Notice, PasswordField, Segmented, Select, Skeleton,
+  Tally, TextArea, TextField, TypeBadge,
+} from '../design-system';
+
+const answer =
+  "Yesterday I have worked on the login bug. The problem was that the token expire too fast. I changed the configuration and now it works good. Today I write tests for it.";
+const galley = buildGalley(answer, [
+  { original: 'have worked', corrected: 'worked', explanation: '“Yesterday” pede o passado simples.', category: 'verb_tense' },
+  { original: 'expire', corrected: 'expired', explanation: 'A frase toda está no passado.', category: 'verb_tense' },
+  { original: 'good', corrected: 'well', explanation: 'Para descrever um verbo, use o advérbio “well”.', category: 'word_choice' },
+  { original: 'I write', corrected: "I'll write", explanation: "Plano para hoje: “I'll write”.", category: 'missing_word' },
+  { original: 'the rollout', corrected: 'x', explanation: 'Fale também do que bloqueia você hoje.', category: 'off_task' },
+]);
+const expr: Expression = { id: 1, text: 'hold off on', type: 'phrasal_verb', meaning: 'Adiar algo de propósito, esperando o momento certo.', example: "Let's hold off on the migration until the release is out." };
+
+export function ComponentsScreen() {
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [level, setLevel] = useState<'B1' | 'B2' | 'C1'>('B1');
+  return (
+    <main className="page gallery">
+      <header className="page-head">
+        <div><h1>Components</h1><p className="lede">Every base component in its states.</p></div>
+        <Segmented label="Theme" value={theme} options={[{ value: 'dark', label: 'Dark' }, { value: 'light', label: 'Light' }]}
+          onChange={(t) => { setTheme(t); document.documentElement.dataset['theme'] = t; }} />
+      </header>
+
+      <section className="gallery-row">
+        <Button variant="primary" shortcut="Enter">Write it</Button>
+        <Button variant="secondary">Review now</Button>
+        <Button variant="quiet" shortcut="Esc">Cancel</Button>
+        <Button variant="primary" busy>Get feedback</Button>
+        <Button variant="secondary" disabled>Write it again</Button>
+        <Chip>push back on</Chip><TypeBadge type="phrasal_verb" /><TypeBadge type="collocation" /><TypeBadge type="chunk" />
+        <Tally count={7} label="7 times this month" /><Tally count={3} label="3 times this month" />
+      </section>
+
+      <section className="gallery-row stack">
+        <Galley galley={galley} title="Your last answer, marked by the coach" meta="Stand-up update, yesterday" />
+        <Galley galley={buildGalley(answer, [])} title="Your answer" marked={false}
+          head={<div className="galley-head"><CoachProgress stage="waiting" startedAt={Date.now() - 6000} onCancel={() => {}} label="The coach is reading your answer" /></div>} />
+      </section>
+
+      <section className="gallery-grid">
+        <ExpressionCard expression={expr} foot="First review tomorrow" />
+        <ExpressionCard expression={{ ...expr, id: 2, text: 'make a trade-off', type: 'collocation', meaning: 'Aceitar perder algo para ganhar outra coisa.', example: 'We made a trade-off: more memory for fewer queries.' }} />
+        <ExpressionCard expression={{ ...expr, id: 3, text: 'for very little gain', type: 'chunk', meaning: 'Com pouco benefício em troca do esforço.', example: 'That rewrite adds risk for very little gain.' }} />
+      </section>
+
+      <section className="gallery-row stack">
+        <Notice tone="error" title="The coach is unavailable right now." detail="Your answer is saved. Check your connection and try again." action={<Button variant="secondary">Try again</Button>} />
+        <Notice tone="info" title="Nothing to review now." detail="Next review in 3 h." />
+        <EmptyState title="Your first answer will appear here" body="Write an answer to a challenge and the coach marks it up like an editor." action={<Button variant="primary">Get a challenge</Button>} />
+        <div><Skeleton width="40%" /><Skeleton /><Skeleton width="80%" /></div>
+      </section>
+
+      <section className="gallery-grid">
+        <TextField label="Model" defaultValue="gemini-flash-latest" hint="Leave the default unless you know you need another." />
+        <PasswordField label="API key" placeholder="Paste your key" error="That key was rejected. Check it and try again." />
+        <Select label="Native language" options={[{ value: 'pt', label: 'Portuguese (Brazil)' }, { value: 'es', label: 'Spanish' }]} />
+        <Segmented<'B1' | 'B2' | 'C1'> label="Current level" value={level} options={[{ value: 'B1', label: 'B1' }, { value: 'B2', label: 'B2' }, { value: 'C1', label: 'C1' }]} onChange={setLevel} />
+        <TextArea label="Your answer" defaultValue={answer} hint="4 sentences. Aim for 3 to 5." />
+      </section>
+    </main>
+  );
+}
