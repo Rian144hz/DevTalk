@@ -1,0 +1,13 @@
+appId: dev.devtalk.app
+productName: DevTalk
+directories:
+  output: dist
+files:
+  - out/**
+  - package.json
+extraResources:
+  - from: prompts
+    to: prompts
+linux:
+  target: [AppImage]
+  category: Education
