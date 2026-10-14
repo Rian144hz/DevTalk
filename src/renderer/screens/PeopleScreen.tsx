@@ -189,7 +189,14 @@ export function PeopleScreen({ edit }: { edit: boolean }) {
       )}
       {notices.map((n) => (
         <Notice key={n.id} tone="info" title="Message from the moderators" detail={`${n.message} (${formatLongDate(n.createdAt)})`}
-          action={<Button variant="quiet" onClick={async () => { unwrap(await api().social.readNotice(n.id)); void load(); }}>Mark as read</Button>} />
+          action={<Button variant="quiet" onClick={async () => {
+            try {
+              unwrap(await api().social.readNotice(n.id));
+              void load();
+            } catch (e) {
+              setError(message(e));
+            }
+          }}>Mark as read</Button>} />
       ))}
       <ProfileView profile={profile} avatar={avatar} />
       <section className="people-next">

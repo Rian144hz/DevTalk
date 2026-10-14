@@ -86,3 +86,23 @@ test.describe('while the server cannot delete', () => {
     await expect(account(page).getByText('Signed in as rian@example.com')).toBeVisible();
   });
 });
+
+test.describe('while signing out fails', () => {
+  test.use({ socialFail: 'signOut:offline' });
+
+  test('sign out explains the problem instead of failing silently', async ({ page }) => {
+    await onboard(page);
+    await joinCommunity(page);
+    await page.getByRole('link', { name: 'Settings' }).click();
+    await account(page).getByRole('button', { name: 'Sign out' }).click();
+    await expect(account(page).getByText('You are offline. Your practice still works; the community needs a connection.')).toBeVisible();
+  });
+});
+
+test('the local delete option says the coach keys go too', async ({ page }) => {
+  await onboard(page);
+  await joinCommunity(page);
+  await page.getByRole('link', { name: 'Settings' }).click();
+  await account(page).getByRole('button', { name: 'Delete my account…' }).click();
+  await expect(account(page).getByRole('checkbox', { name: /practice data and saved coach keys/ })).toBeVisible();
+});

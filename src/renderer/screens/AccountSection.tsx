@@ -22,6 +22,7 @@ export function AccountSection() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleted, setDeleted] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoadError(null);
@@ -36,8 +37,13 @@ export function AccountSection() {
   }, [load]);
 
   async function signOut() {
-    setStatus(unwrap(await api().social.signOut()));
-    setDeleted(false);
+    setSignOutError(null);
+    try {
+      setStatus(unwrap(await api().social.signOut()));
+      setDeleted(false);
+    } catch (e) {
+      setSignOutError(message(e));
+    }
   }
 
   async function exportData() {
@@ -104,6 +110,7 @@ export function AccountSection() {
           <p>Signed in as <strong>{email}</strong></p>
           <Button variant="quiet" onClick={() => void signOut()}>Sign out</Button>
         </div>
+        {signOutError && <Notice tone="error" title={signOutError} />}
 
         <div className="account-block">
           <h3>Your data</h3>
@@ -132,7 +139,7 @@ export function AccountSection() {
                 autoComplete="off" spellCheck={false} hint={email} autoFocus />
               <label className="check-row" htmlFor={ids.deleteLocal}>
                 <input id={ids.deleteLocal} type="checkbox" checked={deleteLocal} onChange={(e) => setDeleteLocal(e.target.checked)} />
-                <span>Also delete my practice data on this computer (the app restarts)</span>
+                <span>Also delete my practice data and saved coach keys on this computer (the app restarts)</span>
               </label>
               {deleteError && <Notice tone="error" title={deleteError} />}
               <div className="settings-actions">

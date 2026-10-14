@@ -200,6 +200,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
     },
 
     async signOut() {
+      failIf('signOut');
       state.session = null;
       save();
     },
