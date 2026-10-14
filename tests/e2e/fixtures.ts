@@ -50,3 +50,18 @@ export const historyCount = (page: Page) =>
     const r = await window.devtalk.progress.history({ before: null });
     return r.ok ? r.data.length : -1;
   });
+
+/** Gets a challenge and answers it, so the fixture coach adds two new expressions. */
+export async function answerOnce(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Get a challenge' }).click();
+  await page.getByRole('button', { name: 'Write it' }).click();
+  await page.getByRole('textbox', { name: 'Your answer' }).fill(SAMPLE_ANSWER);
+  await page.keyboard.press('Control+Enter');
+  await page.locator('.galley .mark-n').first().waitFor();
+}
+
+export const queueSize = (page: Page) =>
+  page.evaluate(async () => {
+    const r = await window.devtalk.review.queue();
+    return r.ok ? r.data.items.length : -1;
+  });
