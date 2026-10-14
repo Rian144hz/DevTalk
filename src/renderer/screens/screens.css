@@ -1,0 +1,14 @@
+/* Onboarding */
+.onboarding { min-height: 100vh; display: flex; justify-content: center; padding: var(--s14) var(--s6); }
+.onboarding-col { width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: var(--s2); }
+.onboarding-col .brand { padding: 0 0 var(--s6); }
+.onboarding-step { margin-top: var(--s8); padding-top: var(--s6); border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: var(--s5); }
+.onboarding-actions { display: flex; justify-content: flex-end; gap: var(--s2); margin-top: var(--s2); }
+
+/* Settings */
+.settings section { max-width: 760px; padding: var(--s6) 0; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: var(--s5); }
+.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--s5); align-items: end; }
+.settings-actions { display: flex; align-items: center; gap: var(--s3); }
+.settings-field { display: flex; flex-direction: column; gap: var(--s3); max-width: 420px; }
+.settings-key { display: flex; flex-direction: column; gap: var(--s3); }
+.settings-foot { max-width: 760px; padding-top: var(--s5); border-top: 1px solid var(--rule); }

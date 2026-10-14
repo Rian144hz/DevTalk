@@ -10,7 +10,7 @@ import { createAnthropicProvider } from './llm/anthropic-provider';
 import { createGeminiProvider } from './llm/gemini-provider';
 import type { ProviderId } from '../shared/providers';
 import { createFixtureProvider } from './llm/fake-fixtures';
-import { createKeyVault, isKeyringUsable, type KeyVault } from './vault/key-vault';
+import { createKeyVault, isKeyringUsable, type KeyVault, type SafeStorageLike } from './vault/key-vault';
 
 export interface AppContext {
   handlers: Handlers;
@@ -20,11 +20,30 @@ export interface AppContext {
 /** Offline fixtures for UI work and e2e: opt-in, and impossible in packaged builds. */
 export const useFixtureLLM = () => !app.isPackaged && process.env['DEVTALK_FAKE_LLM'] === '1';
 
+/**
+ * e2e only (never in packaged builds): DEVTALK_TEST_KEYRING=plain stores fake test keys without the
+ * OS keyring, =unavailable simulates a machine with no keyring.
+ */
+function testKeyring(): SafeStorageLike | null {
+  const mode = app.isPackaged ? undefined : process.env['DEVTALK_TEST_KEYRING'];
+  if (mode === 'plain') {
+    return {
+      isEncryptionAvailable: () => true,
+      encryptString: (s) => Buffer.from(`test:${s}`),
+      decryptString: (b) => b.toString().slice('test:'.length),
+    };
+  }
+  if (mode === 'unavailable') {
+    return { isEncryptionAvailable: () => false, encryptString: () => Buffer.alloc(0), decryptString: () => '' };
+  }
+  return null;
+}
+
 export function createAppContext(emitProgress: (requestId: string, stage: ProgressStage) => void): AppContext {
   const userData = app.getPath('userData');
   const db: DB = openDatabase(join(userData, 'devtalk.sqlite'));
   const store = new SqliteStudyStore(db);
-  const keyring = {
+  const keyring = testKeyring() ?? {
     isEncryptionAvailable: () => isKeyringUsable(safeStorage, process.platform),
     encryptString: (s: string) => safeStorage.encryptString(s),
     decryptString: (b: Buffer) => safeStorage.decryptString(b),

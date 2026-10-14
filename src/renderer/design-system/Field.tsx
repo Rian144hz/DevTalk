@@ -58,8 +58,8 @@ export function Select({ label, hint, error, options, ...rest }: FieldText & Sel
 export function Segmented<T extends string>({ label, value, options, onChange }: {
   label: string;
   value: T;
-  options: { value: T; label: string }[];
-  onChange(v: T): void;
+  options: readonly { value: NoInfer<T>; label: string }[];
+  onChange(v: NoInfer<T>): void;
 }) {
   const id = useId();
   const refs = useRef<(HTMLButtonElement | null)[]>([]);

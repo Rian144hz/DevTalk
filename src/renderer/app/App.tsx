@@ -6,6 +6,8 @@ import type { RouteName } from '../lib/router';
 import { AppDataProvider, useAppData } from './AppData';
 import { Rail } from './Rail';
 import { ComponentsScreen } from '../screens/ComponentsScreen';
+import { OnboardingScreen } from '../screens/OnboardingScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
 
 /** The component gallery ships only in dev builds (or a build made for screenshots). */
 const GALLERY = import.meta.env.DEV || import.meta.env['VITE_COMPONENT_GALLERY'] === '1';
@@ -34,7 +36,7 @@ function Shell() {
   }, []);
 
   if (profile === undefined) return null;
-  if (profile === null) return <Placeholder title={SCREEN_TITLES.onboarding} />;
+  if (profile === null) return <OnboardingScreen />;
 
   const name: RouteName = route.name === 'onboarding' ? 'home' : route.name;
   const provider = profile.provider as ProviderId;
@@ -42,7 +44,9 @@ function Shell() {
     <div className="app">
       <Rail active={name} dueCount={dueCount} provider={provider} model={profile.model || DEFAULT_MODELS[provider]}
         onOpenPalette={() => setPaletteOpen(true)} />
-      {name === 'components' && GALLERY ? <ComponentsScreen /> : <Placeholder title={SCREEN_TITLES[name]} />}
+      {name === 'components' && GALLERY ? <ComponentsScreen />
+        : name === 'settings' ? <SettingsScreen profile={profile} />
+        : <Placeholder title={SCREEN_TITLES[name]} />}
     </div>
   );
 }

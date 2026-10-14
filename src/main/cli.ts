@@ -6,10 +6,10 @@ export const CLI_FLAGS = ['--set-key', '--smoke'] as const;
 export const isCliMode = (argv: string[]) => CLI_FLAGS.some((f) => argv.includes(f));
 
 const DEFAULT_PROFILE = {
-  nativeLanguage: 'Portuguese',
+  nativeLanguage: 'Portuguese (Brazil)',
   currentLevel: 'B1',
   targetLevel: 'B2',
-  explanationLanguage: 'Portuguese',
+  explanationLanguage: 'Portuguese (Brazil)',
   provider: DEFAULT_PROVIDER,
   model: DEFAULT_MODELS[DEFAULT_PROVIDER],
   theme: 'dark',
