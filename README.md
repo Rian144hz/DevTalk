@@ -65,10 +65,10 @@ npm run cli -- --smoke
 
 ## Use
 
-- **Today** shows your last answer, the next challenge and what is due for review.
+- **Home** shows your last answer, the next challenge and what is due for review.
 - **Practice**: write 3 to 5 sentences, then **Ctrl+Enter**. Press **Esc** to cancel while the coach works.
 - **Review**: **Space** reveals the meaning; **1–4** rate Again, Hard, Good, Easy.
-- **Ctrl+K** opens the command palette; **Ctrl+1…Ctrl+6** jump to Today, Practice, Review, Progress, Settings and Rooms.
+- **Ctrl+K** opens the command palette; **Ctrl+1…Ctrl+7** jump to Home, Practice, Review, People, Rooms, Progress and Settings (the sidebar order).
 
 ## Tests
 
