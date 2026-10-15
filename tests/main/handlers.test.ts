@@ -39,7 +39,7 @@ function memoryVault(initial: string | null = 'sk-ant-test'): KeyVault {
   return { has: () => key !== null, get: () => key, set: (k) => { key = k.trim(); }, clear: () => { key = null; } };
 }
 
-function setup(opts: { provider?: LLMProvider; vault?: KeyVault; vaults?: Record<string, KeyVault>; onboarded?: boolean } = {}) {
+function setup(opts: { provider?: LLMProvider; vault?: KeyVault; vaults?: Record<string, KeyVault>; onboarded?: boolean; activity?: string[] } = {}) {
   const store = new MemoryStudyStore();
   if (opts.onboarded !== false) store.saveProfile(profile, t0);
   const provider = opts.provider ?? new FakeProvider([]);
@@ -55,6 +55,7 @@ function setup(opts: { provider?: LLMProvider; vault?: KeyVault; vaults?: Record
     checkProvider: async () => ({ ok: true, detail: 'ok' }),
     templates,
     emitProgress: (requestId, stage) => progress.push([requestId, stage]),
+    onActivity: (kind, detail) => opts.activity?.push(detail ? `${kind}:${detail}` : kind),
   });
   return { h, store, provider, progress };
 }
@@ -265,4 +266,17 @@ test('a provider-specific message reaches the person; the generic config copy na
   const { h: h2 } = setup({ provider: new FakeProvider([() => { throw new LLMError('config', 'raw'); }]) });
   const r = await h2['challenges:next']({ requestId: 'c2' });
   expect(r.ok ? '' : r.error.message).not.toMatch(/Anthropic/);
+});
+
+test('activity hooks: answers, reviews and a rising level are reported', async () => {
+  const activity: string[] = [];
+  const { h } = setup({ provider: new FakeProvider([feedbackReply]), activity });
+  const r = await h['feedback:submit']({ requestId: 'r1', challengeId: null, text: 'I have fixed it.' });
+  expect(r.ok).toBe(true);
+  const q = await h['review:queue']({});
+  const first = q.ok ? q.data.items[0] : undefined;
+  await h['review:rate']({ expressionId: first!.expression.id, rating: 'good' });
+  await h['profile:save']({ ...profile, currentLevel: 'B2', targetLevel: 'C1' });
+  await h['profile:save']({ ...profile, currentLevel: 'B1' });
+  expect(activity).toEqual(['answer', 'review', 'level:B1>B2']);
 });

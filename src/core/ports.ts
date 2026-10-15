@@ -91,4 +91,6 @@ export interface StudyStore {
   pendingChallenge(): Challenge | null;
   /** The earliest due date of any card, or null when there are no cards. */
   nextDueAt(): Date | null;
+  /** ISO timestamps of answers (feedbacks) and reviews at or after `since`, oldest first. */
+  activityTimestamps(since: Date): { answers: string[]; reviews: string[] };
 }

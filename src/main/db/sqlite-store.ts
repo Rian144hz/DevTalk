@@ -231,6 +231,15 @@ export class SqliteStudyStore implements StudyStore {
     })();
   }
 
+  activityTimestamps(since: Date): { answers: string[]; reviews: string[] } {
+    const from = since.toISOString();
+    const column = (sql: string) => (this.db.prepare(sql).all(from) as { t: string }[]).map((r) => r.t);
+    return {
+      answers: column('SELECT created_at AS t FROM feedbacks WHERE created_at >= ? ORDER BY created_at'),
+      reviews: column('SELECT created_at AS t FROM review_logs WHERE created_at >= ? ORDER BY created_at'),
+    };
+  }
+
   mistakeCounts(since: Date | null): { category: MistakeCategory; count: number }[] {
     return this.db
       .prepare(

@@ -83,6 +83,7 @@ void app.whenReady().then(async () => {
 
   registerIpc(ctx.handlers, () => mainWindow);
   mainWindow = createMainWindow();
+  mainWindow.once('ready-to-show', () => ctx.startBackground());
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) mainWindow = createMainWindow();
   });

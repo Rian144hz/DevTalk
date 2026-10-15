@@ -187,6 +187,14 @@ export class MemoryStudyStore implements StudyStore {
     return this.expressions.length;
   }
 
+  activityTimestamps(since: Date): { answers: string[]; reviews: string[] } {
+    const from = since.toISOString();
+    return {
+      answers: this.feedbacks.map((f) => f.createdAt).filter((t) => t >= from).sort(),
+      reviews: this.logs.map((l) => l.log.review.toISOString()).filter((t) => t >= from).sort(),
+    };
+  }
+
   countDue(before: Date): number {
     return [...this.cards.values()].filter((c) => c.due <= before).length;
   }

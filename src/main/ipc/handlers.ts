@@ -1,5 +1,6 @@
 import { ChallengeGenerator } from '../../core/challenges/generator';
 import { FeedbackEngine } from '../../core/feedback/engine';
+import { LEVELS } from '../../core/domain/types';
 import type { LLMProvider } from '../../core/llm/provider';
 import type { ProgressStage } from '../../core/llm/structured';
 import type { Clock, StoredProfile, StudyStore } from '../../core/ports';
@@ -23,6 +24,8 @@ export interface HandlerDeps {
   /** Tie-breaker for the challenge category (fixture mode makes it deterministic). */
   rng?: () => number;
   emitProgress: (requestId: string, stage: ProgressStage) => void;
+  /** Practice happened (an answer, a review, or a level rise like 'B1>B2'); must not block or throw. */
+  onActivity?: (kind: 'answer' | 'review' | 'level', detail?: string) => void;
 }
 
 export type SocialChannel = Extract<InvokeChannel, `social:${string}` | `safety:${string}` | `moderation:${string}`>;
@@ -65,7 +68,9 @@ export function createHandlers(deps: HandlerDeps): HandlerMap<CoreChannel> {
   return {
     'profile:get': handle('profile:get', () => store.getProfile()),
     'profile:save': handle('profile:save', (p) => {
+      const before = store.getProfile()?.currentLevel;
       store.saveProfile(p, clock.now());
+      if (before && LEVELS.indexOf(p.currentLevel) > LEVELS.indexOf(before)) deps.onActivity?.('level', `${before}>${p.currentLevel}`);
       return store.getProfile()!;
     }),
     'keys:status': handle('keys:status', ({ provider }) => ({ hasKey: keyVault(provider).has() })),
@@ -100,6 +105,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap<CoreChannel> {
           signal,
           onProgress,
         );
+        deps.onActivity?.('answer');
         return store.getFeedback(result.feedbackId)!;
       });
     }),
@@ -127,6 +133,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap<CoreChannel> {
       if (!card) throw new AppFailure('not_found', 'That expression no longer exists.');
       const next = rate(card, rating, clock.now());
       store.saveReview(expressionId, next.card, next.log);
+      deps.onActivity?.('review');
       return { card: next.card };
     }),
 

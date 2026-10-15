@@ -11,6 +11,7 @@ import { createUnconfiguredBackend, type SocialBackend } from './social/backend'
 import { readSocialConfig } from './social/config';
 import type { SocialErrorKind } from './social/errors';
 import { createFakeSocialBackend } from './social/fake-backend';
+import { createPracticeSync, type PracticeSync } from './social/practice-sync';
 import { createSessionStore } from './social/session-store';
 import { createSupabaseBackend } from './social/supabase-backend';
 import { createAnthropicProvider } from './llm/anthropic-provider';
@@ -22,6 +23,8 @@ import { createKeyVault, isKeyringUsable, type KeyVault, type SafeStorageLike } 
 
 export interface AppContext {
   handlers: Handlers;
+  /** Background work that may use the network; started once the window is up, never by the CLI. */
+  startBackground(): void;
   close(): void;
 }
 
@@ -94,6 +97,8 @@ export function createAppContext(
   };
   const promptsDir = app.isPackaged ? join(process.resourcesPath, 'prompts') : join(app.getAppPath(), 'prompts');
   const fixtures = createFixtureProvider({ delayMs: 900 });
+  // Set once the community backend exists below; activity before that is counted on the first sync anyway.
+  let practiceSync: PracticeSync | null = null;
 
   const handlers = createHandlers({
     store,
@@ -125,6 +130,7 @@ export function createAppContext(
         : { ok: true, detail: 'Cloud coaches are checked when you ask for feedback.' },
     rng: useFixtureLLM() ? () => 0 : undefined,
     emitProgress,
+    onActivity: (kind, detail) => practiceSync?.notify(kind, detail),
   });
 
   const config = readSocialConfig(import.meta.env);
@@ -138,6 +144,15 @@ export function createAppContext(
         })
       : createUnconfiguredBackend());
 
+  practiceSync = createPracticeSync({
+    store,
+    backend,
+    clock: { now: () => new Date() },
+    timeZone: () => Intl.DateTimeFormat().resolvedOptions().timeZone,
+    platform: process.platform,
+    statePath: join(userData, 'practice-sync.json'),
+  });
+
   const socialHandlers = createSocialHandlers({
     backend,
     exportLocal: () => exportLocalData(db),
@@ -150,7 +165,7 @@ export function createAppContext(
     writeFile: (path, content) => writeFileSync(path, content, { mode: 0o600 }),
     deleteLocalData: () => {
       db.close();
-      const local = /^(devtalk\.sqlite(-wal|-shm)?|api-key.*\.bin|social-session\.bin|fake-social\.json)$/;
+      const local = /^(devtalk\.sqlite(-wal|-shm)?|api-key.*\.bin|social-session\.bin|fake-social\.json|practice-sync\.json)$/;
       for (const name of readdirSync(userData)) if (local.test(name)) rmSync(join(userData, name), { force: true });
       // Let the IPC reply reach the window before restarting.
       setTimeout(() => {
@@ -161,5 +176,9 @@ export function createAppContext(
     today: () => new Date().toISOString().slice(0, 10),
   });
 
-  return { handlers: { ...handlers, ...socialHandlers }, close: () => db.close() };
+  return {
+    handlers: { ...handlers, ...socialHandlers },
+    startBackground: () => void practiceSync?.start(),
+    close: () => db.close(),
+  };
 }

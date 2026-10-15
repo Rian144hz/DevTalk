@@ -32,6 +32,16 @@ export function runStudyStoreContract(name: string, makeStore: () => StudyStore)
       store = makeStore();
     });
 
+    test('activityTimestamps lists answers and reviews since a date', () => {
+      const saved = store.saveFeedback(feedbackInput());
+      const exprId = saved.expressions[0]!.expression.id;
+      const next = rate(newCard(t0), 'good', at(1));
+      store.saveReview(exprId, next.card, next.log);
+      expect(store.activityTimestamps(at(-1))).toEqual({ answers: [t0.toISOString()], reviews: [at(1).toISOString()] });
+      expect(store.activityTimestamps(at(0.5))).toEqual({ answers: [], reviews: [at(1).toISOString()] });
+      expect(store.activityTimestamps(at(2))).toEqual({ answers: [], reviews: [] });
+    });
+
     test('profile round-trip; onboardedAt kept on later saves', () => {
       expect(store.getProfile()).toBeNull();
       store.saveProfile(profile, t0);
