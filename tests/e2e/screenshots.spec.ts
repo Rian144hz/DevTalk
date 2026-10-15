@@ -155,10 +155,14 @@ test.describe('community', () => {
         await page.getByRole('button', { name: 'Join' }).click();
         await page.getByRole('heading', { level: 2, name: 'Rian' }).waitFor();
         await page.getByRole('button', { name: 'Edit profile' }).click();
-        await page.locator('input[type="file"]').setInputFiles(join(__dirname, 'assets', 'photo.png'));
-        await page.locator('.profile-form img.avatar').waitFor();
+        await page.locator('.photo-row input[type="file"]').setInputFiles(join(__dirname, 'assets', 'photo.png'));
+        await page.locator('.photo-row img.avatar[src^="data:"]').waitFor();
+        await page.locator('.banner-field input[type="file"]').setInputFiles(join(__dirname, 'assets', 'banner.gif'));
+        await page.locator('.banner-field .banner img').waitFor();
         const stack = page.getByLabel('Stack');
         for (const t of ['python', 'java', 'c++', 'docker', 'postgres', 'linux']) { await stack.fill(t); await stack.press('Enter'); }
+        await page.getByRole('button', { name: 'python as a main technology' }).click();
+        await page.getByRole('button', { name: 'c++ as a main technology' }).click();
         await page.getByRole('button', { name: 'Add a time' }).click();
         await page.getByLabel('About you (optional)').fill('CS student. I write Python and C++ and want to speak up in code reviews.');
         await page.getByRole('button', { name: 'Save profile' }).click();
@@ -208,6 +212,31 @@ test.describe('moderation', () => {
       await page.getByRole('list', { name: 'Open reports' }).getByRole('listitem').first().getByRole('button').click();
       await page.getByRole('heading', { level: 2, name: /Report about/ }).waitFor();
       await shoot(page, 'moderation', theme);
+      const badges = page.getByRole('region', { name: 'Badges', exact: true });
+      await badges.getByLabel('Find a member').fill('Sam');
+      await badges.getByRole('list', { name: 'Members found' }).getByRole('button').first().click();
+      await badges.getByRole('button', { name: /Remove Mentor|Give Mentor/ }).waitFor();
+      await badges.scrollIntoViewIfNeeded();
+      await shoot(page, 'moderation-badges', theme);
+    }
+  });
+
+  test('a profile with badges, banner and practice graph', async ({ page }) => {
+    await onboard(page);
+    await go(page, '#/people', 'People');
+    await page.getByRole('button', { name: 'Edit profile' }).click();
+    await page.locator('.banner-field input[type="file"]').setInputFiles(join(__dirname, 'assets', 'banner.gif'));
+    await page.locator('.banner-field .banner img').waitFor();
+    await page.getByRole('button', { name: 'java as a main technology' }).click();
+    await page.getByRole('button', { name: 'Save profile' }).click();
+    await page.locator('.profile .banner img').waitFor();
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      await go(page, '#/people', 'People');
+      await page.locator('.profile .graph').waitFor();
+      await shoot(page, 'people-extras', theme);
+      await page.locator('.profile-graph').scrollIntoViewIfNeeded();
+      await shoot(page, 'people-graph', theme);
     }
   });
 });

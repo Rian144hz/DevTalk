@@ -20,6 +20,13 @@ colors:
   sage-wash: "rgb(140 197 162 / 0.12)"
   amber-warn: "#e0b26a"
   focus-blue: "#9cc6f0"
+  community-violet: "#b4a7f5"
+  evolution-copper: "#e39a6c"
+  graph-0: "#22262e"
+  graph-1: "#1f4a31"
+  graph-2: "#2e7a47"
+  graph-3: "#43a862"
+  graph-4: "#6fd38a"
   light-ground: "#eef0f3"
   light-rail: "#e6e9ee"
   light-sheet: "#ffffff"
@@ -34,6 +41,13 @@ colors:
   light-dusty-rose: "#a23e58"
   light-sage: "#2d7a4e"
   light-amber-warn: "#8a5a00"
+  light-community-violet: "#5b46c4"
+  light-evolution-copper: "#a4532a"
+  light-graph-0: "#e1e4e9"
+  light-graph-1: "#b5e2c1"
+  light-graph-2: "#6dc58a"
+  light-graph-3: "#3b9b5d"
+  light-graph-4: "#236b3f"
 typography:
   display:
     fontFamily: "Public Sans Variable, Public Sans, system-ui, sans-serif"
@@ -82,6 +96,7 @@ typography:
     fontWeight: 400
     lineHeight: 1.6
 rounded:
+  cell: "2px"
   chip: "4px"
   control: "6px"
   sheet: "10px"
@@ -203,6 +218,27 @@ components:
     textColor: "{colors.ink}"
     rounded: "{rounded.control}"
     padding: "12px 8px"
+  member-badge:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
+    typography: "{typography.label}"
+    rounded: "{rounded.pill}"
+    padding: "2px 10px 2px 8px"
+  graph-cell:
+    backgroundColor: "{colors.graph-0}"
+    rounded: "{rounded.cell}"
+    size: "10px"
+  banner:
+    backgroundColor: "{colors.graphite-rail}"
+    rounded: "{rounded.sheet}"
+  avatar-profile:
+    backgroundColor: "{colors.graphite-ground}"
+    rounded: "{rounded.pill}"
+    width: "96px"
+    padding: "5px"
+  mascot-option:
+    rounded: "{rounded.pill}"
+    size: "48px"
 ---
 
 # Design System: DevTalk
@@ -223,6 +259,7 @@ Dark is the default theme; a light theme swaps to a cool white sheet on pale gre
 - Flat raised sheets defined by 1px rules; shadow only on floating layers.
 - Margin notes aligned row by row to the line they annotate.
 - Sentence-case, untracked type throughout; no uppercase labels.
+- A few identifier colours (badge violet and copper, language brand colours, the graph green), each confined to one component.
 
 ## Colors
 
@@ -237,6 +274,10 @@ A graphite (or pale cool-grey) document palette with one blue pencil and a pair 
 
 ### Tertiary
 - **Proof Amber** (`amber-warn`; `light-amber-warn`): field errors, invalid-field borders, and the tinted border of error notices (mixed 55% into the rule colour). Problems with the app are amber; the learner's mistakes are never amber.
+- **Community Violet** (`community-violet`; `light-community-violet`): the icon and tint of community member badges, and nothing else.
+- **Evolution Copper** (`evolution-copper`; `light-evolution-copper`): the icon and tint of evolution (milestone) member badges, and nothing else. Technical badges use secondary ink (`--badge-neutral`) in the same role.
+- **Language brand colours** (outside the token set): a language badge takes its Simple Icons brand colour, mixed towards white (dark theme) or black (light theme) in 1% steps until it reaches 3:1 against both the ground and the sheet of that theme; no brand colour means secondary ink. Both theme values are set on the badge so a theme switch needs no re-render.
+- **Graph Green** (`graph-0` to `graph-4`; `light-graph-0` to `light-graph-4`): the practice graph's own five-step ramp, from the empty day (`graph-0`, a near-ground grey) to the busiest. It is a different green from sage and lives only in the graph.
 
 ### Neutral
 - **Graphite Ground** (`graphite-ground` / `light-ground`): app background and the fill of inputs, which sit "below" the sheet.
@@ -250,6 +291,8 @@ A graphite (or pale cool-grey) document palette with one blue pencil and a pair 
 **The Blue Pencil Rule.** Pencil blue belongs to the coach and to the one primary action on a screen. It never decorates headings, backgrounds or icons that the coach did not "write".
 
 **The Edits, Not Grades Rule.** Rose and sage appear only as a pair of diff marks inside the learner's text. They are never status colours, never fills, never "correct/incorrect" signals; app errors use amber.
+
+**The One Home Rule.** Every colour outside the neutrals has exactly one home: blue for the coach and the primary action, amber for app problems, rose and sage for the diff, violet for community badges, copper for evolution badges, brand colours for language badges, graph green for the graph. The graph green is never shown next to a diff.
 
 ## Typography
 
@@ -281,6 +324,8 @@ A fixed 232px sidebar rail sits beside a fluid page padded 40px top and 56px sid
 
 Inside a galley each line is a two-column row: the mono text, then a 248px margin column (200px below 1040px) separated by a 1px rule, so each note sits beside the line it marks. Spacing runs on a 4px base (4, 8, 12, 16, 20, 24, 32, 40, 56). Sections are separated by a 1px top rule plus 24px padding rather than by cards; page headers put the title left and actions right, aligned to the bottom.
 
+The practice graph is 53 Monday-first week columns of 10px cells with 3px gaps; below a 1100px window width the cells drop to 9px and the gaps to 2px so the year fits without scrolling, and when it still overflows it scrolls sideways with the most recent weeks in view and the day column sticky. On the People profile a 3:1 banner spans the 760px column, the 96px avatar overlaps its lower edge by half (48px) and the head row is inset 20px.
+
 ## Elevation & Depth
 
 The system is flat and tonal. Depth comes from three steps of surface (rail darker than ground, ground darker than sheet) and from 1px rules. Inputs sit on the ground colour so they read as recessed into a sheet. Shadow is used for exactly one thing: layers that float above the page.
@@ -288,13 +333,14 @@ The system is flat and tonal. Depth comes from three steps of surface (rail dark
 ### Shadow Vocabulary
 - **Float** (`box-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.35)`; light theme uses `rgb(20 24 32 / 0.22)` and `/ 0.12`): the command palette, the report dialog and other floating menus, over a 35% black backdrop.
 - **Inset ring** (`box-shadow: inset 0 0 0 1px` strong rule): a selection outline, not elevation, on the checked segment, the selected palette row and the selected moderation report.
+- **Separation ring** (`box-shadow: 0 0 0 2px` ground, `0 0 0 4px` ink): a selection outline, not elevation, on the checked mascot in the picker. The profile avatar's 5px ring over the banner is ground-coloured padding, not a shadow.
 
 ### Named Rules
 **The Float-Only Rule.** Sheets, cards and buttons cast no shadow. If it is not floating over the page, it has no shadow.
 
 ## Shapes
 
-Three radii, sized to the object: 4px for small inline things (chips, keys, segmented options), 6px for controls (buttons, inputs, nav rows, focus outlines), 10px for sheets (galleys, cards, notices, palette). Badges are full pills. Diff marks get a 2px corner on their wash. Borders are always 1px; dashed borders mean "absent or open": the empty state and the "chunk" type badge. The numbered proof caret is a 16px circle outlined in pencil.
+Three radii, sized to the object: 4px for small inline things (chips, keys, segmented options), 6px for controls (buttons, inputs, nav rows, focus outlines), 10px for sheets (galleys, cards, notices, palette). Badges are full pills. Diff marks get a 2px corner on their wash, and practice-graph cells and legend squares share that 2px cell radius. Member badges are full pills; the banner takes the sheet radius; avatars and mascots are circles. Borders are always 1px; dashed borders mean "absent or open": the empty state and the "chunk" type badge. The numbered proof caret is a 16px circle outlined in pencil.
 
 ## Components
 
@@ -345,9 +391,22 @@ Recurring mistakes are counted with drawn pencil tally strokes (2px by 16px, a r
 
 ### Avatar
 A circle with a 1px strong-rule border: the person's photo, or the first letter of the name in secondary ink, weight 600, on sheet-hover. Never coloured per person. A photo that cannot be decoded falls back to the initial. The name is always shown beside it. Sizes: 72px on a profile, 32px in lists.
+Without a photo, a member's avatar shows their mascot: one of nine bundled illustrations (ducks, bears, axolotls; provenance in `docs/design/mascots/SOURCE.md`), chosen in Edit profile or picked from their id. The photo always wins; the initial remains only where there is no member id. The mascot fills the same ruled circle, so the ring is still never coloured. On the People profile the avatar is 96px inside a 5px ground-coloured ring that overlaps the banner.
+
+### Mascot picker
+In Edit profile, once the profile exists: a wrapping row of nine 48px mascot circles with 8px gaps, each a visually hidden radio with the mascot's name as its title. The checked mascot gets the separation ring (2px ground, then 2px ink); keyboard focus adds the 2px focus outline offset 5px. The hint says whether people see the photo or the mascot.
 
 ### Stack tag
 A technology on a profile: its Simple Icons logo at 14px in `currentColor` (the text tone), then its name in 14px Public Sans, inside a 4px chip outline in strong rule. Unknown technologies show the name only. Logos identify; they never decorate.
+
+### Member badges
+A member's badges as a wrapping row of pills (6px gap) under the profile head, in a fixed group order: community, technical, language, evolution. Each pill is 13px ink text with 2px by 10px padding (8px on the icon side), a fill of the group colour at 11% and a border mixing the group colour 50% into the strong rule. The colour is carried by the icon: a 15px, 1.6-stroke line icon on a 16px grid, or a 14px Simple Icons logo for languages. The label never takes the group colour. A hint, when present, is the title and is read after the name. What a badge may mean is set in PRODUCT.md. Member badges are distinct from the expression type badge, which stays a neutral 12px pill.
+
+### Practice graph (signature)
+Practice per day over the last 53 weeks, on Progress and on the People profile. From top: a secondary-ink facts line in tabular figures; month labels and a Mon/Wed/Fri day column in 12px tertiary ink; the grid of 2px-radius cells in the five graph-green steps; then a footer with the day's text line in 13px secondary ink (a polite live region, with an idle hint until a day is chosen) and a "Less ... More" legend of five cells at the grid's right edge. Hovering a cell outlines it 1px in ink. The grid is one tab stop; arrow keys, Home and End move between days, the selected day gets the 2px focus outline offset 1px and its text is announced. No diff appears on the same screen.
+
+### Banner
+A profile cover at 3:1 with the sheet radius, cropped to fill from the centre, at the top of the People profile; without a banner, a plain 6:1 band in the rail tone keeps the layout. Animated banners move only while Settings › "Play animated banners" is on and the system does not ask to reduce motion; otherwise the first frame is shown still, and if it cannot be decoded nothing is drawn. The banner is decorative and hidden from assistive technology.
 
 ### Profile fact sheet
 A profile is a ruled definition list, not a card: a 180px term column (140px below 1040px) in 14px secondary ink beside the value, every row ruled top and bottom. The moderation report detail uses the same sheet.
@@ -374,13 +433,16 @@ Join runs one step at a time in one column, like onboarding. The step count live
 - **Do** use the three-step tonal stack (rail, ground, sheet) for depth, and the float shadow only for overlays.
 - **Do** honour reduced motion: all durations drop to 0ms and looping animations stop.
 - **Do** confirm destructive actions inline in a neutral panel, guarded by a typed e-mail or a required reason.
+- **Do** let the icon carry a member badge's colour and keep its label in ink.
+- **Do** show an animated banner's first frame, still, under reduced motion or when "Play animated banners" is off.
 
 ### Don't:
 - **Don't** build a dashboard of stat cards or metric tiles; progress is facts, ruled lists and tallies.
 - **Don't** use rose or sage outside the diff, or label anything "wrong" or "correct".
-- **Don't** add a second accent colour or tint headings with the pencil.
+- **Don't** add a second accent colour or tint headings with the pencil. Badge violet and copper, language brand colours and the graph green are identifiers confined to their component, not accents.
+- **Don't** use violet, copper or the graph green outside member badges and the practice graph, or show the graph beside a diff.
 - **Don't** add shadows to sheets, cards or buttons.
 - **Don't** uppercase or letter-space labels, or put small category labels above headings.
 - **Don't** animate the command palette or the report dialog open or closed.
 - **Don't** colour destructive actions amber or red; amber stays for problems with the app.
-- **Don't** colour avatars or stack logos; logos take the text tone.
+- **Don't** colour avatars or stack logos; logos take the text tone. A mascot is the only picture shown when there is no photo, and only language badges carry brand colour.

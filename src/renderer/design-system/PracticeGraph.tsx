@@ -5,7 +5,7 @@ import { cellLabel, factsLine, monthLabels, moveCell, type Cell } from '../lib/g
 const ROW_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', ''];
 const ROW_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End']);
-const IDLE = 'Point at a day, or focus the graph and use the arrow keys, to see what was done.';
+const IDLE = 'Move the mouse over a day, or press Tab and use the arrow keys, to see what was done that day.';
 
 /**
  * Practice per day over the last 53 weeks (Monday first), GitHub style: one square per day, darker green for more
@@ -22,10 +22,17 @@ export function PracticeGraph({ days, current, longest, today }: { days: DayActi
   const labelOf = (c: Cell) => cellLabel(weeks[c.week]![c.day]!);
 
   useEffect(() => setActive(last), [last]);
-  // On narrow windows the graph scrolls sideways; start at the most recent weeks.
+  // On narrow windows the graph scrolls sideways: show the most recent weeks, also after the window is resized.
   useEffect(() => {
     const el = scroller.current;
-    if (el) el.scrollLeft = el.scrollWidth;
+    if (!el) return;
+    const toEnd = () => {
+      el.scrollLeft = el.scrollWidth;
+    };
+    toEnd();
+    const observer = new ResizeObserver(toEnd);
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
@@ -42,6 +49,7 @@ export function PracticeGraph({ days, current, longest, today }: { days: DayActi
       <p className="graph-facts">{factsLine(days, current, longest)}</p>
       <div className="graph-scroll" ref={scroller}>
         <div className="graph-body">
+          <span className="graph-corner" aria-hidden="true" />
           <div className="graph-months" aria-hidden="true">
             {monthLabels(weeks).map((m) => (
               <span key={m.week} style={{ gridColumn: `${m.week + 1} / span 3` }}>{m.label}</span>

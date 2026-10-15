@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-14T12:33:08+00:00",
+  "generatedAt": "2026-10-15T12:00:00+00:00",
   "title": "Design System: DevTalk",
   "extensions": {
     "colorMeta": {
@@ -546,6 +546,260 @@
         ],
         "oklch": "oklch(50.8% 0.108 73)",
         "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "community-violet": {
+        "role": "tertiary",
+        "displayName": "Community Violet",
+        "canonical": "#b4a7f5",
+        "cssVar": "--badge-community",
+        "tonalRamp": [
+          "oklch(15% 0.111 291)",
+          "oklch(26% 0.111 291)",
+          "oklch(37% 0.111 291)",
+          "oklch(48% 0.111 291)",
+          "oklch(59% 0.111 291)",
+          "oklch(70% 0.111 291)",
+          "oklch(82% 0.111 291)",
+          "oklch(95% 0.111 291)"
+        ],
+        "oklch": "oklch(76.8% 0.111 291)",
+        "theme": "dark (default :root)"
+      },
+      "evolution-copper": {
+        "role": "tertiary",
+        "displayName": "Evolution Copper",
+        "canonical": "#e39a6c",
+        "cssVar": "--badge-evolution",
+        "tonalRamp": [
+          "oklch(15% 0.107 53)",
+          "oklch(26% 0.107 53)",
+          "oklch(37% 0.107 53)",
+          "oklch(48% 0.107 53)",
+          "oklch(59% 0.107 53)",
+          "oklch(70% 0.107 53)",
+          "oklch(82% 0.107 53)",
+          "oklch(95% 0.107 53)"
+        ],
+        "oklch": "oklch(74.8% 0.107 53)",
+        "theme": "dark (default :root)"
+      },
+      "graph-0": {
+        "role": "neutral",
+        "displayName": "Graph Green (empty day)",
+        "canonical": "#22262e",
+        "cssVar": "--graph-0",
+        "tonalRamp": [
+          "oklch(15% 0.016 264)",
+          "oklch(26% 0.016 264)",
+          "oklch(37% 0.016 264)",
+          "oklch(48% 0.016 264)",
+          "oklch(59% 0.016 264)",
+          "oklch(70% 0.016 264)",
+          "oklch(82% 0.016 264)",
+          "oklch(95% 0.016 264)"
+        ],
+        "oklch": "oklch(26.8% 0.016 264)",
+        "theme": "dark (default :root)",
+        "purpose": "Empty day in the practice graph; the ramp is the graph's own green, never next to a diff."
+      },
+      "graph-1": {
+        "role": "tertiary",
+        "displayName": "Graph Green step 1",
+        "canonical": "#1f4a31",
+        "cssVar": "--graph-1",
+        "tonalRamp": [
+          "oklch(15% 0.065 156)",
+          "oklch(26% 0.065 156)",
+          "oklch(37% 0.065 156)",
+          "oklch(48% 0.065 156)",
+          "oklch(59% 0.065 156)",
+          "oklch(70% 0.065 156)",
+          "oklch(82% 0.065 156)",
+          "oklch(95% 0.065 156)"
+        ],
+        "oklch": "oklch(37.1% 0.065 156)",
+        "theme": "dark (default :root)"
+      },
+      "graph-2": {
+        "role": "tertiary",
+        "displayName": "Graph Green step 2",
+        "canonical": "#2e7a47",
+        "cssVar": "--graph-2",
+        "tonalRamp": [
+          "oklch(15% 0.110 151)",
+          "oklch(26% 0.110 151)",
+          "oklch(37% 0.110 151)",
+          "oklch(48% 0.110 151)",
+          "oklch(59% 0.110 151)",
+          "oklch(70% 0.110 151)",
+          "oklch(82% 0.110 151)",
+          "oklch(95% 0.110 151)"
+        ],
+        "oklch": "oklch(51.9% 0.110 151)",
+        "theme": "dark (default :root)"
+      },
+      "graph-3": {
+        "role": "tertiary",
+        "displayName": "Graph Green step 3",
+        "canonical": "#43a862",
+        "cssVar": "--graph-3",
+        "tonalRamp": [
+          "oklch(15% 0.140 151)",
+          "oklch(26% 0.140 151)",
+          "oklch(37% 0.140 151)",
+          "oklch(48% 0.140 151)",
+          "oklch(59% 0.140 151)",
+          "oklch(70% 0.140 151)",
+          "oklch(82% 0.140 151)",
+          "oklch(95% 0.140 151)"
+        ],
+        "oklch": "oklch(65.5% 0.140 151)",
+        "theme": "dark (default :root)"
+      },
+      "graph-4": {
+        "role": "tertiary",
+        "displayName": "Graph Green step 4",
+        "canonical": "#6fd38a",
+        "cssVar": "--graph-4",
+        "tonalRamp": [
+          "oklch(15% 0.141 151)",
+          "oklch(26% 0.141 151)",
+          "oklch(37% 0.141 151)",
+          "oklch(48% 0.141 151)",
+          "oklch(59% 0.141 151)",
+          "oklch(70% 0.141 151)",
+          "oklch(82% 0.141 151)",
+          "oklch(95% 0.141 151)"
+        ],
+        "oklch": "oklch(78.7% 0.141 151)",
+        "theme": "dark (default :root)"
+      },
+      "light-community-violet": {
+        "role": "tertiary",
+        "displayName": "Community Violet (light theme)",
+        "canonical": "#5b46c4",
+        "cssVar": "--badge-community",
+        "tonalRamp": [
+          "oklch(15% 0.187 285)",
+          "oklch(26% 0.187 285)",
+          "oklch(37% 0.187 285)",
+          "oklch(48% 0.187 285)",
+          "oklch(59% 0.187 285)",
+          "oklch(70% 0.187 285)",
+          "oklch(82% 0.187 285)",
+          "oklch(95% 0.187 285)"
+        ],
+        "oklch": "oklch(49.1% 0.187 285)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-evolution-copper": {
+        "role": "tertiary",
+        "displayName": "Evolution Copper (light theme)",
+        "canonical": "#a4532a",
+        "cssVar": "--badge-evolution",
+        "tonalRamp": [
+          "oklch(15% 0.120 46)",
+          "oklch(26% 0.120 46)",
+          "oklch(37% 0.120 46)",
+          "oklch(48% 0.120 46)",
+          "oklch(59% 0.120 46)",
+          "oklch(70% 0.120 46)",
+          "oklch(82% 0.120 46)",
+          "oklch(95% 0.120 46)"
+        ],
+        "oklch": "oklch(53.4% 0.120 46)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-graph-0": {
+        "role": "neutral",
+        "displayName": "Graph Green (empty day, light theme)",
+        "canonical": "#e1e4e9",
+        "cssVar": "--graph-0",
+        "tonalRamp": [
+          "oklch(15% 0.008 261)",
+          "oklch(26% 0.008 261)",
+          "oklch(37% 0.008 261)",
+          "oklch(48% 0.008 261)",
+          "oklch(59% 0.008 261)",
+          "oklch(70% 0.008 261)",
+          "oklch(82% 0.008 261)",
+          "oklch(95% 0.008 261)"
+        ],
+        "oklch": "oklch(91.8% 0.008 261)",
+        "theme": "light (:root[data-theme=\"light\"])",
+        "purpose": "Empty day in the practice graph; the ramp is the graph's own green, never next to a diff."
+      },
+      "light-graph-1": {
+        "role": "tertiary",
+        "displayName": "Graph Green step 1 (light theme)",
+        "canonical": "#b5e2c1",
+        "cssVar": "--graph-1",
+        "tonalRamp": [
+          "oklch(15% 0.065 153)",
+          "oklch(26% 0.065 153)",
+          "oklch(37% 0.065 153)",
+          "oklch(48% 0.065 153)",
+          "oklch(59% 0.065 153)",
+          "oklch(70% 0.065 153)",
+          "oklch(82% 0.065 153)",
+          "oklch(95% 0.065 153)"
+        ],
+        "oklch": "oklch(87.2% 0.065 153)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-graph-2": {
+        "role": "tertiary",
+        "displayName": "Graph Green step 2 (light theme)",
+        "canonical": "#6dc58a",
+        "cssVar": "--graph-2",
+        "tonalRamp": [
+          "oklch(15% 0.121 153)",
+          "oklch(26% 0.121 153)",
+          "oklch(37% 0.121 153)",
+          "oklch(48% 0.121 153)",
+          "oklch(59% 0.121 153)",
+          "oklch(70% 0.121 153)",
+          "oklch(82% 0.121 153)",
+          "oklch(95% 0.121 153)"
+        ],
+        "oklch": "oklch(75.3% 0.121 153)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-graph-3": {
+        "role": "tertiary",
+        "displayName": "Graph Green step 3 (light theme)",
+        "canonical": "#3b9b5d",
+        "cssVar": "--graph-3",
+        "tonalRamp": [
+          "oklch(15% 0.130 152)",
+          "oklch(26% 0.130 152)",
+          "oklch(37% 0.130 152)",
+          "oklch(48% 0.130 152)",
+          "oklch(59% 0.130 152)",
+          "oklch(70% 0.130 152)",
+          "oklch(82% 0.130 152)",
+          "oklch(95% 0.130 152)"
+        ],
+        "oklch": "oklch(61.7% 0.130 152)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-graph-4": {
+        "role": "tertiary",
+        "displayName": "Graph Green step 4 (light theme)",
+        "canonical": "#236b3f",
+        "cssVar": "--graph-4",
+        "tonalRamp": [
+          "oklch(15% 0.101 153)",
+          "oklch(26% 0.101 153)",
+          "oklch(37% 0.101 153)",
+          "oklch(48% 0.101 153)",
+          "oklch(59% 0.101 153)",
+          "oklch(70% 0.101 153)",
+          "oklch(82% 0.101 153)",
+          "oklch(95% 0.101 153)"
+        ],
+        "oklch": "oklch(47.1% 0.101 153)",
+        "theme": "light (:root[data-theme=\"light\"])"
       }
     },
     "typographyMeta": {
@@ -601,6 +855,11 @@
         "name": "inset-ring",
         "value": "inset 0 0 0 1px var(--rule-strong)",
         "purpose": "Selection outline on the checked segment, the selected palette row and the selected moderation report; not elevation."
+      },
+      {
+        "name": "separation-ring",
+        "value": "0 0 0 2px var(--bg), 0 0 0 4px var(--ink)",
+        "purpose": "Selection outline (not elevation) on the checked mascot in the picker."
       }
     ],
     "motion": [
@@ -645,6 +904,11 @@
         "name": "compact",
         "value": "1040px",
         "purpose": "Page side padding 32px, galley margin column 200px, history grid drops track. Profile fact sheet term column 140px."
+      },
+      {
+        "name": "graph-narrow",
+        "value": "1100px",
+        "purpose": "Practice graph cells drop from 10px to 9px and gaps from 3px to 2px so the year fits without scrolling."
       }
     ],
     "layout": {
@@ -656,7 +920,13 @@
       "profileColumn": "760px",
       "profileTermColumn": "180px",
       "moderationQueue": "340px",
-      "dialogWidth": "520px"
+      "dialogWidth": "520px",
+      "graphWeeks": 53,
+      "graphCell": "10px (9px below 1100px)",
+      "graphGap": "3px (2px below 1100px)",
+      "bannerRatio": "3:1 (6:1 empty band)",
+      "profileAvatar": "96px, 5px ground ring, overlapping the banner by 48px",
+      "mascotOption": "48px, 8px gap"
     }
   },
   "components": [
@@ -728,7 +998,7 @@
       "name": "Avatar",
       "kind": "custom",
       "refersTo": "avatar",
-      "description": "Photo or initial in a ruled circle, never coloured per person; an undecodable photo falls back to the initial. 72px on a profile, 32px in lists.",
+      "description": "Photo, else the member's mascot (chosen or picked from their id), else the initial, in a ruled circle never coloured per person; the photo always wins. 96px on the People profile (5px ground ring over the banner), 72px in Edit profile, 32px in lists.",
       "html": "<span class=\"ds-avatar\" aria-hidden=\"true\">R</span>",
       "css": ".ds-avatar{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font:600 17px/1 var(--font-ui,'Public Sans',system-ui,sans-serif);object-fit:cover}"
     },
@@ -770,6 +1040,38 @@
       "description": "Open reports as a ruled list: avatar, name, reason in secondary ink, date in tertiary ink; hover takes the sheet fill, the selected row sheet-hover plus an inset ring, like the palette selection.",
       "html": "<ul class=\"ds-queue\"><li><button aria-current=\"true\"><span class=\"ds-q-av\">S</span><span><b>Sam</b><br><small>Spam or scams, profile</small></span><time>14 October 2026</time></button></li><li><button><span class=\"ds-q-av\">A</span><span><b>Alex</b><br><small>Harassment or bullying, profile</small></span><time>14 October 2026</time></button></li></ul>",
       "css": ".ds-queue{list-style:none;padding:0;margin:0;width:340px;border-top:1px solid var(--rule,#2b2f39)}.ds-queue li{border-bottom:1px solid var(--rule,#2b2f39)}.ds-queue button{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 8px;background:transparent;border:0;border-radius:var(--r-control,6px);color:var(--ink,#e8e6e1);text-align:left;font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);cursor:pointer}.ds-queue button:hover{background:var(--sheet,#20232b)}.ds-queue button[aria-current=true]{background:var(--sheet-hover,#262a33);box-shadow:inset 0 0 0 1px var(--rule-strong,#3a3f4b)}.ds-queue b{font-weight:600}.ds-queue small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-queue time{align-self:start;font-size:var(--text-sm,0.8125rem);color:var(--ink-3,#8c93a3);white-space:nowrap}.ds-q-av{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font-weight:600;font-size:13px}"
+    },
+    {
+      "name": "Member Badges",
+      "kind": "chip",
+      "refersTo": "member-badge",
+      "description": "A member's badges as pills in group order (community, technical, language, evolution): fill 11% of the group colour, border 50% group colour into the strong rule; the icon carries the colour, the label stays in ink. Distinct from the expression type badge.",
+      "html": "<ul class=\"ds-badges\"><li><span class=\"ds-mb ds-mb-community\"><svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M5.5 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM2 13c0-2 1.5-3.5 3.5-3.5S9 11 9 13M11 7.5a1.75 1.75 0 1 0 0-3.5M11.5 9.5c1.5.3 2.5 1.6 2.5 3.5\"/></svg><span>Helper</span></span></li><li><span class=\"ds-mb\"><svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M5 4 1.5 8 5 12M11 4l3.5 4L11 12\"/></svg><span>Reviewer</span></span></li><li><span class=\"ds-mb ds-mb-language\" style=\"--c:#4B8BBE\"><svg class=\"ds-logo\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/></svg><span>Python</span></span></li><li><span class=\"ds-mb ds-mb-evolution\"><svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M2 13h12M4 13V9M8 13V6M12 13V3\"/></svg><span>100 answers</span></span></li></ul>",
+      "css": ".ds-badges{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:6px}.ds-mb{--c:var(--badge-neutral,var(--ink-2,#b4b9c5));display:inline-flex;align-items:center;gap:6px;font:400 var(--text-sm,0.8125rem)/1.5 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1);border-radius:999px;padding:2px 10px 2px 8px;border:1px solid color-mix(in srgb,var(--c) 50%,var(--rule-strong,#3a3f4b));background:color-mix(in srgb,var(--c) 11%,transparent)}.ds-mb-community{--c:var(--badge-community,#b4a7f5)}.ds-mb-evolution{--c:var(--badge-evolution,#e39a6c)}.ds-mb svg{flex:none;width:15px;height:15px;color:var(--c);fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.ds-mb svg.ds-logo{width:14px;height:14px;fill:currentColor;stroke:none}"
+    },
+    {
+      "name": "Practice Graph",
+      "kind": "custom",
+      "refersTo": "graph-cell",
+      "description": "53 Monday-first weeks of 2px-radius cells in the graph's own green ramp: facts line, month labels, sticky Mon/Wed/Fri column, the day's text line (live region) and a Less ... More legend at the grid's right edge. One tab stop with arrow keys; never shown next to a diff.",
+      "html": "<div class=\"ds-graph\"><p class=\"ds-g-facts\">42 days with practice this year. Current streak 3 days, longest 9.</p><div class=\"ds-g-body\"><div class=\"ds-g-days\" aria-hidden=\"true\"><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span></span></div><div class=\"ds-g-grid\" tabindex=\"0\" role=\"grid\" aria-label=\"Practice per day\"><i class=\"l0\"></i><i class=\"l1\"></i><i class=\"l0\"></i><i class=\"l2\"></i><i class=\"l0\"></i><i class=\"l0\"></i><i class=\"l1\"></i><i class=\"l3\"></i><i class=\"l2\"></i><i class=\"l0\"></i><i class=\"l4\"></i><i class=\"l1\"></i><i class=\"l0\"></i><i class=\"l0\"></i><i class=\"l2\"></i><i class=\"l0\"></i><i class=\"l1\"></i><i class=\"l0\"></i><i class=\"l3\"></i><i class=\"l0\"></i><i class=\"l0\"></i></div></div><div class=\"ds-g-foot\"><p aria-live=\"polite\">Wednesday 14 October: 2 answers, 1 review.</p><span class=\"ds-g-legend\">Less <i class=\"l0\"></i><i class=\"l1\"></i><i class=\"l2\"></i><i class=\"l3\"></i><i class=\"l4\"></i> More</span></div></div>",
+      "css": ".ds-graph{--cell:10px;display:flex;flex-direction:column;gap:8px;width:max-content;font-family:var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-g-facts{margin:0;color:var(--ink-2,#b4b9c5);font-variant-numeric:tabular-nums}.ds-g-body{display:flex;gap:4px}.ds-g-days{display:grid;grid-template-rows:repeat(7,var(--cell));row-gap:3px;font-size:var(--text-xs,0.75rem);line-height:var(--cell);color:var(--ink-3,#8c93a3)}.ds-g-grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,var(--cell));grid-auto-columns:var(--cell);gap:3px}.ds-g-grid:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}.ds-graph i{display:block;width:var(--cell);height:var(--cell);border-radius:2px}.ds-g-grid i:hover{outline:1px solid var(--ink,#e8e6e1)}.l0{background:var(--graph-0,#22262e)}.l1{background:var(--graph-1,#1f4a31)}.l2{background:var(--graph-2,#2e7a47)}.l3{background:var(--graph-3,#43a862)}.l4{background:var(--graph-4,#6fd38a)}.ds-g-foot{display:flex;justify-content:space-between;align-items:center;gap:8px 16px}.ds-g-foot p{margin:0;font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-g-legend{margin-left:auto;display:inline-flex;align-items:center;gap:3px;font-size:var(--text-xs,0.75rem);color:var(--ink-3,#8c93a3)}"
+    },
+    {
+      "name": "Profile Banner",
+      "kind": "card",
+      "refersTo": "banner",
+      "description": "A 3:1 cover with the sheet radius on the People profile; the 96px avatar overlaps its lower edge in a 5px ground ring. No banner: a 6:1 band in the rail tone. Animated banners show their first frame under reduced motion or when Play animated banners is off.",
+      "html": "<div class=\"ds-profile\"><div class=\"ds-banner\" aria-hidden=\"true\"></div><div class=\"ds-p-head\"><span class=\"ds-p-av\"><span>R</span></span><h2>Rian</h2></div></div>",
+      "css": ".ds-profile{width:520px;font-family:var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1)}.ds-banner{aspect-ratio:3/1;border-radius:var(--r-sheet,10px);overflow:hidden;background:linear-gradient(135deg,#2a3140,#3b4558)}.ds-p-head{display:flex;align-items:flex-end;gap:16px;padding-inline:20px}.ds-p-av{display:inline-flex;margin-top:-48px;padding:5px;border-radius:50%;background:var(--bg,#16181d)}.ds-p-av span{display:inline-grid;place-items:center;width:96px;height:96px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font-weight:600;font-size:36px}.ds-p-head h2{margin:0 0 4px;font-size:var(--text-lg,1.0625rem);font-weight:600}"
+    },
+    {
+      "name": "Mascot Picker",
+      "kind": "input",
+      "refersTo": "mascot-option",
+      "description": "Edit profile: a wrapping row of nine 48px mascot circles; the checked one gets a 2px ground then 2px ink separation ring, focus adds the 2px focus outline offset 5px. Mascots show only when there is no photo.",
+      "html": "<fieldset class=\"ds-mascots\"><legend>Mascot</legend><div><label><input type=\"radio\" name=\"m\" checked><span style=\"background:#f3d36b\"></span></label><label><input type=\"radio\" name=\"m\"><span style=\"background:#9c7350\"></span></label><label><input type=\"radio\" name=\"m\"><span style=\"background:#f2a7c3\"></span></label></div></fieldset>",
+      "css": ".ds-mascots{border:0;padding:0;margin:0;font-family:var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1)}.ds-mascots legend{padding:0;margin-bottom:8px;font-size:var(--text-md,0.875rem);font-weight:600}.ds-mascots div{display:flex;flex-wrap:wrap;gap:8px}.ds-mascots label{display:inline-flex;border-radius:50%;cursor:pointer}.ds-mascots input{position:absolute;opacity:0;width:1px;height:1px}.ds-mascots span{display:block;width:48px;height:48px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b)}.ds-mascots label:has(input:checked) span{box-shadow:0 0 0 2px var(--bg,#16181d),0 0 0 4px var(--ink,#e8e6e1)}.ds-mascots label:has(input:focus-visible) span{outline:2px solid var(--focus,#9cc6f0);outline-offset:5px}"
     }
   ],
   "narrative": {
@@ -780,7 +1082,8 @@
       "Desaturated rose/sage diff marks on monospace text; never \"wrong/right\" colouring.",
       "Flat raised sheets defined by 1px rules; shadow only on floating layers.",
       "Margin notes aligned row by row to the line they annotate.",
-      "Sentence-case, untracked type throughout; no uppercase labels."
+      "Sentence-case, untracked type throughout; no uppercase labels.",
+      "A few identifier colours (badge violet and copper, language brand colours, the graph green), each confined to one component."
     ],
     "rules": [
       {
@@ -791,6 +1094,11 @@
       {
         "name": "The Edits, Not Grades Rule",
         "body": "Rose and sage appear only as a pair of diff marks inside the learner's text. They are never status colours, never fills, never \"correct/incorrect\" signals; app errors use amber.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Home Rule",
+        "body": "Every colour outside the neutrals has exactly one home: blue for the coach and the primary action, amber for app problems, rose and sage for the diff, violet for community badges, copper for evolution badges, brand colours for language badges, graph green for the graph. The graph green is never shown next to a diff.",
         "section": "colors"
       },
       {
@@ -816,17 +1124,20 @@
       "**Do** separate rows and sections with 1px rules and a top border rather than wrapping them in cards.",
       "**Do** use the three-step tonal stack (rail, ground, sheet) for depth, and the float shadow only for overlays.",
       "**Do** honour reduced motion: all durations drop to 0ms and looping animations stop.",
-      "**Do** confirm destructive actions inline in a neutral panel, guarded by a typed e-mail or a required reason."
+      "**Do** confirm destructive actions inline in a neutral panel, guarded by a typed e-mail or a required reason.",
+      "**Do** let the icon carry a member badge's colour and keep its label in ink.",
+      "**Do** show an animated banner's first frame, still, under reduced motion or when \"Play animated banners\" is off."
     ],
     "donts": [
       "**Don't** build a dashboard of stat cards or metric tiles; progress is facts, ruled lists and tallies.",
       "**Don't** use rose or sage outside the diff, or label anything \"wrong\" or \"correct\".",
-      "**Don't** add a second accent colour or tint headings with the pencil.",
+      "**Don't** add a second accent colour or tint headings with the pencil. Badge violet and copper, language brand colours and the graph green are identifiers confined to their component, not accents.",
+      "**Don't** use violet, copper or the graph green outside member badges and the practice graph, or show the graph beside a diff.",
       "**Don't** add shadows to sheets, cards or buttons.",
       "**Don't** uppercase or letter-space labels, or put small category labels above headings.",
       "**Don't** animate the command palette or the report dialog open or closed.",
       "**Don't** colour destructive actions amber or red; amber stays for problems with the app.",
-      "**Don't** colour avatars or stack logos; logos take the text tone."
+      "**Don't** colour avatars or stack logos; logos take the text tone. A mascot is the only picture shown when there is no photo, and only language badges carry brand colour."
     ]
   }
 }

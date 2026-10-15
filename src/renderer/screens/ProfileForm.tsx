@@ -224,7 +224,7 @@ export function ProfileForm({
 
       {userId && (
         <fieldset className="field mascots">
-          <legend className="field-label">Picture without a photo</legend>
+          <legend className="field-label">Mascot</legend>
           <div className="mascot-row">
             {MASCOTS.map((m) => (
               <label key={m} className="mascot-option" title={MASCOT_NAMES[m]}>
@@ -235,7 +235,7 @@ export function ProfileForm({
             ))}
           </div>
           <span className="field-hint">
-            {preview ? 'Your photo is shown while you have one. Remove it to use this picture.' : 'Shown where your photo would be.'}
+            {preview ? 'People see your photo. Remove the photo to show this mascot.' : 'Shown when you have no photo.'}
           </span>
         </fieldset>
       )}

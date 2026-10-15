@@ -106,19 +106,20 @@ kbd { font: var(--text-xs) var(--font-mono); color: var(--ink-2); border: 1px so
 .avatar { flex: none; border-radius: 50%; border: 1px solid var(--rule-strong); object-fit: cover; background: var(--sheet-hover); }
 .avatar-initial { display: inline-grid; place-items: center; color: var(--ink-2); font-weight: 600; line-height: 1; user-select: none; }
 
-/* Badges: a pill tinted by its group; the icon carries the colour, the name stays in the text colour */
+/* Member badges: a pill tinted by its group; the icon carries the colour, the name stays in the text colour.
+   (.badge is the expression-type pill above.) */
 .badge-row { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-.badge {
+.member-badge {
   --c: var(--badge-neutral);
   display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); line-height: 1.5; color: var(--ink);
   border-radius: 999px; padding: 2px 10px 2px 8px;
   border: 1px solid color-mix(in srgb, var(--c) 50%, var(--rule-strong));
   background: color-mix(in srgb, var(--c) 11%, transparent);
 }
-.badge-community { --c: var(--badge-community); }
-.badge-evolution { --c: var(--badge-evolution); }
-.badge-language { --c: var(--badge-dark, var(--badge-neutral)); }
-:root[data-theme="light"] .badge-language { --c: var(--badge-light, var(--badge-neutral)); }
+.member-badge-community { --c: var(--badge-community); }
+.member-badge-evolution { --c: var(--badge-evolution); }
+.member-badge-language { --c: var(--badge-dark, var(--badge-neutral)); }
+:root[data-theme="light"] .member-badge-language { --c: var(--badge-light, var(--badge-neutral)); }
 .badge-icon { flex: none; width: 15px; height: 15px; color: var(--c); fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .badge-logo { flex: none; width: 14px; height: 14px; color: var(--c); fill: currentColor; }
 
@@ -143,7 +144,7 @@ kbd { font: var(--text-xs) var(--font-mono); color: var(--ink-2); border: 1px so
 .block-done { color: var(--ink-2); }
 
 /* Practice graph: 53 Monday-first weeks of squares in the graph green (never shown next to a diff) */
-.graph { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }
+.graph { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; width: max-content; max-width: 100%; }
 .graph-facts { color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .graph-scroll { overflow-x: auto; padding: 2px 2px var(--s1); }
 .graph-body { display: grid; grid-template-columns: auto max-content; column-gap: var(--s1); row-gap: 4px; width: max-content; }
@@ -164,5 +165,14 @@ kbd { font: var(--text-xs) var(--font-mono); color: var(--ink-2); border: 1px so
 .graph-l4 { background: var(--graph-4); }
 .graph-foot { display: flex; justify-content: space-between; align-items: center; gap: var(--s2) var(--s4); flex-wrap: wrap; }
 .graph-tip { font-size: var(--text-sm); color: var(--ink-2); min-height: 1.5em; font-variant-numeric: tabular-nums; }
-.graph-legend { display: inline-flex; align-items: center; gap: 3px; font-size: var(--text-xs); color: var(--ink-3); }
+.graph-legend { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; font-size: var(--text-xs); color: var(--ink-3); }
 .graph-legend i { display: inline-block; width: var(--cell); height: var(--cell); border-radius: 2px; }
+/* Covers month labels that scroll under the sticky day column */
+.graph-corner { grid-column: 1; grid-row: 1; position: sticky; left: 0; z-index: 2; background: var(--bg); }
+/* Narrower windows: smaller squares so the whole year fits without scrolling */
+@media (max-width: 1100px) {
+  .graph { --cell: 9px; }
+  .graph-grid { gap: 2px; }
+  .graph-months { column-gap: 2px; }
+  .graph-days { row-gap: 2px; }
+}
