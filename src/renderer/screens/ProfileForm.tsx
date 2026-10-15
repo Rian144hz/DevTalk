@@ -168,6 +168,8 @@ export function ProfileForm({
       mainStack: mainStack.filter((t) => finalStack.includes(t) && canBeMain(t)),
       showProgress,
       mascot,
+      // Edited in a later task (the "Show me in the member list" switch); kept as given until then.
+      listed: initial.listed,
     };
     const parsed = ProfileDraftSchema.safeParse(draft);
     const found: Partial<Record<keyof ProfileDraft, string>> = {};

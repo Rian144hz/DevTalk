@@ -1,6 +1,7 @@
 import { AREAS, LEGAL_DOCUMENTS, LEGAL_VERSION, REPORT_CONTEXTS, REPORT_REASONS } from '../../src/core/social/types';
 import type { ProfileDraft } from '../../src/core/social/types';
 import { ProfileDraftSchema, normalizeStackTags } from '../../src/core/social/validate';
+import { MEMBER_PAGE_SIZE, MEMBER_QUERY_MAX, memberLine } from '../../src/core/social/people';
 
 const valid: ProfileDraft = {
   displayName: 'Rian',
@@ -14,6 +15,7 @@ const valid: ProfileDraft = {
   mainStack: [],
   showProgress: true,
   mascot: null,
+  listed: true,
 };
 
 function issuePaths(draft: unknown): string[] {
@@ -78,4 +80,24 @@ test('level, area, language and timezone are checked', () => {
   expect(issuePaths({ ...valid, area: 'qa' })).toEqual(['area']);
   expect(issuePaths({ ...valid, nativeLanguage: '' })).toEqual(['nativeLanguage']);
   expect(issuePaths({ ...valid, timezone: '' })).toEqual(['timezone']);
+});
+
+describe('people', () => {
+  test('a draft must say whether the person is listed', () => {
+    const { listed: _, ...withoutListed } = valid;
+    expect(issuePaths(withoutListed)).toEqual(['listed']);
+    expect(issuePaths({ ...valid, listed: false })).toEqual([]);
+  });
+
+  test('a member line names the area and the level', () => {
+    const row = { id: 'u', displayName: 'Sam', level: 'B1' as const, area: 'backend' as const, mainStack: [], mascot: null, hasAvatar: false };
+    expect(memberLine(row)).toBe('Back end developer, B1');
+    expect(memberLine({ ...row, area: 'other', level: 'C1' })).toBe('Developer, C1');
+    expect(memberLine({ ...row, area: 'devops' })).toBe('DevOps developer, B1');
+  });
+
+  test('page size and search length follow the spec', () => {
+    expect(MEMBER_PAGE_SIZE).toBe(30);
+    expect(MEMBER_QUERY_MAX).toBe(40);
+  });
 });

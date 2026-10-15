@@ -18,6 +18,7 @@ const draft: ProfileDraft = {
   mainStack: [],
   showProgress: true,
   mascot: null,
+  listed: true,
 };
 
 /** A tiny but well-formed WebP header ("RIFF....WEBP"). */

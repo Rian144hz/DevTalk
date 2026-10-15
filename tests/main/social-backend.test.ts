@@ -38,6 +38,7 @@ const draft: ProfileDraft = {
   mainStack: [],
   showProgress: true,
   mascot: null,
+  listed: true,
 };
 
 async function kindOf(p: Promise<unknown>): Promise<SocialErrorKind | 'resolved'> {

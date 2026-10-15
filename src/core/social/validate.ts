@@ -35,6 +35,7 @@ export const ProfileDraftSchema = z
   mainStack: z.array(z.string()).max(L.mainStack),
   showProgress: z.boolean(),
   mascot: z.enum(MASCOTS).nullable(),
+  listed: z.boolean(),
   })
   .superRefine((d, ctx) => {
     if (d.mainStack.some((t) => !d.stack.includes(t))) {

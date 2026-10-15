@@ -89,7 +89,7 @@ describe('practice days', () => {
 describe('profile draft extras', () => {
   const base: ProfileDraft = {
     displayName: 'Rian', nativeLanguage: 'Portuguese (Brazil)', level: 'B1', timezone: 'America/Bahia', area: 'backend',
-    stack: ['python', 'java', 'c++'], availability: [], bio: '', mainStack: ['python'], showProgress: true, mascot: null,
+    stack: ['python', 'java', 'c++'], availability: [], bio: '', mainStack: ['python'], showProgress: true, mascot: null, listed: true,
   };
   const paths = (d: unknown) => {
     const r = ProfileDraftSchema.safeParse(d);

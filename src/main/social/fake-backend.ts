@@ -112,6 +112,7 @@ const SEED_PROFILE: Omit<SocialProfile, 'id' | 'displayName' | 'hasAvatar' | 'su
   mainStack: ['python'],
   showProgress: true,
   mascot: null,
+  listed: true,
 };
 
 export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocialBackend {

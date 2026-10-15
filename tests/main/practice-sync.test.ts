@@ -28,7 +28,7 @@ function answer(store: MemoryStudyStore, when: Date, expressions = 0) {
 
 const profileDraft = (timezone: string) => ({
   displayName: 'Rian', nativeLanguage: 'Portuguese (Brazil)', level: 'B1' as const, timezone, area: 'backend' as const,
-  stack: [], availability: [], bio: '', mainStack: [], showProgress: true, mascot: null,
+  stack: [], availability: [], bio: '', mainStack: [], showProgress: true, mascot: null, listed: true,
 });
 
 async function member(timezone = 'America/Sao_Paulo') {

@@ -43,6 +43,7 @@ interface ProfileRow {
   mascot: string | null;
   banner_path: string | null;
   uses_linux?: boolean | null;
+  listed?: boolean | null;
 }
 
 function toProfile(row: ProfileRow, suspendedUntil: string | null): SocialProfile {
@@ -62,6 +63,7 @@ function toProfile(row: ProfileRow, suspendedUntil: string | null): SocialProfil
     showProgress: row.show_progress ?? true,
     mascot: (row.mascot as MascotId | null) ?? null,
     hasBanner: row.banner_path !== null && row.banner_path !== undefined,
+    listed: row.listed ?? true,
   };
 }
 

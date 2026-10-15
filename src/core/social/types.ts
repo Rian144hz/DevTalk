@@ -54,6 +54,8 @@ export interface SocialProfile {
   /** Chosen default picture; null = the stable default for this account. */
   mascot: MascotId | null;
   hasBanner: boolean;
+  /** Shown in the member list; when false, the profile is still reachable through follower lists or a link. */
+  listed: boolean;
 }
 
 export type ProfileDraft = Omit<SocialProfile, 'id' | 'hasAvatar' | 'suspendedUntil' | 'hasBanner'>;
@@ -99,3 +101,32 @@ export type ModerationDecision =
   | { kind: 'warn'; reportId: number | null; target: string; message: string }
   | { kind: 'suspend'; reportId: number | null; target: string; days: 1 | 7 | 30 | null; reason: string }
   | { kind: 'unsuspend'; target: string };
+
+/** A member as lists show them (member list, followers, following). */
+export interface MemberRow {
+  id: string;
+  displayName: string;
+  level: Level;
+  area: Area;
+  mainStack: string[];
+  mascot: MascotId | null;
+  hasAvatar: boolean;
+}
+
+/** Public counts of a profile, plus the caller's own follow and like. */
+export interface SocialStats {
+  followers: number;
+  following: number;
+  likes: number;
+  iFollow: boolean;
+  iLike: boolean;
+}
+
+export interface MemberFilters {
+  query?: string;
+  level?: Level;
+  area?: Area;
+  stack?: string;
+}
+
+export type NoticeKind = 'moderation' | 'follow';

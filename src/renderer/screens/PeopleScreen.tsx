@@ -201,6 +201,7 @@ export function PeopleScreen({ edit }: { edit: boolean }) {
             mainStack: profile.mainStack,
             showProgress: profile.showProgress,
             mascot: profile.mascot,
+            listed: profile.listed,
           }}
           onCancel={go('#/people')}
           onSubmit={async (p, photo, newBanner) => {
