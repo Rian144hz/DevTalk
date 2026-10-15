@@ -16,6 +16,7 @@ const PATHS: Record<string, ReactElement> = {
   lock: <><rect x="3.5" y="7" width="9" height="6.5" rx="1" /><path d="M5.5 7V5.5a2.5 2.5 0 0 1 5 0V7" /></>,
   x: <path d="M4 4l8 8M12 4l-8 8" />,
   shield: <path d="M8 1.8 13 3.8v3.8c0 3-2.1 5.2-5 6.6-2.9-1.4-5-3.6-5-6.6V3.8z" />,
+  heart: <path d="M8 13.5S2.5 10.2 2.5 6.2A2.9 2.9 0 0 1 8 4.6a2.9 2.9 0 0 1 5.5 1.6c0 4-5.5 7.3-5.5 7.3z" />,
   copy: <><rect x="5.5" y="5.5" width="8" height="8" rx="1.2" /><path d="M10.5 5.5V3.5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2" /></>,
 };
 

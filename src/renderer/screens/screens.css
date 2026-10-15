@@ -226,3 +226,5 @@
 @media (max-width: 1180px) {
   .moderation { grid-template-columns: minmax(0, 1fr); }
 }
+.profile > .social-actions { padding-inline: var(--s5); }
+.profile-safety { max-width: 760px; display: flex; gap: var(--s2); margin-top: var(--s6); padding-top: var(--s4); border-top: 1px solid var(--rule); }

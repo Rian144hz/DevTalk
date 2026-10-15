@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
-import { localDay, type PracticeGraphData } from '../../core/progress/practice';
-import type { Badge, SocialProfile } from '../../core/social/types';
+import type { PracticeGraphData } from '../../core/progress/practice';
+import type { Badge, SocialProfile, SocialStats } from '../../core/social/types';
 import type { SocialNotice, SocialStatus } from '../../shared/ipc-contract';
-import { Avatar, BadgeRow, Banner, Button, EmptyState, Notice, PracticeGraph, Skeleton, StackList } from '../design-system';
+import { Button, EmptyState, Notice, Skeleton, SocialActions } from '../design-system';
 import { AppErrorException, api, unwrap } from '../lib/api';
-import { formatLongDate, formatSlot } from '../lib/format';
+import { formatLongDate } from '../lib/format';
 import { setReturnTo } from '../lib/returnTo';
 import type { Route } from '../lib/router';
-import { AREA_LABELS } from './forms';
 import { saveProfileAndPhoto } from './JoinScreen';
+import { MemberProfile } from './MemberProfile';
 import { MembersTab } from './MembersTab';
+import { ProfileView } from './ProfileView';
 import { PagedMembers } from './PagedMembers';
 import { ProfileForm } from './ProfileForm';
 
@@ -23,66 +24,16 @@ interface Loaded {
   banner: string | null;
   badges: Badge[];
   graph: PracticeGraphData;
+  stats: SocialStats;
   notices: SocialNotice[];
 }
+
+const NO_STATS: SocialStats = { followers: 0, following: 0, likes: 0, iFollow: false, iLike: false };
 
 const NO_GRAPH: PracticeGraphData = { days: [], current: 0, longest: 0 };
 
 function suspendedText(until: string): string {
   return until === 'infinity' ? 'Your account is suspended.' : `Your account is suspended until ${formatLongDate(until)}.`;
-}
-
-function ProfileView({ profile, avatar, banner, badges, graph }: Omit<Loaded, 'status' | 'notices' | 'profile'> & { profile: SocialProfile }) {
-  const byDay = [...profile.availability].sort((a, b) => ((a.day + 6) % 7) - ((b.day + 6) % 7) || a.from.localeCompare(b.from));
-  const today = localDay(new Date(), Intl.DateTimeFormat().resolvedOptions().timeZone);
-  return (
-    <article className="profile">
-      <Banner src={banner} />
-      <header className="profile-head">
-        <span className="profile-avatar">
-          <Avatar src={avatar} name={profile.displayName} size={96} userId={profile.id} mascot={profile.mascot} />
-        </span>
-        <div className="profile-name">
-          <h2>{profile.displayName}</h2>
-          <p className="lede">{AREA_LABELS[profile.area]} developer, English level {profile.level}</p>
-        </div>
-      </header>
-      <BadgeRow badges={badges} />
-      <dl className="profile-facts">
-        <dt>Native language</dt>
-        <dd>{profile.nativeLanguage}</dd>
-        <dt>Time zone</dt>
-        <dd>{profile.timezone}</dd>
-        <dt>Stack</dt>
-        <dd>{profile.stack.length > 0 ? <StackList tags={profile.stack} /> : <span className="muted">Not added yet</span>}</dd>
-        <dt>Available</dt>
-        <dd>
-          {byDay.length > 0 ? (
-            <ul className="slots-read">{byDay.map((s, k) => <li key={k} className="num">{formatSlot(s)}</li>)}</ul>
-          ) : (
-            <span className="muted">No times added</span>
-          )}
-        </dd>
-        {profile.bio && (
-          <>
-            <dt>About</dt>
-            <dd className="bio">{profile.bio}</dd>
-          </>
-        )}
-      </dl>
-      <section className="profile-graph" aria-labelledby="profile-practice">
-        <h3 id="profile-practice">Practice</h3>
-        {!profile.showProgress && (
-          <p className="muted small">Only you see this. Other members do not see your practice graph or progress badges.</p>
-        )}
-        {graph.days.length > 0 ? (
-          <PracticeGraph days={graph.days} current={graph.current} longest={graph.longest} today={today} />
-        ) : (
-          <p className="muted">No practice shared yet. Days appear here a few seconds after you answer or review.</p>
-        )}
-      </section>
-    </article>
-  );
 }
 
 type Tab = 'members' | 'following' | 'me';
@@ -113,18 +64,19 @@ export function PeopleScreen({ route }: { route: Route }) {
     try {
       const status = unwrap(await api().social.status());
       if (!status.signedIn || status.needsDocuments || !status.hasProfile) {
-        setData({ status, profile: null, avatar: null, banner: null, badges: [], graph: NO_GRAPH, notices: [] });
+        setData({ status, profile: null, avatar: null, banner: null, badges: [], graph: NO_GRAPH, stats: NO_STATS, notices: [] });
         return;
       }
       const profile = unwrap(await api().social.getProfile());
-      const [avatar, banner, badges, graph, notices] = await Promise.all([
+      const [avatar, banner, badges, graph, stats, notices] = await Promise.all([
         profile?.hasAvatar ? api().social.avatar(profile.id).then(unwrap) : null,
         profile?.hasBanner ? api().social.banner(profile.id).then(unwrap) : null,
         profile ? api().social.badges(profile.id).then(unwrap) : [],
         profile ? api().social.practiceGraph(profile.id).then(unwrap) : NO_GRAPH,
+        profile ? api().social.socialStats(profile.id).then(unwrap) : NO_STATS,
         api().social.notices().then((r) => unwrap(r).filter((n) => !n.read)),
       ]);
-      setData({ status, profile, avatar, banner, badges, graph, notices });
+      setData({ status, profile, avatar, banner, badges, graph, stats, notices });
     } catch (e) {
       setError(message(e));
     }
@@ -161,7 +113,7 @@ export function PeopleScreen({ route }: { route: Route }) {
     );
   }
 
-  const { status, profile, avatar, banner, badges, graph, notices } = data;
+  const { status, profile, avatar, banner, badges, graph, stats, notices } = data;
   if (!status.configured) {
     return (
       <main className="page people">
@@ -267,14 +219,15 @@ export function PeopleScreen({ route }: { route: Route }) {
       )}
       {showing === 'me' && (
         <>
-          <ProfileView profile={profile} avatar={avatar} banner={banner} badges={badges} graph={graph} />
+          <ProfileView profile={profile} avatar={avatar} banner={banner} badges={badges} graph={graph} own
+            actions={<SocialActions userId={profile.id} name={profile.displayName} stats={stats} self />} />
           <section className="people-next">
             <EmptyState title="Private messages come next"
               body="Soon you can send a private message to a member from their profile and practise together." />
           </section>
         </>
       )}
-      {showing === null && <MembersTab />}
+      {showing === null && route.userId && <MemberProfile userId={route.userId} myId={profile.id} />}
     </main>
   );
 }

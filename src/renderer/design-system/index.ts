@@ -15,6 +15,7 @@ export { Notice } from './Notice';
 export { PracticeGraph } from './PracticeGraph';
 export { REPORT_REASON_LABELS, ReportDialog } from './ReportDialog';
 export { Skeleton } from './Skeleton';
+export { SocialActions } from './SocialActions';
 export { StackList, StackTag } from './StackTag';
 export { Tally } from './Tally';
 export { TypeBadge } from './TypeBadge';
