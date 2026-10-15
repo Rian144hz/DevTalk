@@ -472,6 +472,28 @@ describe('fake backend: people', () => {
     expect(await b.profileOf('00000000-0000-4000-8000-999999999999')).toBeNull();
   });
 
+  test('after review: loops hit the limit, no profile means no follow, deleting removes your notices', async () => {
+    const { b, ids } = await people();
+    const me = (await b.session())!.userId;
+    for (let i = 0; i < 200; i++) b.addNoticeForTest('00000000-0000-4000-8000-' + String(900000 + i).padStart(12, '0'), 'Rian followed you.', { kind: 'follow', actor: me });
+    expect(await b.follow(ids['Ana']!).catch((e: unknown) => e)).toMatchObject({ kind: 'rate_limited', message: 'follow limit reached' });
+
+    const fresh = createFakeSocialBackend({ seed: 'people' });
+    const freshIds = Object.fromEntries((await fresh.peopleForTest()).map((p) => [p.displayName, p.id])) as Record<string, string>;
+    await fresh.signOut();
+    await fresh.sendCode('noprofile@example.com');
+    await fresh.verifyCode('noprofile@example.com', '123456');
+    await fresh.acceptDocuments();
+    expect(await kindOf(fresh.follow(freshIds['Ana']!))).toBe('forbidden');
+    expect(await kindOf(fresh.like(freshIds['Ana']!))).toBe('forbidden');
+
+    const c = await people();
+    await c.b.follow(c.ids['Dani']!);
+    expect(c.b.noticesFor(c.ids['Dani']!).filter((n) => n.kind === 'follow')).toHaveLength(1);
+    await c.b.deleteAccount();
+    expect(c.b.noticesFor(c.ids['Dani']!).filter((n) => n.kind === 'follow')).toEqual([]);
+  });
+
   test('moderation notices have no actor; the export lists your ties', async () => {
     const { b, ids } = await people();
     const me = (await b.session())!.userId;

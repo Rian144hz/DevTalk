@@ -124,3 +124,13 @@ test('a double click on Follow or on the heart ends in one consistent state', as
   const state = JSON.parse(readFileSync(join(dataDir, 'fake-social.json'), 'utf8')) as { follows: { followee: string }[] };
   expect(state.follows.filter((f) => f.followee === idOf(fakeState(dataDir), 'Dani'))).toHaveLength(1);
 });
+
+test('your own counts follow what you just did in other tabs', async ({ page }) => {
+  await onboard(page);
+  await go(page, '#/people');
+  await members(page).filter({ hasText: 'Bia' }).getByRole('link').click();
+  await page.getByRole('button', { name: 'Follow Bia' }).click();
+  await expect(page.getByRole('button', { name: 'Stop following Bia' })).toBeVisible();
+  await page.getByRole('link', { name: 'Your profile' }).click();
+  await expect(page.locator('.profile').getByRole('link', { name: '1 following' })).toBeVisible();
+});

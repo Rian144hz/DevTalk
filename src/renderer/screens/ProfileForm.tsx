@@ -339,7 +339,7 @@ export function ProfileForm({
           <input id={ids.listed} type="checkbox" checked={listed} onChange={(e) => setListed(e.target.checked)} aria-describedby={`${ids.listed}-hint`} />
           <span>Show me in the member list</span>
         </label>
-        <span className="field-hint" id={`${ids.listed}-hint`}>People who already follow you can still open your profile.</span>
+        <span className="field-hint" id={`${ids.listed}-hint`}>Members can still open your profile from follower lists or a link.</span>
       </div>
 
       {formError && <Notice tone="error" title={formError} />}

@@ -1,7 +1,7 @@
 // 0006 — follows, profile likes, the member list and the social readers.
 import { createDb } from './harness';
 import type { TestDb } from './harness';
-import { member, suspend } from './people';
+import { accept, member, suspend } from './people';
 
 let t: TestDb;
 beforeAll(async () => {
@@ -76,6 +76,7 @@ describe('following and liking', () => {
   test('someone without a profile can neither follow nor be followed', async () => {
     const a = await named('Has profile');
     const ghost = await t.newUser();
+    await accept(t, ghost);
     await expect(follow(ghost, a)).rejects.toThrow(/row-level security/);
     await expect(follow(a, ghost)).rejects.toThrow(/row-level security/);
   });
@@ -120,7 +121,10 @@ describe('following and liking', () => {
     });
     await expect(follow(a, target)).rejects.toThrow(/follow limit reached/);
     await expect(like(a, target)).rejects.toThrow(/like limit reached/);
-    await t.owner(() => t.db.query(`update follows set created_at = now() - interval '25 hours' where follower = $1`, [a]));
+    await t.owner(async () => {
+      await t.db.query(`update follows set created_at = now() - interval '25 hours' where follower = $1`, [a]);
+      await t.db.query(`update notices set created_at = now() - interval '25 hours' where actor = $1`, [a]);
+    });
     await follow(a, target);
   });
 });

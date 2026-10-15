@@ -1,6 +1,6 @@
 # Terms of use
 
-Version 2026-10-15.2. This is a plain-language draft. It has not been reviewed by a lawyer.
+Version 2026-10-15.3. This is a plain-language draft. It has not been reviewed by a lawyer.
 
 ## What DevTalk is
 

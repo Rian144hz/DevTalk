@@ -1,6 +1,6 @@
 # Privacy policy
 
-Version 2026-10-15.2. This is a plain-language draft for Brazil's data protection law (LGPD). It has not been reviewed by a lawyer.
+Version 2026-10-15.3. This is a plain-language draft for Brazil's data protection law (LGPD). It has not been reviewed by a lawyer.
 
 ## The short version
 
@@ -28,7 +28,7 @@ We do not collect your practice text, your voice, your contacts or your location
 
 - Your profile, photo or default picture, banner, and these badges: Creator, Moderator, Founding member, Beta tester, Mentor, Open source contributor, your area, Linux native and your main technologies.
 - Your **practice graph and progress badges** (day streaks, level up, Vocabulary hunter), unless you turn off "Show my practice graph and progress badges to other members" in People › Edit profile. When it is off, only you see them; the daily numbers are still kept with your account so your own graph works.
-- **Whom you follow and who follows you** (the lists and their counts), and **how many likes your profile has**. Members do not see when you followed or liked someone.
+- **Whom you follow and who follows you** (the lists and their counts), and **how many likes your profile has**. The person you follow sees the date in their notice and in their data export; other members do not see when you followed or liked someone.
 - You appear in the **member list**, where members search by name, English level, area and technology. Turn off "Show me in the member list" in People › Edit profile to leave it; members can still open your profile from a follower list or a link.
 - Members never see your e-mail, your practice text, your corrections or your reviews.
 

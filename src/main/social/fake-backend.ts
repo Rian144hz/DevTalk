@@ -72,7 +72,7 @@ export interface FakeSocialBackend extends SocialBackend {
   seededUserIds(): string[];
   noticesFor(userId: string): Notice[];
   suspendForTest(userId: string, until: string): void;
-  addNoticeForTest(userId: string, message: string): void;
+  addNoticeForTest(userId: string, message: string, extra?: { kind: NoticeKind; actor: string }): void;
   /** Every profile with its id (seeded and signed-up). */
   peopleForTest(): Promise<{ id: string; displayName: string }[]>;
   /** Adds `n` follows by `follower` made now, to reach the daily limit. */
@@ -303,7 +303,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
   };
   const assertCanTie = (viewer: string, target: string, what: string) => {
     if (viewer === target) throw new SocialError('forbidden', `You cannot ${what} yourself.`);
-    if (!canReach(viewer, target)) throw new SocialError('forbidden', 'new row violates row-level security policy');
+    if (!(viewer in state.profiles) || !canReach(viewer, target)) throw new SocialError('forbidden', 'new row violates row-level security policy');
   };
   const recentCount = (rows: { at: string }[]) => rows.filter((r) => Date.parse(r.at) > now() - DAY_MS).length;
 
@@ -535,7 +535,9 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       state.badgeGrants = state.badgeGrants.filter((g) => g.userId !== userId);
       state.blocks = state.blocks.filter((k) => k.blocker !== userId && k.blocked !== userId);
       state.moderators = state.moderators.filter((m) => m !== userId);
-      state.notices = state.notices.filter((n) => n.userId !== userId);
+      state.notices = state.notices.filter((n) => n.userId !== userId && n.actor !== userId);
+      state.follows = state.follows.filter((f) => f.follower !== userId && f.followee !== userId);
+      state.likes = state.likes.filter((l) => l.liker !== userId && l.profile !== userId);
       for (const r of state.reports) {
         if (r.reporter === userId) r.reporter = null;
         if (r.reported === userId) r.reported = null;
@@ -700,7 +702,10 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       const viewer = me().userId;
       assertCanTie(viewer, userId, 'follow');
       if (state.follows.some((f) => f.follower === viewer && f.followee === userId)) return;
-      if (recentCount(state.follows.filter((f) => f.follower === viewer)) >= 200) throw new SocialError('rate_limited', 'follow limit reached');
+      const sentToday = state.notices.filter((n) => n.kind === 'follow' && n.actor === viewer && Date.parse(n.createdAt) > now() - DAY_MS);
+      if (recentCount(state.follows.filter((f) => f.follower === viewer)) >= 200 || sentToday.length >= 200) {
+        throw new SocialError('rate_limited', 'follow limit reached');
+      }
       state.follows.push({ follower: viewer, followee: userId, at: iso() });
       const recent = state.notices.some(
         (n) => n.userId === userId && n.kind === 'follow' && n.actor === viewer && Date.parse(n.createdAt) > now() - 7 * DAY_MS,
@@ -773,8 +778,8 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       if (p) p.suspendedUntil = until;
       save();
     },
-    addNoticeForTest(userId, message) {
-      state.notices.push({ id: nextId(), userId, message, createdAt: iso(), readAt: null });
+    addNoticeForTest(userId, message, extra) {
+      state.notices.push({ id: nextId(), userId, message, createdAt: iso(), readAt: null, ...extra });
       save();
     },
   };

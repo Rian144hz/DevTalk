@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PracticeGraphData } from '../../core/progress/practice';
 import type { Badge, SocialProfile, SocialStats } from '../../core/social/types';
 import type { SocialNotice, SocialStatus } from '../../shared/ipc-contract';
@@ -89,6 +89,23 @@ export function PeopleScreen({ route }: { route: Route }) {
     void load();
     setReturnTo('#/people', 'Back to People');
   }, [load, edit]);
+
+  // Moving between tabs and profiles keeps this screen mounted: refresh your own counts and notices quietly,
+  // so following someone shows up on Your profile and a block clears their notice.
+  const myId = useRef<string | null>(null);
+  myId.current = data?.profile?.id ?? null;
+  useEffect(() => {
+    const id = myId.current;
+    if (!id) return;
+    let alive = true;
+    Promise.all([api().social.socialStats(id).then(unwrap), api().social.notices().then((r) => unwrap(r).filter((n) => !n.read))]).then(
+      ([stats, notices]) => alive && setData((d) => (d ? { ...d, stats, notices } : d)),
+      () => undefined, // keep what is on screen; the next move tries again
+    );
+    return () => {
+      alive = false;
+    };
+  }, [route.sub, route.userId]);
 
   const head = (action?: React.ReactNode, lede?: string) => (
     <header className="page-head">
