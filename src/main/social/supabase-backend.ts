@@ -10,7 +10,7 @@ import {
 import { LEGAL_DOCUMENTS, LEGAL_VERSION } from '../../core/social/types';
 import type { DayActivity } from '../../core/progress/practice';
 import type { ManualBadge } from '../../core/social/badges';
-import type { Badge, BadgeGroup, MascotId } from '../../core/social/types';
+import type { Badge, BadgeGroup, MascotId, MemberRow, NoticeKind } from '../../core/social/types';
 import type { AvailabilitySlot, ModerationReport, ProfileDraft, SocialProfile } from '../../core/social/types';
 import type { Level } from '../../core/domain/types';
 import type { Area, ReportContext, ReportReason } from '../../core/social/types';
@@ -24,7 +24,7 @@ const avatarPath = (userId: string) => `${userId}/avatar.webp`;
 
 /** suspended_until is not a readable column (see 0001_profiles.sql): always name the columns. */
 const PROFILE_COLUMNS =
-  'id, display_name, native_language, level, timezone, area, stack, availability, bio, avatar_path, main_stack, show_progress, mascot, banner_path, uses_linux';
+  'id, display_name, native_language, level, timezone, area, stack, availability, bio, avatar_path, main_stack, show_progress, mascot, banner_path, uses_linux, listed';
 const GRAPH_DAYS = 371;
 
 interface ProfileRow {
@@ -64,6 +64,28 @@ function toProfile(row: ProfileRow, suspendedUntil: string | null): SocialProfil
     mascot: (row.mascot as MascotId | null) ?? null,
     hasBanner: row.banner_path !== null && row.banner_path !== undefined,
     listed: row.listed ?? true,
+  };
+}
+
+interface MemberRowDb {
+  id: string;
+  display_name: string;
+  level: string;
+  area: string;
+  main_stack: string[] | null;
+  mascot: string | null;
+  has_avatar: boolean;
+}
+
+function toMemberRow(r: MemberRowDb): MemberRow {
+  return {
+    id: r.id,
+    displayName: r.display_name,
+    level: r.level as Level,
+    area: r.area as Area,
+    mainStack: r.main_stack ?? [],
+    mascot: (r.mascot as MascotId | null) ?? null,
+    hasAvatar: r.has_avatar,
   };
 }
 
@@ -214,6 +236,7 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
         main_stack: draft.mainStack,
         show_progress: draft.showProgress,
         mascot: draft.mascot,
+        listed: draft.listed,
       };
       const saved = check(await client.from('profiles').upsert(row, { onConflict: 'id' }).select(PROFILE_COLUMNS).single<ProfileRow>());
       if (!saved) throw new SocialError('unknown', 'The profile was not saved.');
@@ -278,9 +301,23 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
     async listNotices(): Promise<Notice[]> {
       await me();
       const rows = check(
-        await client.from('notices').select('id, message, created_at, read_at').order('created_at', { ascending: false }),
-      ) as { id: number; message: string; created_at: string; read_at: string | null }[];
-      return rows.map((r) => ({ id: r.id, message: r.message, createdAt: r.created_at, read: r.read_at !== null }));
+        await client.from('notices').select('id, message, created_at, read_at, kind, actor').order('created_at', { ascending: false }),
+      ) as { id: number; message: string; created_at: string; read_at: string | null; kind: NoticeKind | null; actor: string | null }[];
+      const actorIds = [...new Set(rows.flatMap((r) => (r.actor ? [r.actor] : [])))];
+      const names = new Map<string, string>();
+      if (actorIds.length > 0) {
+        const found = check(await client.from('profiles').select('id, display_name').in('id', actorIds)) as { id: string; display_name: string }[];
+        for (const f of found) names.set(f.id, f.display_name);
+      }
+      return rows.map((r) => ({
+        id: r.id,
+        message: r.message,
+        createdAt: r.created_at,
+        read: r.read_at !== null,
+        kind: r.kind ?? 'moderation',
+        // A follower who is now blocked or gone keeps the notice text but no link.
+        actor: r.actor && names.has(r.actor) ? { id: r.actor, displayName: names.get(r.actor)! } : null,
+      }));
     },
 
     async markNoticeRead(id) {
@@ -396,6 +433,7 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
         bannerUrl = data?.signedUrl ?? null;
       }
       const progress = check(await client.rpc('my_progress_export'));
+      const social = check(await client.rpc('my_social_export'));
       const badges = await this.badges(userId);
       return {
         exportedAt: new Date().toISOString(),
@@ -411,6 +449,7 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
         usesLinux: row?.uses_linux ?? false,
         badges,
         progress,
+        social,
       };
     },
 
@@ -501,6 +540,69 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
     async revokeBadge(userId, badge: ManualBadge, reason) {
       await me();
       check(await client.from('moderation_actions').insert({ target: userId, action: 'revoke_badge', badge, reason }));
+    },
+
+    async members(filters, page) {
+      await me();
+      const blank = (s: string | undefined) => (s && s.trim() ? s.trim() : null);
+      const rows = check(
+        await client.rpc('member_directory', {
+          q: blank(filters.query),
+          lvl: filters.level ?? null,
+          area_filter: filters.area ?? null,
+          stack_tag: blank(filters.stack),
+          page,
+        }),
+      ) as MemberRowDb[];
+      return rows.map(toMemberRow);
+    },
+
+    async profileOf(userId) {
+      await me();
+      const row = check(await client.from('profiles').select(PROFILE_COLUMNS).eq('id', userId).maybeSingle()) as ProfileRow | null;
+      // Others' suspensions are not readable; a suspended member is not visible anyway.
+      return row ? toProfile(row, null) : null;
+    },
+
+    async socialStats(userId) {
+      await me();
+      const rows = check(await client.rpc('profile_social', { target: userId })) as
+        | { followers: number; following: number; likes: number; i_follow: boolean; i_like: boolean }[]
+        | null;
+      const r = rows?.[0];
+      return r
+        ? { followers: r.followers, following: r.following, likes: r.likes, iFollow: r.i_follow, iLike: r.i_like }
+        : { followers: 0, following: 0, likes: 0, iFollow: false, iLike: false };
+    },
+
+    async follow(userId) {
+      const { userId: follower } = await me();
+      check(await client.from('follows').upsert({ follower, followee: userId }, { onConflict: 'follower,followee', ignoreDuplicates: true }));
+    },
+
+    async unfollow(userId) {
+      const { userId: follower } = await me();
+      check(await client.from('follows').delete().eq('follower', follower).eq('followee', userId));
+    },
+
+    async like(userId) {
+      const { userId: liker } = await me();
+      check(await client.from('profile_likes').upsert({ liker, profile: userId }, { onConflict: 'liker,profile', ignoreDuplicates: true }));
+    },
+
+    async unlike(userId) {
+      const { userId: liker } = await me();
+      check(await client.from('profile_likes').delete().eq('liker', liker).eq('profile', userId));
+    },
+
+    async followers(userId, page) {
+      await me();
+      return (check(await client.rpc('followers_of', { target: userId, page })) as MemberRowDb[]).map(toMemberRow);
+    },
+
+    async following(userId, page) {
+      await me();
+      return (check(await client.rpc('following_of', { target: userId, page })) as MemberRowDb[]).map(toMemberRow);
     },
 
     async deleteAccount() {

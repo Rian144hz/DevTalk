@@ -282,7 +282,7 @@ describe('fake social backend', () => {
     const data = await b.exportOwnData();
     expect(data).toMatchObject({ account: { email: 'rian@example.com' }, profile: { displayName: 'Rian' } });
     expect(Object.keys(data).sort()).toEqual([
-      'account', 'avatarUrl', 'badges', 'bannerUrl', 'blocks', 'consents', 'exportedAt', 'moderationActions', 'notices', 'profile', 'progress', 'reportsMade', 'usesLinux',
+      'account', 'avatarUrl', 'badges', 'bannerUrl', 'blocks', 'consents', 'exportedAt', 'moderationActions', 'notices', 'profile', 'progress', 'reportsMade', 'social', 'usesLinux',
     ]);
     expect(data['progress']).toEqual({ practiceDays: [], milestones: [] });
     await b.deleteAccount();
@@ -382,5 +382,104 @@ describe('fake social backend', () => {
     const again = createFakeSocialBackend({ filePath: file });
     expect((await again.session())?.email).toBe('rian@example.com');
     expect(await again.hasAcceptedCurrentDocuments()).toBe(false);
+  });
+});
+
+describe('fake backend: people', () => {
+  /** Signed in as Rian (B1, back end) with a seeded community; returns name → id. */
+  async function people() {
+    const b = createFakeSocialBackend({ seed: 'people' });
+    const ids = Object.fromEntries((await b.peopleForTest()).map((p) => [p.displayName, p.id])) as Record<string, string>;
+    return { b, ids };
+  }
+  const names = (rows: { displayName: string }[]) => rows.map((r) => r.displayName);
+
+  test('the member list leaves out yourself, unlisted, suspended and blocked people, closest level first', async () => {
+    const { b } = await people();
+    const all = names(await b.members({}, 0));
+    expect(all).not.toContain('Rian');
+    for (const hidden of ['Edu', 'Fabi', 'Gil']) expect(all).not.toContain(hidden);
+    expect(all.slice(0, 3)).toEqual(['Bia', 'João', 'Max']);
+    expect(names(await b.members({ level: 'B2' }, 0))).toEqual(['Caio', 'Lia']);
+    expect(names(await b.members({ area: 'frontend' }, 0))).toEqual(['Bia', 'Iris']);
+    expect(names(await b.members({ stack: 'PYTHON' }, 0))).toEqual(['Ana', 'Caio']);
+    expect(names(await b.members({ query: 'ai' }, 0))).toEqual(['Caio']);
+    expect(await b.members({}, 1)).toEqual([]);
+    expect((await b.members({ query: 'Bia' }, 0))[0]).toEqual({
+      id: expect.any(String), displayName: 'Bia', level: 'B1', area: 'frontend', mainStack: ['react'], mascot: null, hasAvatar: false,
+    });
+  });
+
+  test('follow and unfollow: counts, one notice a week, never yourself or blocked people', async () => {
+    const { b, ids } = await people();
+    const me = (await b.session())!.userId;
+    expect(await b.socialStats(ids['Bia']!)).toEqual({ followers: 2, following: 0, likes: 0, iFollow: false, iLike: false });
+    await b.follow(ids['Bia']!);
+    await b.follow(ids['Bia']!);
+    expect(await b.socialStats(ids['Bia']!)).toMatchObject({ followers: 3, iFollow: true });
+    expect(b.noticesFor(ids['Bia']!).filter((n) => n.kind === 'follow')).toEqual([
+      expect.objectContaining({ message: 'Rian followed you.', kind: 'follow', actor: { id: me, displayName: 'Rian' } }),
+    ]);
+    await b.unfollow(ids['Bia']!);
+    await b.follow(ids['Bia']!);
+    expect(b.noticesFor(ids['Bia']!).filter((n) => n.kind === 'follow')).toHaveLength(1);
+    expect(await kindOf(b.follow(me))).toBe('forbidden');
+    expect(await kindOf(b.follow(ids['Gil']!))).toBe('forbidden');
+    expect(await kindOf(b.follow(ids['Fabi']!))).toBe('forbidden');
+  });
+
+  test('likes count without notices; you cannot like yourself', async () => {
+    const { b, ids } = await people();
+    const before = b.noticesFor(ids['Ana']!).length;
+    await b.like(ids['Ana']!);
+    await b.like(ids['Ana']!);
+    expect(await b.socialStats(ids['Ana']!)).toMatchObject({ likes: 1, iLike: true });
+    expect(b.noticesFor(ids['Ana']!)).toHaveLength(before);
+    await b.unlike(ids['Ana']!);
+    expect(await b.socialStats(ids['Ana']!)).toMatchObject({ likes: 0, iLike: false });
+    expect(await kindOf(b.like((await b.session())!.userId))).toBe('forbidden');
+  });
+
+  test('the 201st follow in a day hits the limit', async () => {
+    const { b, ids } = await people();
+    b.addFollowsForTest((await b.session())!.userId, 200);
+    const err = await b.follow(ids['Ana']!).catch((e: unknown) => e);
+    expect(err).toMatchObject({ kind: 'rate_limited', message: 'follow limit reached' });
+  });
+
+  test('follower lists keep unlisted people and leave out suspended and blocked ones', async () => {
+    const { b, ids } = await people();
+    expect(names(await b.followers(ids['Bia']!, 0))).toEqual(['Ana', 'Caio']);
+    expect(names(await b.followers(ids['Max']!, 0))).toEqual(['Edu']);
+    expect(names(await b.following(ids['Ana']!, 0))).toEqual(['Bia']);
+    expect(await b.followers(ids['Gil']!, 0)).toEqual([]);
+  });
+
+  test('blocking ends follows and likes both ways', async () => {
+    const { b, ids } = await people();
+    await b.follow(ids['Dani']!);
+    await b.like(ids['Dani']!);
+    await b.block(ids['Dani']!);
+    await b.unblock(ids['Dani']!);
+    expect(await b.socialStats(ids['Dani']!)).toMatchObject({ followers: 0, likes: 0, iFollow: false, iLike: false });
+  });
+
+  test('profileOf gives a visible member, null for blocked, suspended or unknown ids', async () => {
+    const { b, ids } = await people();
+    expect((await b.profileOf(ids['Edu']!))?.displayName).toBe('Edu');
+    expect(await b.profileOf(ids['Gil']!)).toBeNull();
+    expect(await b.profileOf(ids['Fabi']!)).toBeNull();
+    expect(await b.profileOf('00000000-0000-4000-8000-999999999999')).toBeNull();
+  });
+
+  test('moderation notices have no actor; the export lists your ties', async () => {
+    const { b, ids } = await people();
+    const me = (await b.session())!.userId;
+    b.addNoticeForTest(me, 'Be kind.');
+    expect((await b.listNotices()).find((n) => n.message === 'Be kind.')).toMatchObject({ kind: 'moderation', actor: null });
+    await b.follow(ids['Ana']!);
+    await b.like(ids['Ana']!);
+    const data = await b.exportOwnData();
+    expect(data['social']).toMatchObject({ following: [{ id: ids['Ana'] }], likesGiven: [{ id: ids['Ana'] }] });
   });
 });

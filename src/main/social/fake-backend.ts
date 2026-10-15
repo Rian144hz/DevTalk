@@ -4,7 +4,8 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { addDays, streaks, type DayActivity } from '../../core/progress/practice';
 import { BADGE_LABELS, type ManualBadge } from '../../core/social/badges';
 import { LEGAL_DOCUMENTS, LEGAL_VERSION } from '../../core/social/types';
-import type { Badge, ModerationReport, ProfileDraft, ReportInput, SocialProfile } from '../../core/social/types';
+import { MEMBER_PAGE_SIZE } from '../../core/social/people';
+import type { Badge, MemberRow, ModerationReport, NoticeKind, ProfileDraft, ReportInput, SocialProfile } from '../../core/social/types';
 import type { MemberSummary, ModerationHistoryItem, Notice, PracticeGraphData, SocialBackend, SocialSession } from './backend';
 import { SocialError } from './errors';
 import type { SocialErrorKind } from './errors';
@@ -44,7 +45,7 @@ interface State {
   reports: StoredReport[];
   moderators: string[];
   actions: StoredAction[];
-  notices: { id: number; userId: string; message: string; createdAt: string; readAt: string | null }[];
+  notices: { id: number; userId: string; message: string; createdAt: string; readAt: string | null; kind?: NoticeKind; actor?: string | null }[];
   nextId: number;
   seeded: string[];
   createdAt: Record<string, string>;
@@ -53,10 +54,13 @@ interface State {
   practiceDays: Record<string, DayActivity[]>;
   milestones: { userId: string; kind: 'level_up' | 'vocabulary'; value: string; at: string }[];
   badgeGrants: { userId: string; badge: string }[];
+  follows: { follower: string; followee: string; at: string }[];
+  likes: { liker: string; profile: string; at: string }[];
 }
 
 export interface FakeSocialOptions {
-  seed?: 'moderation';
+  /** 'moderation': signed in as a moderator with open reports; 'people': signed in as member Rian among varied members. */
+  seed?: 'moderation' | 'people';
   /** Persist the state here so a relaunch keeps it (e2e restarts). */
   filePath?: string;
   /** Make one call fail with the given kind (e2e error paths). */
@@ -69,6 +73,10 @@ export interface FakeSocialBackend extends SocialBackend {
   noticesFor(userId: string): Notice[];
   suspendForTest(userId: string, until: string): void;
   addNoticeForTest(userId: string, message: string): void;
+  /** Every profile with its id (seeded and signed-up). */
+  peopleForTest(): Promise<{ id: string; displayName: string }[]>;
+  /** Adds `n` follows by `follower` made now, to reach the daily limit. */
+  addFollowsForTest(follower: string, n: number): void;
 }
 
 const emptyState = (): State => ({
@@ -90,6 +98,8 @@ const emptyState = (): State => ({
   practiceDays: {},
   milestones: [],
   badgeGrants: [],
+  follows: [],
+  likes: [],
 });
 
 const LEVEL_ORDER = ['A2', 'B1', 'B2', 'C1', 'C2'];
@@ -181,6 +191,38 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
     save();
   }
 
+  if (opts.seed === 'people' && state.users.length === 0) {
+    const add = (name: string, over: Partial<SocialProfile> = {}) => {
+      const user = createUser(`${name.toLowerCase().normalize('NFD').replace(/[^a-z]/g, '')}@example.com`);
+      acceptFor(user.id);
+      putProfile(user.id, name);
+      state.profiles[user.id] = { ...state.profiles[user.id]!, stack: [], mainStack: [], ...over };
+      return user.id;
+    };
+    const rian = add('Rian', { level: 'B1', area: 'backend', stack: ['python'] });
+    const p = {
+      Ana: add('Ana', { level: 'A2', area: 'backend', stack: ['python'] }),
+      Bia: add('Bia', { level: 'B1', area: 'frontend', stack: ['react'], mainStack: ['react'] }),
+      Caio: add('Caio', { level: 'B2', area: 'data', stack: ['python'] }),
+      Dani: add('Dani', { level: 'C1', area: 'devops', stack: ['docker'] }),
+      Edu: add('Edu', { level: 'B1', area: 'mobile', stack: ['kotlin'], listed: false }),
+      Fabi: add('Fabi', { level: 'B2', area: 'backend', suspendedUntil: '2999-01-01T00:00:00.000Z' }),
+      Gil: add('Gil', { level: 'B1', area: 'backend' }),
+      Hugo: add('Hugo', { level: 'C2', area: 'other' }),
+      Iris: add('Iris', { level: 'A2', area: 'frontend' }),
+      João: add('João', { level: 'B1', area: 'data' }),
+      Lia: add('Lia', { level: 'B2', area: 'mobile' }),
+      Max: add('Max', { level: 'B1', area: 'backend' }),
+    };
+    const at = iso(now() - 3 * DAY_MS);
+    const ties: [keyof typeof p, string][] = [['Ana', p.Bia], ['Caio', p.Bia], ['Fabi', p.Bia], ['Gil', p.Bia], ['Edu', p.Max], ['Hugo', rian]];
+    for (const [follower, followee] of ties) state.follows.push({ follower: p[follower], followee, at });
+    state.blocks.push({ blocker: p.Gil, blocked: rian });
+    state.seeded = Object.values(p);
+    state.session = { userId: rian, email: 'rian@example.com' };
+    save();
+  }
+
   const failIf = (name: keyof SocialBackend) => {
     const kind = opts.fail?.[name];
     if (kind) throw new SocialError(kind, `Injected failure: ${kind}`);
@@ -233,7 +275,34 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
   const noticesFor = (userId: string): Notice[] =>
     state.notices
       .filter((n) => n.userId === userId)
-      .map((n) => ({ id: n.id, message: n.message, createdAt: n.createdAt, read: n.readAt !== null }));
+      .map((n) => ({
+        id: n.id,
+        message: n.message,
+        createdAt: n.createdAt,
+        read: n.readAt !== null,
+        kind: n.kind ?? 'moderation',
+        actor: n.actor ? { id: n.actor, displayName: state.profiles[n.actor]?.displayName ?? 'A member' } : null,
+      }));
+  /** Mirrors counts_for_viewer(): not suspended and no block with the caller. */
+  const countsFor = (viewer: string, other: string) => isActive(other) && !blockedBetween(viewer, other);
+  /** Mirrors can_see_profile() (no moderator exception) plus "has a profile". */
+  const canReach = (viewer: string, target: string) =>
+    isActive(viewer) && hasAccepted(viewer) && isActive(target) && !blockedBetween(viewer, target) && target in state.profiles;
+  const isViewerMember = (viewer: string) => isActive(viewer) && hasAccepted(viewer);
+  const rowOf = (id: string): MemberRow => {
+    const p = state.profiles[id]!;
+    return { id, displayName: p.displayName, level: p.level, area: p.area, mainStack: [...p.mainStack], mascot: p.mascot, hasAvatar: id in state.avatars };
+  };
+  const byName = (a: MemberRow, b: MemberRow) => a.displayName.localeCompare(b.displayName, 'en') || a.id.localeCompare(b.id);
+  const pageOf = <T,>(rows: T[], page: number) => {
+    const start = Math.max(0, Math.trunc(page)) * MEMBER_PAGE_SIZE;
+    return rows.slice(start, start + MEMBER_PAGE_SIZE);
+  };
+  const assertCanTie = (viewer: string, target: string, what: string) => {
+    if (viewer === target) throw new SocialError('forbidden', `You cannot ${what} yourself.`);
+    if (!canReach(viewer, target)) throw new SocialError('forbidden', 'new row violates row-level security policy');
+  };
+  const recentCount = (rows: { at: string }[]) => rows.filter((r) => Date.parse(r.at) > now() - DAY_MS).length;
 
   const backend: FakeSocialBackend = {
     configured: true,
@@ -316,6 +385,10 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       if (userId === blocker) throw new SocialError('forbidden', 'You cannot block yourself.');
       assertMember(blocker);
       if (!state.blocks.some((k) => k.blocker === blocker && k.blocked === userId)) state.blocks.push({ blocker, blocked: userId });
+      // Mirrors clear_ties_on_block(): follows and likes between the two end, both ways.
+      const pair = (a: string, b: string) => (a === blocker && b === userId) || (a === userId && b === blocker);
+      state.follows = state.follows.filter((f) => !pair(f.follower, f.followee));
+      state.likes = state.likes.filter((l) => !pair(l.liker, l.profile));
       save();
     },
 
@@ -434,6 +507,11 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
         bannerUrl: state.banners[userId] ? `fake://banners/banner.${state.banners[userId]!.ext}` : null,
         usesLinux: state.usesLinux[userId] ?? false,
         badges: await this.badges(userId),
+        social: {
+          following: state.follows.filter((f) => f.follower === userId).map((f) => ({ id: f.followee, at: f.at })),
+          followers: state.follows.filter((f) => f.followee === userId).map((f) => ({ id: f.follower, at: f.at })),
+          likesGiven: state.likes.filter((l) => l.liker === userId).map((l) => ({ id: l.profile, at: l.at })),
+        },
         progress: {
           practiceDays: (state.practiceDays[userId] ?? []).map((d) => ({ ...d })),
           milestones: state.milestones.filter((m) => m.userId === userId).map((m) => ({ kind: m.kind, value: m.value, achievedAt: m.at })),
@@ -576,7 +654,116 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       save();
     },
 
+    async members(filters, page) {
+      failIf('members');
+      const viewer = me().userId;
+      if (!isViewerMember(viewer)) return [];
+      const order = (lvl: string) => LEVEL_ORDER.indexOf(lvl);
+      const mine = order(state.profiles[viewer]?.level ?? 'B1');
+      const q = filters.query?.trim().toLowerCase();
+      const rows = Object.values(state.profiles)
+        .filter((p) => p.id !== viewer && p.listed !== false && countsFor(viewer, p.id))
+        .filter((p) => !q || p.displayName.toLowerCase().includes(q))
+        .filter((p) => !filters.level || p.level === filters.level)
+        .filter((p) => !filters.area || p.area === filters.area)
+        .filter((p) => !filters.stack || p.stack.some((t) => t.toLowerCase() === filters.stack!.toLowerCase()))
+        .map((p) => rowOf(p.id))
+        .sort((a, b) => Math.abs(order(a.level) - mine) - Math.abs(order(b.level) - mine) || byName(a, b));
+      return pageOf(rows, page);
+    },
+
+    async profileOf(userId) {
+      failIf('profileOf');
+      const viewer = me().userId;
+      const p = state.profiles[userId];
+      return p && canSee(viewer, userId) ? toProfile(p) : null;
+    },
+
+    async socialStats(userId) {
+      failIf('socialStats');
+      const viewer = me().userId;
+      if (!(userId === viewer || canReach(viewer, userId))) return { followers: 0, following: 0, likes: 0, iFollow: false, iLike: false };
+      return {
+        followers: state.follows.filter((f) => f.followee === userId && countsFor(viewer, f.follower)).length,
+        following: state.follows.filter((f) => f.follower === userId && countsFor(viewer, f.followee)).length,
+        likes: state.likes.filter((l) => l.profile === userId && countsFor(viewer, l.liker)).length,
+        iFollow: state.follows.some((f) => f.follower === viewer && f.followee === userId),
+        iLike: state.likes.some((l) => l.liker === viewer && l.profile === userId),
+      };
+    },
+
+    async follow(userId) {
+      failIf('follow');
+      const viewer = me().userId;
+      assertCanTie(viewer, userId, 'follow');
+      if (state.follows.some((f) => f.follower === viewer && f.followee === userId)) return;
+      if (recentCount(state.follows.filter((f) => f.follower === viewer)) >= 200) throw new SocialError('rate_limited', 'follow limit reached');
+      state.follows.push({ follower: viewer, followee: userId, at: iso() });
+      const recent = state.notices.some(
+        (n) => n.userId === userId && n.kind === 'follow' && n.actor === viewer && Date.parse(n.createdAt) > now() - 7 * DAY_MS,
+      );
+      if (!recent) {
+        const name = state.profiles[viewer]?.displayName ?? 'A member';
+        state.notices.push({ id: nextId(), userId, message: `${name} followed you.`, createdAt: iso(), readAt: null, kind: 'follow', actor: viewer });
+      }
+      save();
+    },
+
+    async unfollow(userId) {
+      failIf('unfollow');
+      const viewer = me().userId;
+      state.follows = state.follows.filter((f) => !(f.follower === viewer && f.followee === userId));
+      save();
+    },
+
+    async like(userId) {
+      failIf('like');
+      const viewer = me().userId;
+      if (viewer === userId) throw new SocialError('forbidden', 'You cannot like your own profile.');
+      assertCanTie(viewer, userId, 'like');
+      if (state.likes.some((l) => l.liker === viewer && l.profile === userId)) return;
+      if (recentCount(state.likes.filter((l) => l.liker === viewer)) >= 200) throw new SocialError('rate_limited', 'like limit reached');
+      state.likes.push({ liker: viewer, profile: userId, at: iso() });
+      save();
+    },
+
+    async unlike(userId) {
+      failIf('unlike');
+      const viewer = me().userId;
+      state.likes = state.likes.filter((l) => !(l.liker === viewer && l.profile === userId));
+      save();
+    },
+
+    async followers(userId, page) {
+      failIf('followers');
+      const viewer = me().userId;
+      if (!(userId === viewer || canReach(viewer, userId))) return [];
+      const rows = state.follows
+        .filter((f) => f.followee === userId && f.follower in state.profiles && countsFor(viewer, f.follower))
+        .map((f) => rowOf(f.follower))
+        .sort(byName);
+      return pageOf(rows, page);
+    },
+
+    async following(userId, page) {
+      failIf('following');
+      const viewer = me().userId;
+      if (!(userId === viewer || canReach(viewer, userId))) return [];
+      const rows = state.follows
+        .filter((f) => f.follower === userId && f.followee in state.profiles && countsFor(viewer, f.followee))
+        .map((f) => rowOf(f.followee))
+        .sort(byName);
+      return pageOf(rows, page);
+    },
+
     seededUserIds: () => [...state.seeded],
+    async peopleForTest() {
+      return Object.values(state.profiles).map((p) => ({ id: p.id, displayName: p.displayName }));
+    },
+    addFollowsForTest(follower, n) {
+      for (let i = 0; i < n; i++) state.follows.push({ follower, followee: newUuid(), at: iso() });
+      save();
+    },
     noticesFor,
     suspendForTest(userId, until) {
       const p = state.profiles[userId];

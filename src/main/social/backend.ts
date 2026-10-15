@@ -1,6 +1,6 @@
 import type { DayActivity, PracticeGraphData } from '../../core/progress/practice';
 import type { ManualBadge } from '../../core/social/badges';
-import type { Badge, MemberSummary, ModerationDecision, ModerationReport, ProfileDraft, ReportInput, SocialProfile } from '../../core/social/types';
+import type { Badge, MemberFilters, MemberRow, MemberSummary, NoticeKind, SocialStats, ModerationDecision, ModerationReport, ProfileDraft, ReportInput, SocialProfile } from '../../core/social/types';
 import { SocialError } from './errors';
 
 export interface SocialSession {
@@ -13,6 +13,9 @@ export interface Notice {
   message: string;
   createdAt: string;
   read: boolean;
+  kind: NoticeKind;
+  /** Who caused it (the follower of a follow notice); null for moderation notices. */
+  actor: { id: string; displayName: string } | null;
 }
 
 export type { MemberSummary, PracticeGraphData };
@@ -69,6 +72,17 @@ export interface SocialBackend {
   searchMembers(query: string): Promise<MemberSummary[]>;
   grantBadge(userId: string, badge: ManualBadge, reason: string): Promise<void>;
   revokeBadge(userId: string, badge: ManualBadge, reason: string): Promise<void>;
+  /** Listed, active members the caller is not blocked with, closest English level first; 30 per page. */
+  members(filters: MemberFilters, page: number): Promise<MemberRow[]>;
+  /** Another member's profile, or null when the caller cannot see it (blocked, suspended, gone). */
+  profileOf(userId: string): Promise<SocialProfile | null>;
+  socialStats(userId: string): Promise<SocialStats>;
+  follow(userId: string): Promise<void>;
+  unfollow(userId: string): Promise<void>;
+  like(userId: string): Promise<void>;
+  unlike(userId: string): Promise<void>;
+  followers(userId: string, page: number): Promise<MemberRow[]>;
+  following(userId: string, page: number): Promise<MemberRow[]>;
 }
 
 /** Used when the build has no Supabase settings: every call says so. */
@@ -112,5 +126,14 @@ export function createUnconfiguredBackend(): SocialBackend {
     searchMembers: fail,
     grantBadge: fail,
     revokeBadge: fail,
+    members: fail,
+    profileOf: fail,
+    socialStats: fail,
+    follow: fail,
+    unfollow: fail,
+    like: fail,
+    unlike: fail,
+    followers: fail,
+    following: fail,
   };
 }

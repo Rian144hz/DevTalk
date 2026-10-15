@@ -213,6 +213,7 @@ test('the export includes the moderation actions about the person', async () => 
     'GET /rest/v1/notices': json(200, []),
     'POST /rest/v1/rpc/my_moderation_actions': json(200, [{ action: 'warn', reason: 'Be kind', until: null, created_at: '2026-10-14T10:00:00Z' }]),
     'POST /rest/v1/rpc/my_progress_export': json(200, { practiceDays: [], milestones: [] }),
+    'POST /rest/v1/rpc/my_social_export': json(200, { following: [], followers: [], likesGiven: [] }),
     'POST /rest/v1/rpc/profile_badges': json(200, []),
   });
   await b.verifyCode('rian@example.com', '123456');
@@ -235,12 +236,14 @@ test('the export includes practice days and milestones with their times, badges,
     'GET /rest/v1/notices': json(200, []),
     'POST /rest/v1/rpc/my_moderation_actions': json(200, []),
     'POST /rest/v1/rpc/my_progress_export': json(200, progress),
+    'POST /rest/v1/rpc/my_social_export': json(200, { following: [{ id: 'u2', at: '2026-10-15T10:00:00Z' }], followers: [], likesGiven: [] }),
     'POST /rest/v1/rpc/profile_badges': json(200, [{ id: 'mentor', grp: 'community', label: 'Mentor', detail: null }]),
     'POST /storage/v1/object/sign/banners/user-1/banner.gif': json(200, { signedURL: '/object/sign/banners/user-1/banner.gif?token=t' }),
   });
   await b.verifyCode('rian@example.com', '123456');
   const data = await b.exportOwnData();
   expect(data).toMatchObject({ progress, usesLinux: true, badges: [{ id: 'mentor', group: 'community', label: 'Mentor', detail: null }] });
+  expect(data['social']).toEqual({ following: [{ id: 'u2', at: '2026-10-15T10:00:00Z' }], followers: [], likesGiven: [] });
   expect(String(data['bannerUrl'])).toContain('banners/user-1/banner.gif');
   expect(calls.find((c) => c.path === '/rest/v1/rpc/profile_badges')!.body).toEqual({ target: 'user-1' });
 });
@@ -346,5 +349,87 @@ describe('profile extras', () => {
       { action: 'grant_badge', reason: 'Helps a lot', until: null, badge: 'mentor', createdAt: '2026-10-14T10:00:00Z' },
     ]);
     expect(calls.find((c) => c.path === '/rest/v1/moderation_actions')!.query).toContain('badge');
+  });
+});
+
+describe('people (Supabase)', () => {
+  const signedIn = (routes: Record<string, Reply>) => backend({ 'POST /auth/v1/verify': json(200, sessionBody()), ...routes });
+  const row = { id: 'u2', display_name: 'Bia', level: 'B1', area: 'frontend', main_stack: ['react'], mascot: null, has_avatar: true };
+  const mapped = { id: 'u2', displayName: 'Bia', level: 'B1', area: 'frontend', mainStack: ['react'], mascot: null, hasAvatar: true };
+
+  test('members asks member_directory, with nulls for empty filters', async () => {
+    const { b, calls } = signedIn({ 'POST /rest/v1/rpc/member_directory': json(200, [row]) });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.members({ level: 'B1', query: '  ' }, 2)).toEqual([mapped]);
+    expect(calls.find((c) => c.path === '/rest/v1/rpc/member_directory')!.body).toEqual({ q: null, lvl: 'B1', area_filter: null, stack_tag: null, page: 2 });
+  });
+
+  test('socialStats maps profile_social; no row means zeros', async () => {
+    const { b } = signedIn({ 'POST /rest/v1/rpc/profile_social': json(200, [{ followers: 3, following: 1, likes: 12, i_follow: true, i_like: false }]) });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.socialStats('u2')).toEqual({ followers: 3, following: 1, likes: 12, iFollow: true, iLike: false });
+    const empty = signedIn({ 'POST /rest/v1/rpc/profile_social': json(200, []) });
+    await empty.b.verifyCode('rian@example.com', '123456');
+    expect(await empty.b.socialStats('u2')).toEqual({ followers: 0, following: 0, likes: 0, iFollow: false, iLike: false });
+  });
+
+  test('follow and like add the caller\'s row, ignoring duplicates; unfollow and unlike remove it', async () => {
+    const ok = () => new Response(null, { status: 201 });
+    const gone = () => new Response(null, { status: 204 });
+    const { b, calls } = signedIn({ 'POST /rest/v1/follows': ok, 'DELETE /rest/v1/follows': gone, 'POST /rest/v1/profile_likes': ok, 'DELETE /rest/v1/profile_likes': gone });
+    await b.verifyCode('rian@example.com', '123456');
+    await b.follow('u2');
+    await b.unfollow('u2');
+    await b.like('u2');
+    await b.unlike('u2');
+    const post = calls.find((c) => c.method === 'POST' && c.path === '/rest/v1/follows')!;
+    expect(post.body).toEqual({ follower: 'user-1', followee: 'u2' });
+    expect(post.query).toContain('on_conflict=follower,followee');
+    expect(calls.find((c) => c.method === 'DELETE' && c.path === '/rest/v1/follows')!.query).toMatch(/follower=eq\.user-1.*followee=eq\.u2/);
+    expect(calls.find((c) => c.method === 'POST' && c.path === '/rest/v1/profile_likes')!.body).toEqual({ liker: 'user-1', profile: 'u2' });
+    expect(calls.find((c) => c.method === 'DELETE' && c.path === '/rest/v1/profile_likes')!.query).toMatch(/liker=eq\.user-1.*profile=eq\.u2/);
+  });
+
+  test('the daily limit comes back as rate_limited', async () => {
+    const { b } = signedIn({ 'POST /rest/v1/follows': json(400, { code: 'P0001', message: 'follow limit reached' }) });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await errorOf(b.follow('u2'))).toMatchObject({ kind: 'rate_limited' });
+  });
+
+  test('followers and following call their readers', async () => {
+    const { b, calls } = signedIn({ 'POST /rest/v1/rpc/followers_of': json(200, [row]), 'POST /rest/v1/rpc/following_of': json(200, []) });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.followers('u3', 1)).toEqual([mapped]);
+    expect(await b.following('u3', 0)).toEqual([]);
+    expect(calls.find((c) => c.path === '/rest/v1/rpc/followers_of')!.body).toEqual({ target: 'u3', page: 1 });
+  });
+
+  test('profileOf reads the row by id with listed; nothing visible means null', async () => {
+    const profile = {
+      id: 'u2', display_name: 'Bia', native_language: 'Portuguese (Brazil)', level: 'B1', timezone: 'America/Bahia', area: 'frontend',
+      stack: ['react'], availability: [], bio: '', avatar_path: null, main_stack: ['react'], show_progress: true, mascot: null, banner_path: null, listed: false,
+    };
+    const { b, calls } = signedIn({ 'GET /rest/v1/profiles': json(200, profile) });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.profileOf('u2')).toMatchObject({ id: 'u2', displayName: 'Bia', listed: false, suspendedUntil: null });
+    expect(calls.find((c) => c.path === '/rest/v1/profiles')!.query).toMatch(/listed/);
+    const none = signedIn({ 'GET /rest/v1/profiles': json(200, null) });
+    await none.b.verifyCode('rian@example.com', '123456');
+    expect(await none.b.profileOf('u9')).toBeNull();
+  });
+
+  test('notices carry their kind and the actor\'s name', async () => {
+    const { b } = signedIn({
+      'GET /rest/v1/notices': json(200, [
+        { id: 1, message: 'Bia followed you.', created_at: '2026-10-15T10:00:00Z', read_at: null, kind: 'follow', actor: 'u2' },
+        { id: 2, message: 'Be kind.', created_at: '2026-10-14T10:00:00Z', read_at: null, kind: 'moderation', actor: null },
+      ]),
+      'GET /rest/v1/profiles': json(200, [{ id: 'u2', display_name: 'Bia' }]),
+    });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.listNotices()).toEqual([
+      { id: 1, message: 'Bia followed you.', createdAt: '2026-10-15T10:00:00Z', read: false, kind: 'follow', actor: { id: 'u2', displayName: 'Bia' } },
+      { id: 2, message: 'Be kind.', createdAt: '2026-10-14T10:00:00Z', read: false, kind: 'moderation', actor: null },
+    ]);
   });
 });
