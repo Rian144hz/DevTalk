@@ -22,16 +22,6 @@ const canvasToBytes = async (canvas: OffscreenCanvas, quality: number) => {
 };
 
 export const browserBannerDeps: BannerDeps = {
-  async isAnimated(file) {
-    const decoder = new ImageDecoder({ data: (file as Blob).stream(), type: file.type });
-    try {
-      await decoder.tracks.ready;
-      const track = decoder.tracks.selectedTrack;
-      return !!track && (track.animated || track.frameCount > 1);
-    } finally {
-      decoder.close();
-    }
-  },
   read: async (file) => new Uint8Array(await (file as Blob).arrayBuffer()),
   decode: (file) => createImageBitmap(file as Blob, { imageOrientation: 'from-image' }),
   async encode(source, crop, width, height, quality) {

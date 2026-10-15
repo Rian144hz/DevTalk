@@ -1,4 +1,4 @@
-import { inspectBanner, prepareBannerUpload, stripGifMetadata, stripWebpMetadata } from '../../src/main/social/media';
+import { inspectBanner, isAnimatedBanner, prepareBannerUpload, stripGifMetadata, stripWebpMetadata } from '../../src/core/media/banner';
 import { gif, webp } from './banner-fixtures';
 
 const text = (b: Uint8Array) => Buffer.from(b).toString('latin1');
@@ -25,6 +25,27 @@ describe('GIF', () => {
   test('a truncated GIF is corrupt', () => {
     const full = gif();
     expect(inspectBanner(full.slice(0, full.length - 12))).toEqual({ error: 'corrupt' });
+  });
+});
+
+describe('animation', () => {
+  test('a GIF with two or more frames is animated; one frame is still', () => {
+    expect(isAnimatedBanner(gif())).toBe(true);
+    expect(isAnimatedBanner(gif({ frames: 1 }))).toBe(false);
+    expect(isAnimatedBanner(gif({ frames: 5, netscape: false }))).toBe(true);
+  });
+
+  test('a WebP is animated only with the animation flag or an ANIM chunk; broken bytes are not animated', () => {
+    expect(isAnimatedBanner(webp())).toBe(true);
+    expect(isAnimatedBanner(webp({ animated: false }))).toBe(false);
+    expect(isAnimatedBanner(webp({ simple: true }))).toBe(false);
+    expect(isAnimatedBanner(new Uint8Array([1, 2, 3]))).toBe(false);
+  });
+
+  test('an animated GIF that would play once or a few times is set to loop forever', () => {
+    expect(stripGifMetadata(gif({ netscape: false }))).toEqual(gif());
+    expect(stripGifMetadata(gif({ loops: 3 }))).toEqual(gif());
+    expect(stripGifMetadata(gif({ frames: 1, netscape: false }))).toEqual(gif({ frames: 1, netscape: false }));
   });
 });
 

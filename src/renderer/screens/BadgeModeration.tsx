@@ -25,7 +25,12 @@ export function BadgeModeration() {
   const [reasonError, setReasonError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [myId, setMyId] = useState<string | null>(null);
   const latest = useRef(0);
+
+  useEffect(() => {
+    void api().social.getProfile().then((r) => r.ok && setMyId(r.data?.id ?? null));
+  }, []);
 
   useEffect(() => {
     const q = query.trim();
@@ -96,6 +101,7 @@ export function BadgeModeration() {
   }
 
   const has = (badge: ManualBadge) => !!badges?.some((b) => b.id === badge);
+  const isMe = !!member && member.id === myId;
 
   return (
     <section className="badge-moderation" aria-labelledby={ids.title}>
@@ -126,8 +132,12 @@ export function BadgeModeration() {
           <div className="report-detail">
             <h3 className="member-title">{member.displayName}</h3>
             {badges === null ? <Skeleton width="50%" /> : badges.length > 0 ? <BadgeRow badges={badges} /> : <p className="muted">No badges yet.</p>}
-            <TextField label="Reason" value={reason} maxLength={200} error={reasonError ?? undefined}
-              onChange={(e) => setReason(e.target.value)} hint="Required. Kept in the history for other moderators." />
+            {isMe ? (
+              <p className="muted">This is you. You cannot change your own badges; another moderator can do it.</p>
+            ) : (
+              <TextField label="Reason" value={reason} maxLength={200} error={reasonError ?? undefined}
+                onChange={(e) => setReason(e.target.value)} hint="Required. Kept in the history for other moderators." />
+            )}
             {error && <Notice tone="error" title={error} />}
             <ul className="ruled badge-actions" aria-label="Badges given by moderators">
               {MANUAL_BADGES.map((b) => {
@@ -136,7 +146,7 @@ export function BadgeModeration() {
                 return (
                   <li key={b}>
                     <Badge badge={{ id: b, group: 'community', label, detail: null }} />
-                    <Button variant="secondary" busy={busy === `${owned ? 'revoke' : 'grant'}:${b}`} disabled={badges === null || busy !== null}
+                    <Button variant="secondary" busy={busy === `${owned ? 'revoke' : 'grant'}:${b}`} disabled={isMe || badges === null || busy !== null}
                       onClick={() => void change(owned ? 'revoke' : 'grant', b)}>
                       {owned ? `Remove ${label}` : `Give ${label}`}
                     </Button>

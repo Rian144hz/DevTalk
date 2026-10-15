@@ -15,10 +15,10 @@ function subBlocks(data: number[]): number[] {
   return [...out, 0];
 }
 
-export function gif(o: { w?: number; h?: number; frames?: number; frameBytes?: number; comment?: string; netscape?: boolean; xmp?: boolean } = {}) {
-  const { w = 960, h = 320, frames = 2, frameBytes = 4, comment, netscape = true, xmp } = o;
+export function gif(o: { w?: number; h?: number; frames?: number; frameBytes?: number; comment?: string; netscape?: boolean; loops?: number; xmp?: boolean } = {}) {
+  const { w = 960, h = 320, frames = 2, frameBytes = 4, comment, netscape = true, loops = 0, xmp } = o;
   const b = [...ascii('GIF89a'), ...u16(w), ...u16(h), 0x80, 0, 0, 0, 0, 0, 255, 255, 255];
-  if (netscape) b.push(0x21, 0xff, 11, ...ascii('NETSCAPE2.0'), 3, 1, 0, 0, 0);
+  if (netscape) b.push(0x21, 0xff, 11, ...ascii('NETSCAPE2.0'), 3, 1, ...u16(loops), 0);
   if (comment) b.push(0x21, 0xfe, ...subBlocks(ascii(comment)));
   if (xmp) b.push(0x21, 0xff, 11, ...ascii('XMP DataXMP'), ...subBlocks(ascii('<x:xmpmeta GPS="1"/>')));
   for (let f = 0; f < frames; f++) {

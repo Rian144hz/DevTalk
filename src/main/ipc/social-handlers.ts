@@ -2,7 +2,7 @@ import { normalizeStackTags } from '../../core/social/validate';
 import type { SocialStatus } from '../../shared/ipc-contract';
 import { validateAvatar } from '../social/avatar';
 import type { SocialBackend } from '../social/backend';
-import { prepareBannerUpload } from '../social/media';
+import { prepareBannerUpload } from '../../core/media/banner';
 import { AppFailure, handle, type HandlerMap } from './handle';
 import type { SocialChannel } from './handlers';
 
@@ -54,6 +54,13 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
 
   async function requireModerator(): Promise<void> {
     if (!(await backend.isModerator())) throw new AppFailure('forbidden', 'Only moderators can see this.');
+  }
+
+  /** Badge changes are for other members; the server refuses them on oneself, so say why before asking it. */
+  async function requireOtherMember(userId: string): Promise<void> {
+    if ((await backend.session())?.userId === userId) {
+      throw new AppFailure('validation', 'You cannot change your own badges. Another moderator can do it.');
+    }
   }
 
   return {
@@ -164,11 +171,13 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
     }),
     'moderation:grantBadge': handle('moderation:grantBadge', async ({ userId, badge, reason }) => {
       await requireModerator();
+      await requireOtherMember(userId);
       await backend.grantBadge(userId, badge, reason);
       return null;
     }),
     'moderation:revokeBadge': handle('moderation:revokeBadge', async ({ userId, badge, reason }) => {
       await requireModerator();
+      await requireOtherMember(userId);
       await backend.revokeBadge(userId, badge, reason);
       return null;
     }),

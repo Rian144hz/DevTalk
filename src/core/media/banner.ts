@@ -1,5 +1,6 @@
-// Profile banners: what the main process accepts, and metadata removal without re-encoding.
-// The window re-encodes still images itself; animated GIF/WebP arrive as chosen and are cleaned here.
+// Profile banners, read from their bytes: kind, size, whether they move, and metadata removal without re-encoding.
+// Pure (no DOM, no Node): the window uses it to tell animated from still, the main process to check and clean.
+// The window re-encodes still images itself; animated GIF/WebP arrive as chosen and are cleaned in main.
 
 export type BannerKind = 'gif' | 'webp-animated' | 'webp-static';
 export type BannerError = 'unsupported' | 'too_large' | 'bad_dimensions' | 'corrupt';
@@ -87,10 +88,25 @@ function walkGif(b: Uint8Array): { headerEnd: number; blocks: GifBlock[]; frames
   }
 }
 
-/** Removes comment, plain-text and application extensions (except the animation loop). */
+/** The application extension that makes a GIF loop forever (loop count 0). */
+const LOOP_FOREVER = new Uint8Array([0x21, 0xff, 11, ...Array.from('NETSCAPE2.0', (c) => c.charCodeAt(0)), 3, 1, 0, 0, 0]);
+
+const isLoopBlock = (b: Uint8Array, k: GifBlock) => b[k.start] === 0x21 && b[k.start + 1] === 0xff && k.keep;
+
+/**
+ * Removes comment, plain-text and application extensions (except the animation loop). An animated GIF is set to
+ * loop forever, as banners do: a missing loop extension is added and a finite loop count becomes 0.
+ */
 export function stripGifMetadata(bytes: Uint8Array): Uint8Array {
-  const { headerEnd, blocks } = walkGif(bytes);
-  const parts = [bytes.subarray(0, headerEnd), ...blocks.filter((k) => k.keep).map((k) => bytes.subarray(k.start, k.end))];
+  const { headerEnd, blocks, frames } = walkGif(bytes);
+  const kept = blocks.filter((k) => k.keep).map((k) => {
+    const part = bytes.slice(k.start, k.end);
+    // NETSCAPE2.0 / ANIMEXTS1.0: 11-byte id, then a 3-byte sub-block [1, count lo, count hi].
+    if (frames > 1 && isLoopBlock(bytes, k) && part[14] === 3 && part[15] === 1) part.set([0, 0], 16);
+    return part;
+  });
+  const hasLoop = blocks.some((k) => isLoopBlock(bytes, k));
+  const parts = [bytes.subarray(0, headerEnd), ...(frames > 1 && !hasLoop ? [LOOP_FOREVER] : []), ...kept];
   const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
   let at = 0;
   for (const p of parts) {
@@ -171,6 +187,18 @@ export function stripWebpMetadata(bytes: Uint8Array): Uint8Array {
 }
 
 // ---- entry points ----
+
+/** True for a GIF with two or more frames, or a WebP with the animation flag or an ANIM chunk. */
+export function isAnimatedBanner(bytes: Uint8Array): boolean {
+  if (bytes.length > MAX_INPUT_BYTES) return false;
+  try {
+    if (isGif(bytes)) return walkGif(bytes).frames > 1;
+    if (isWebp(bytes)) return webpInfo(bytes).kind === 'webp-animated';
+  } catch (err) {
+    if (!(err instanceof Corrupt)) throw err;
+  }
+  return false;
+}
 
 export function inspectBanner(bytes: Uint8Array): { kind: BannerKind; width: number; height: number } | { error: BannerError } {
   if (bytes.length > MAX_INPUT_BYTES) return { error: 'too_large' };

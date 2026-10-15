@@ -296,6 +296,14 @@ describe('profile extras', () => {
     expect((await ok(h['social:badges']({ userId: alex! }))).map((b) => b.id)).not.toContain('beta_tester');
   });
 
+  test('a moderator is told plainly that they cannot change their own badges', async () => {
+    const { h, backend } = setup({ seed: 'moderation' });
+    const me = (await backend.session())!.userId;
+    const own = { ok: false, error: { kind: 'validation', message: 'You cannot change your own badges. Another moderator can do it.' } };
+    expect(await h['moderation:grantBadge']({ userId: me, badge: 'mentor', reason: 'x' })).toEqual(own);
+    expect(await h['moderation:revokeBadge']({ userId: me, badge: 'mentor', reason: 'x' })).toEqual(own);
+  });
+
   test('a non-moderator cannot search or give badges', async () => {
     const { h } = setup();
     await signUp(h);

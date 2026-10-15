@@ -1,5 +1,6 @@
 import { AvatarInputError, BannerInputError, centreCrop, centreSquare, parseDataUrl, prepareAvatar, prepareBanner } from '../../src/renderer/lib/image';
 import type { AvatarDeps, BannerDeps } from '../../src/renderer/lib/image';
+import { gif, webp } from '../main/banner-fixtures';
 
 const MB = 1024 * 1024;
 
@@ -63,15 +64,14 @@ test('a file that cannot be decoded is unsupported', async () => {
 });
 
 describe('banner', () => {
-  function bannerDeps(o: { animated?: boolean; sizes?: number[]; width?: number; height?: number } = {}) {
+  function bannerDeps(o: { bytes?: Uint8Array; sizes?: number[]; width?: number; height?: number } = {}) {
     const calls: { crop: unknown; w: number; h: number; quality: number }[] = [];
     let decoded = 0;
     let read = 0;
     const d: BannerDeps = {
-      isAnimated: async () => o.animated ?? false,
       read: async () => {
         read++;
-        return new Uint8Array([71, 73, 70]);
+        return o.bytes ?? gif({ frames: 1 });
       },
       decode: async () => {
         decoded++;
@@ -92,40 +92,52 @@ describe('banner', () => {
   });
 
   test('a still image becomes a 1500×500 WebP, re-encoded at 0.6 when over 2 MB', async () => {
-    const { d, calls } = bannerDeps({ sizes: [3 * MB, MB] });
+    const { d, calls, read } = bannerDeps({ sizes: [3 * MB, MB] });
     const out = await prepareBanner({ type: 'image/png', size: 4 * MB }, d);
     expect(out).toEqual({ bytes: new Uint8Array(MB), type: 'image/webp' });
     expect(calls).toEqual([
       { crop: { sx: 0, sy: 0, sw: 3000, sh: 1000 }, w: 1500, h: 500, quality: 0.8 },
       { crop: { sx: 0, sy: 0, sw: 3000, sh: 1000 }, w: 1500, h: 500, quality: 0.6 },
     ]);
-  });
-
-  test('an animated GIF or WebP is sent as chosen', async () => {
-    const gif = bannerDeps({ animated: true });
-    expect(await prepareBanner({ type: 'image/gif', size: MB }, gif.d)).toEqual({ bytes: new Uint8Array([71, 73, 70]), type: 'image/gif' });
-    expect(gif.decoded()).toBe(0);
-    const webp = bannerDeps({ animated: true });
-    expect((await prepareBanner({ type: 'image/webp', size: MB }, webp.d)).type).toBe('image/webp');
-  });
-
-  test('a single-frame GIF is treated as a still image', async () => {
-    const { d, calls, read } = bannerDeps({ animated: false });
-    expect((await prepareBanner({ type: 'image/gif', size: MB }, d)).type).toBe('image/webp');
-    expect(calls).toHaveLength(1);
     expect(read()).toBe(0);
+  });
+
+  test('an animated GIF or WebP is sent as chosen, decided from its bytes', async () => {
+    const animatedGif = gif({ frames: 3 });
+    const g = bannerDeps({ bytes: animatedGif });
+    expect(await prepareBanner({ type: 'image/gif', size: MB }, g.d)).toEqual({ bytes: animatedGif, type: 'image/gif' });
+    expect(g.decoded()).toBe(0);
+    const w = bannerDeps({ bytes: webp() });
+    expect((await prepareBanner({ type: 'image/webp', size: MB }, w.d)).type).toBe('image/webp');
+    expect(w.decoded()).toBe(0);
+  });
+
+  test('a single-frame GIF or a still WebP is treated as a still image', async () => {
+    for (const [type, bytes] of [['image/gif', gif({ frames: 1 })], ['image/webp', webp({ animated: false })]] as const) {
+      const { d, calls } = bannerDeps({ bytes });
+      expect((await prepareBanner({ type, size: MB }, d)).type).toBe('image/webp');
+      expect(calls).toHaveLength(1);
+    }
+  });
+
+  test('an animated GIF smaller than 600 × 200 is refused when chosen, not when saved', async () => {
+    const { d } = bannerDeps({ bytes: gif({ w: 498, h: 280 }) });
+    await expect(prepareBanner({ type: 'image/gif', size: 100_000 }, d)).rejects.toMatchObject({
+      reason: 'animated_too_small',
+      message: 'An animated banner must be at least 600 × 200 pixels.',
+    });
   });
 
   test.each([
-    ['an SVG', { type: 'image/svg+xml', size: 2_000 }, false, 'unsupported', 'Choose a GIF, WebP, JPEG or PNG image.'],
-    ['a 9 MB JPEG', { type: 'image/jpeg', size: 9 * MB }, false, 'too_large', 'Choose an image under 8 MB.'],
-    ['a 3 MB animated GIF', { type: 'image/gif', size: 3 * MB }, true, 'animated_too_large', 'An animated banner must be under 2 MB.'],
-  ])('refuses %s', async (_label, file, animated, reason, message) => {
-    const { d, read } = bannerDeps({ animated });
+    ['an SVG', { type: 'image/svg+xml', size: 2_000 }, 'unsupported', 'Choose a GIF, WebP, JPEG or PNG image.'],
+    ['a 9 MB JPEG', { type: 'image/jpeg', size: 9 * MB }, 'too_large', 'Choose an image under 8 MB.'],
+    ['a 3 MB animated GIF', { type: 'image/gif', size: 3 * MB }, 'animated_too_large', 'An animated banner must be under 2 MB.'],
+  ])('refuses %s', async (_label, file, reason, message) => {
+    const { d, calls } = bannerDeps({ bytes: gif() });
     const err = await prepareBanner(file, d).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(BannerInputError);
     expect(err).toMatchObject({ reason, message });
-    expect(read()).toBe(0);
+    expect(calls).toHaveLength(0);
   });
 
   test('a file that cannot be decoded is unsupported', async () => {

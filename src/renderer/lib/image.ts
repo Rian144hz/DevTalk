@@ -1,6 +1,7 @@
 // Profile photo and banner preparation in the window. Still images are cropped, resized and re-encoded as WebP:
 // re-encoding through a canvas drops EXIF data (including GPS) before anything leaves the machine. Animated banners
 // are sent as chosen and the main process removes their metadata without re-encoding.
+import { inspectBanner, isAnimatedBanner } from '../../core/media/banner';
 
 export const AVATAR_SIZE = 256;
 export const MAX_INPUT_BYTES = 8 * 1024 * 1024;
@@ -64,11 +65,12 @@ export const BANNER_HEIGHT = 500;
 export const MAX_BANNER_BYTES = 2 * 1024 * 1024;
 const BANNER_ACCEPTED = ['image/gif', 'image/webp', 'image/jpeg', 'image/png'];
 
-export type BannerInputReason = 'unsupported' | 'too_large' | 'animated_too_large';
+export type BannerInputReason = 'unsupported' | 'too_large' | 'animated_too_large' | 'animated_too_small';
 const BANNER_MESSAGES: Record<BannerInputReason, string> = {
   unsupported: 'Choose a GIF, WebP, JPEG or PNG image.',
   too_large: 'Choose an image under 8 MB.',
   animated_too_large: 'An animated banner must be under 2 MB.',
+  animated_too_small: 'An animated banner must be at least 600 × 200 pixels.',
 };
 
 export class BannerInputError extends Error {
@@ -86,8 +88,6 @@ export interface RectCrop {
 }
 
 export interface BannerDeps {
-  /** True when a GIF or WebP has more than one frame. */
-  isAnimated(file: { type: string; size: number }): Promise<boolean>;
   read(file: { type: string; size: number }): Promise<Uint8Array>;
   decode(file: { type: string; size: number }): Promise<ImageBitmapLike>;
   encode(source: ImageBitmapLike, crop: RectCrop, width: number, height: number, quality: number): Promise<Uint8Array>;
@@ -106,10 +106,15 @@ export async function prepareBanner(
 ): Promise<{ bytes: Uint8Array; type: 'image/gif' | 'image/webp' }> {
   if (!BANNER_ACCEPTED.includes(file.type)) throw new BannerInputError('unsupported');
   if (file.size > MAX_INPUT_BYTES) throw new BannerInputError('too_large');
-  const mayAnimate = file.type === 'image/gif' || file.type === 'image/webp';
-  if (mayAnimate && (await deps.isAnimated(file).catch(() => false))) {
-    if (file.size > MAX_BANNER_BYTES) throw new BannerInputError('animated_too_large');
-    return { bytes: await deps.read(file), type: file.type as 'image/gif' | 'image/webp' };
+  if (file.type === 'image/gif' || file.type === 'image/webp') {
+    // Decided from the bytes, the same way the main process reads them (frame count, WebP animation flag).
+    const bytes = await deps.read(file);
+    if (isAnimatedBanner(bytes)) {
+      if (file.size > MAX_BANNER_BYTES) throw new BannerInputError('animated_too_large');
+      const info = inspectBanner(bytes);
+      if ('error' in info) throw new BannerInputError(info.error === 'bad_dimensions' ? 'animated_too_small' : 'unsupported');
+      return { bytes, type: file.type };
+    }
   }
   let bitmap: ImageBitmapLike;
   try {

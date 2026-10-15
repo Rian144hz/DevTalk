@@ -84,6 +84,17 @@ test.describe('as a moderator', () => {
     await expect(badges.getByRole('list', { name: 'Badge history' }).getByText('Removed Mentor')).toBeVisible();
   });
 
+  test('choosing yourself explains that your own badges are changed by another moderator', async ({ page }) => {
+    await onboard(page);
+    await page.getByRole('link', { name: 'Moderation' }).click();
+    const badges = page.getByRole('region', { name: 'Badges', exact: true });
+    await badges.getByLabel('Find a member').fill('Mod');
+    await badges.getByRole('list', { name: 'Members found' }).getByRole('button', { name: /Mod/ }).click();
+    await expect(badges.getByText('This is you. You cannot change your own badges; another moderator can do it.')).toBeVisible();
+    await expect(badges.getByRole('button', { name: /^(Give|Remove) / })).toHaveCount(3);
+    for (const b of await badges.getByRole('button', { name: /^(Give|Remove) / }).all()) await expect(b).toBeDisabled();
+  });
+
   test('the palette can open Moderation', async ({ page }) => {
     await onboard(page);
     await page.keyboard.press('Control+k');
