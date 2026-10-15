@@ -1,9 +1,12 @@
+import { ensureContrast } from './colour';
 import { STACK_ALIASES, STACK_ALIAS_LABELS, STACK_ICONS } from './stack-icons.generated';
 
 export interface StackIcon {
   /** The logo's own name (Simple Icons title). */
   title: string;
   path: string;
+  /** Brand colour (RRGGBB) or null for black and grey brands. */
+  hex: string | null;
   /** What the profile shows: the technology the person means. */
   label: string;
 }
@@ -29,3 +32,19 @@ export function stackIconFor(tag: string): StackIcon | null {
 export const KNOWN_STACKS: string[] = [
   ...new Set([...Object.values(STACK_ICONS).map((i) => i.title), ...Object.values(STACK_ALIAS_LABELS)]),
 ].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
+
+/** The grounds a badge sits on in each theme (--bg and --sheet in tokens.css). */
+export const THEME_GROUNDS = { dark: ['#16181d', '#20232b'], light: ['#eef0f3', '#ffffff'] } as const;
+/** --ink-2 in each theme: badges without a brand colour. */
+const NEUTRAL = { dark: '#B4B9C5', light: '#454B57' } as const;
+
+/** The brand colour of a stack tag, adjusted to read at 3:1 on both grounds of the theme; neutral when it has none. */
+export function languageColour(tag: string, theme: 'dark' | 'light'): string {
+  const hex = stackIconFor(tag)?.hex;
+  if (!hex) return NEUTRAL[theme];
+  // Adjusting against the harder ground first also satisfies the easier one (the mix only moves away from both).
+  const [a, b] = THEME_GROUNDS[theme];
+  const hardest = theme === 'dark' ? b : a;
+  const easiest = theme === 'dark' ? a : b;
+  return ensureContrast(ensureContrast(`#${hex}`, hardest), easiest);
+}

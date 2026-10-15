@@ -3,9 +3,27 @@ import { useState } from 'react';
 import { buildGalley } from '../../core/feedback/galley';
 import type { Expression } from '../../core/domain/types';
 import {
-  Avatar, BlockButton, Button, Chip, CoachProgress, EmptyState, ExpressionCard, Galley, Notice, PasswordField, ReportDialog,
+  Avatar, BadgeRow, BlockButton, Button, Chip, CoachProgress, EmptyState, ExpressionCard, Galley, Notice, PasswordField, ReportDialog,
   Segmented, Select, Skeleton, StackList, Tally, TextArea, TextField, TypeBadge,
 } from '../design-system';
+import type { Badge } from '../../core/social/types';
+import { MASCOTS } from '../../core/social/types';
+import { MASCOT_NAMES } from '../lib/mascots';
+
+const SAMPLE_BADGES: Badge[] = [
+  { id: 'streak_30', group: 'evolution', label: '30-day streak', detail: '34' },
+  { id: 'lang:python', group: 'language', label: 'python', detail: null },
+  { id: 'creator', group: 'community', label: 'Creator', detail: null },
+  { id: 'moderator', group: 'community', label: 'Moderator', detail: null },
+  { id: 'founding_member', group: 'community', label: 'Founding member', detail: null },
+  { id: 'mentor', group: 'community', label: 'Mentor', detail: null },
+  { id: 'open_source', group: 'community', label: 'Open source contributor', detail: null },
+  { id: 'area:backend', group: 'technical', label: 'Back end', detail: null },
+  { id: 'linux', group: 'technical', label: 'Linux native', detail: null },
+  { id: 'lang:java', group: 'language', label: 'java', detail: null },
+  { id: 'level_up', group: 'evolution', label: 'B1 → B2', detail: 'B1>B2' },
+  { id: 'vocabulary', group: 'evolution', label: 'Vocabulary hunter', detail: '100+' },
+];
 
 const answer =
   "Yesterday I have worked on the login bug. The problem was that the token expire too fast. I changed the configuration and now it works good. Today I write tests for it.";
@@ -64,7 +82,11 @@ export function ComponentsScreen() {
         <div className="gallery-row">
           <Avatar src={null} name="Rian" size={64} /><Avatar src={null} name="ana" /><Avatar src={null} name="Élodie" size={28} />
         </div>
+        <div className="gallery-row">
+          {MASCOTS.map((m) => <Avatar key={m} src={null} name={MASCOT_NAMES[m]} userId="gallery" mascot={m} size={48} />)}
+        </div>
         <StackList tags={['python', 'java', 'c++', 'react native', 'postgres', 'docker', 'my-company-lib']} />
+        <BadgeRow badges={SAMPLE_BADGES} />
         <div className="gallery-row">
           <Button variant="secondary" onClick={() => setReporting(true)}>Report Sam</Button>
           <BlockButton name="Sam" onBlock={async () => { await wait(600); return null; }} />

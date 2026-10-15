@@ -102,9 +102,25 @@ kbd { font: var(--text-xs) var(--font-mono); color: var(--ink-2); border: 1px so
 .stack-tag { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-md); color: var(--ink); border: 1px solid var(--rule-strong); border-radius: var(--r-chip); padding: 2px var(--s2); overflow-wrap: anywhere; }
 .stack-icon { flex: none; fill: currentColor; }
 
-/* Avatar: photo or initial; never coloured */
+/* Avatar: photo, mascot (bundled illustration) or initial; the ring is never coloured */
 .avatar { flex: none; border-radius: 50%; border: 1px solid var(--rule-strong); object-fit: cover; background: var(--sheet-hover); }
 .avatar-initial { display: inline-grid; place-items: center; color: var(--ink-2); font-weight: 600; line-height: 1; user-select: none; }
+
+/* Badges: a pill tinted by its group; the icon carries the colour, the name stays in the text colour */
+.badge-row { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.badge {
+  --c: var(--badge-neutral);
+  display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); line-height: 1.5; color: var(--ink);
+  border-radius: 999px; padding: 2px 10px 2px 8px;
+  border: 1px solid color-mix(in srgb, var(--c) 50%, var(--rule-strong));
+  background: color-mix(in srgb, var(--c) 11%, transparent);
+}
+.badge-community { --c: var(--badge-community); }
+.badge-evolution { --c: var(--badge-evolution); }
+.badge-language { --c: var(--badge-dark, var(--badge-neutral)); }
+:root[data-theme="light"] .badge-language { --c: var(--badge-light, var(--badge-neutral)); }
+.badge-icon { flex: none; width: 15px; height: 15px; color: var(--c); fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.badge-logo { flex: none; width: 14px; height: 14px; color: var(--c); fill: currentColor; }
 
 /* Modal dialog (reports): same sheet and float as the palette, no open/close animation */
 .dialog { margin: auto; width: min(520px, 92vw); max-height: 88vh; padding: 0; background: var(--sheet); color: var(--ink); border: 1px solid var(--rule-strong); border-radius: var(--r-sheet); box-shadow: var(--shadow-float); }

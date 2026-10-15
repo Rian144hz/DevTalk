@@ -28,7 +28,7 @@ function ProfileView({ profile, avatar }: { profile: SocialProfile; avatar: stri
   return (
     <article className="profile">
       <header className="profile-head">
-        <Avatar src={avatar} name={profile.displayName} size={72} />
+        <Avatar src={avatar} name={profile.displayName} size={72} userId={profile.id} mascot={profile.mascot} />
         <div>
           <h2>{profile.displayName}</h2>
           <p className="lede">{AREA_LABELS[profile.area]} developer, English level {profile.level}</p>

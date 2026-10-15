@@ -135,7 +135,7 @@ export function ModerationScreen() {
               {reports.map((r) => (
                 <li key={r.id}>
                   <button type="button" aria-current={selected?.id === r.id ? 'true' : undefined} onClick={() => select(r)}>
-                    <Avatar src={r.reported ? (avatars[r.reported.id] ?? null) : null} name={r.reported?.displayName ?? '?'} size={32} />
+                    <Avatar src={r.reported ? (avatars[r.reported.id] ?? null) : null} name={r.reported?.displayName ?? '?'} size={32} userId={r.reported?.id} mascot={r.reported?.mascot} />
                     <span className="report-main">
                       <span className="report-who">{r.reported?.displayName ?? 'Deleted account'}</span>
                       <span className="report-meta">{REPORT_REASON_LABELS[r.reason]}, {CONTEXT_LABELS[r.contextType].toLowerCase()}</span>
