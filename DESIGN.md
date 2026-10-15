@@ -239,6 +239,36 @@ components:
   mascot-option:
     rounded: "{rounded.pill}"
     size: "48px"
+  people-tab:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink-secondary}"
+    padding: "8px 0"
+  people-tab-current:
+    textColor: "{colors.ink}"
+  member-row:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    padding: "12px 8px"
+  member-row-hover:
+    backgroundColor: "{colors.galley-sheet}"
+  member-filter-field:
+    backgroundColor: "{colors.graphite-ground}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    height: "42px"
+  like-button:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    padding: "9px 12px"
+  like-button-hover:
+    backgroundColor: "{colors.galley-sheet-hover}"
+  follow-notice:
+    backgroundColor: "{colors.galley-sheet}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.sheet}"
+    padding: "16px 20px"
 ---
 
 # Design System: DevTalk
@@ -326,6 +356,8 @@ Inside a galley each line is a two-column row: the mono text, then a 248px margi
 
 The practice graph is 53 Monday-first week columns of 10px cells with 3px gaps; below a 1100px window width the cells drop to 9px and the gaps to 2px so the year fits without scrolling, and when it still overflows it scrolls sideways with the most recent weeks in view and the day column sticky. On the People profile a 3:1 banner spans the 760px column, the 96px avatar overlaps its lower edge by half (48px) and the head row is inset 20px.
 
+People opens with its tabs across the 760px column, 24px apart over a 1px rule, with 24px below. The member filters are a four-column grid (search 2fr, English level and Area 1fr each, Technology 1.2fr) with 16px gaps and 20px below; below 1100px they wrap to two equal columns. Member lists, follower lists and their loading skeletons share the 760px column.
+
 ## Elevation & Depth
 
 The system is flat and tonal. Depth comes from three steps of surface (rail darker than ground, ground darker than sheet) and from 1px rules. Inputs sit on the ground colour so they read as recessed into a sheet. Shadow is used for exactly one thing: layers that float above the page.
@@ -391,7 +423,7 @@ Recurring mistakes are counted with drawn pencil tally strokes (2px by 16px, a r
 
 ### Avatar
 A circle with a 1px strong-rule border: the person's photo, or the first letter of the name in secondary ink, weight 600, on sheet-hover. Never coloured per person. A photo that cannot be decoded falls back to the initial. The name is always shown beside it. Sizes: 72px on a profile, 32px in lists.
-Without a photo, a member's avatar shows their mascot: one of nine bundled illustrations (ducks, bears, axolotls; provenance in `docs/design/mascots/SOURCE.md`), chosen in Edit profile or picked from their id. The photo always wins; the initial remains only where there is no member id. The mascot fills the same ruled circle, so the ring is still never coloured. On the People profile the avatar is 96px inside a 5px ground-coloured ring that overlaps the banner.
+Without a photo, a member's avatar shows their mascot: one of nine bundled illustrations (ducks, bears, axolotls; provenance in `docs/design/mascots/SOURCE.md`), chosen in Edit profile or picked from their id. The photo always wins; the initial remains only where there is no member id. The mascot fills the same ruled circle, so the ring is still never coloured. On the People profile the avatar is 96px inside a 5px ground-coloured ring that overlaps the banner. In the member list it is 40px; in follow notices and the moderation queue it stays 32px.
 
 ### Mascot picker
 In Edit profile, once the profile exists: a wrapping row of nine 48px mascot circles with 8px gaps, each a visually hidden radio with the mascot's name as its title. The checked mascot gets the separation ring (2px ground, then 2px ink); keyboard focus adds the 2px focus outline offset 5px. The hint says whether people see the photo or the mascot.
@@ -423,6 +455,27 @@ Open reports as a ruled list: avatar, name in weight 600, reason and place in 13
 ### Join steps
 Join runs one step at a time in one column, like onboarding. The step count lives in the lede ("Step 2 of 4. Check your e-mail for a code."), never as a label above the heading. Consents are ruled rows with the document link right-aligned.
 
+### People tabs
+Members, Following and Your profile as a row of route links in a labelled `nav`, not a segmented control. Each tab is 15px weight 500 in secondary ink with 8px vertical padding and a 2px transparent underline sitting on the 1px rule below the row; hover turns it ink. The current tab (`aria-current="page"`) is ink with a 2px ink underline, never pencil. A member's profile and their follower lists keep Members marked, since that is where they are reached from. A member list directly under the tabs drops its own top rule.
+
+### Member list
+People as ruled rows, one link per row, in the same grammar as the moderation queue: a 40px avatar or mascot, the name in weight 600 with the meta line under it ("Back end developer, B1", 13px secondary ink), and the member's main technologies as language badges on the right. Rows are 12px by 8px with the control radius; hover takes the sheet fill. Lists load 30 at a time; when a page comes back full, a secondary "Load more" button follows the list and shows the busy dot while it loads.
+
+### Member filters
+Above the member list: Search by name, English level, Area and Technology as ordinary fields with their labels. Text inputs and selects render at different natural heights, so the filter row forces both to 42px (2.625rem).
+
+### Follow and like
+Under a profile's name, a wrapping row (8px by 16px gaps, 20px below). On someone else's profile, Follow is the profile's one primary action, a pencil-filled button; once followed it becomes a secondary "Following" button. Their accessible names say what a press does: "Follow <name>" and "Stop following <name>". The like control is shaped like a secondary control (strong-rule outline, control radius, 9px by 12px, weight 500): a 16px heart line icon, filled in the text tone when liked (`aria-pressed`), and the count in tabular figures; hover takes sheet-hover. Then "N followers" and "N following" as 14px secondary-ink links in tabular figures that turn ink on hover. On your own profile only the counts show, with a 14px heart before the likes. Counts are plain facts; nothing is ranked or sorted by them.
+
+### Follow notice
+A new follower is an info notice (sheet fill, strong rule, 10px radius, 16px by 20px) laid out as one row with 12px gaps: the follower's 32px picture (photo or mascot), then "<linked name> followed you." with the date under it in 13px secondary ink, then Mark as read.
+
+### Follower lists
+"<name>'s followers" and "People <name> follows": a secondary-ink back link to the profile, the title at 20px, then the member list rows. Empty states name whose list it is ("No one follows Ana yet.", "You do not follow anyone yet.").
+
+### Member profile
+Another member's profile reuses the profile sheet (banner, head, badges, fact sheet, graph) with Follow and like under the name. Report (quiet) and Block (secondary, confirmed inline) sit in a footer under a 1px top rule, 24px above and 16px inside it. A profile that is gone, suspended or blocking you is an empty state, "This profile is not available.", with a secondary "Back to Members".
+
 ## Do's and Don'ts
 
 ### Do:
@@ -435,6 +488,9 @@ Join runs one step at a time in one column, like onboarding. The step count live
 - **Do** confirm destructive actions inline in a neutral panel, guarded by a typed e-mail or a required reason.
 - **Do** let the icon carry a member badge's colour and keep its label in ink.
 - **Do** show an animated banner's first frame, still, under reduced motion or when "Play animated banners" is off.
+- **Do** make Follow the member profile's one primary action; once followed it becomes a secondary "Following" button.
+- **Do** mark the current People tab with a 2px ink underline on the rule, and keep Members marked on a member's profile and lists.
+- **Do** set follower, following and like counts in tabular figures as plain text beside their controls.
 
 ### Don't:
 - **Don't** build a dashboard of stat cards or metric tiles; progress is facts, ruled lists and tallies.
@@ -446,3 +502,5 @@ Join runs one step at a time in one column, like onboarding. The step count live
 - **Don't** animate the command palette or the report dialog open or closed.
 - **Don't** colour destructive actions amber or red; amber stays for problems with the app.
 - **Don't** colour avatars or stack logos; logos take the text tone. A mascot is the only picture shown when there is no photo, and only language badges carry brand colour.
+- **Don't** rank or sort people by followers or likes, or give a count its own tile.
+- **Don't** colour the like heart; liked is the heart filled in the text tone.

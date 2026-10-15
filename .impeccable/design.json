@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-15T12:00:00+00:00",
+  "generatedAt": "2026-10-15T18:00:00+00:00",
   "title": "Design System: DevTalk",
   "extensions": {
     "colorMeta": {
@@ -908,7 +908,7 @@
       {
         "name": "graph-narrow",
         "value": "1100px",
-        "purpose": "Practice graph cells drop from 10px to 9px and gaps from 3px to 2px so the year fits without scrolling."
+        "purpose": "Practice graph cells drop from 10px to 9px and gaps from 3px to 2px so the year fits without scrolling. The member filters wrap from four columns to two."
       }
     ],
     "layout": {
@@ -926,7 +926,10 @@
       "graphGap": "3px (2px below 1100px)",
       "bannerRatio": "3:1 (6:1 empty band)",
       "profileAvatar": "96px, 5px ground ring, overlapping the banner by 48px",
-      "mascotOption": "48px, 8px gap"
+      "mascotOption": "48px, 8px gap",
+      "peopleTabs": "24px gap over a 1px rule, 24px below",
+      "memberFilters": "2fr 1fr 1fr 1.2fr, 16px gap; two columns below 1100px; fields 42px tall",
+      "memberPage": 30
     }
   },
   "components": [
@@ -998,7 +1001,7 @@
       "name": "Avatar",
       "kind": "custom",
       "refersTo": "avatar",
-      "description": "Photo, else the member's mascot (chosen or picked from their id), else the initial, in a ruled circle never coloured per person; the photo always wins. 96px on the People profile (5px ground ring over the banner), 72px in Edit profile, 32px in lists.",
+      "description": "Photo, else the member's mascot (chosen or picked from their id), else the initial, in a ruled circle never coloured per person; the photo always wins. 96px on the People profile (5px ground ring over the banner), 72px in Edit profile, 40px in the member list, 32px in follow notices and the moderation queue.",
       "html": "<span class=\"ds-avatar\" aria-hidden=\"true\">R</span>",
       "css": ".ds-avatar{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font:600 17px/1 var(--font-ui,'Public Sans',system-ui,sans-serif);object-fit:cover}"
     },
@@ -1072,6 +1075,30 @@
       "description": "Edit profile: a wrapping row of nine 48px mascot circles; the checked one gets a 2px ground then 2px ink separation ring, focus adds the 2px focus outline offset 5px. Mascots show only when there is no photo.",
       "html": "<fieldset class=\"ds-mascots\"><legend>Mascot</legend><div><label><input type=\"radio\" name=\"m\" checked><span style=\"background:#f3d36b\"></span></label><label><input type=\"radio\" name=\"m\"><span style=\"background:#9c7350\"></span></label><label><input type=\"radio\" name=\"m\"><span style=\"background:#f2a7c3\"></span></label></div></fieldset>",
       "css": ".ds-mascots{border:0;padding:0;margin:0;font-family:var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1)}.ds-mascots legend{padding:0;margin-bottom:8px;font-size:var(--text-md,0.875rem);font-weight:600}.ds-mascots div{display:flex;flex-wrap:wrap;gap:8px}.ds-mascots label{display:inline-flex;border-radius:50%;cursor:pointer}.ds-mascots input{position:absolute;opacity:0;width:1px;height:1px}.ds-mascots span{display:block;width:48px;height:48px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b)}.ds-mascots label:has(input:checked) span{box-shadow:0 0 0 2px var(--bg,#16181d),0 0 0 4px var(--ink,#e8e6e1)}.ds-mascots label:has(input:focus-visible) span{outline:2px solid var(--focus,#9cc6f0);outline-offset:5px}"
+    },
+    {
+      "name": "People Tabs",
+      "kind": "nav",
+      "refersTo": "people-tab",
+      "description": "Route links (Members, Following, Your profile) over a 1px rule; the current tab is ink with a 2px ink underline, never pencil. A member's profile and lists keep Members marked.",
+      "html": "<nav class=\"ds-tabs\" aria-label=\"People\"><a href=\"#\" aria-current=\"page\">Members</a><a href=\"#\">Following</a><a href=\"#\">Your profile</a></nav>",
+      "css": ".ds-tabs{display:flex;gap:24px;max-width:760px;border-bottom:1px solid var(--rule,#2b2f39);font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-tabs a{padding:8px 0;margin-bottom:-1px;border-bottom:2px solid transparent;color:var(--ink-2,#b4b9c5);text-decoration:none}.ds-tabs a:hover{color:var(--ink,#e8e6e1)}.ds-tabs a[aria-current=page]{color:var(--ink,#e8e6e1);border-bottom-color:var(--ink,#e8e6e1)}.ds-tabs a:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px;border-radius:var(--r-control,6px)}"
+    },
+    {
+      "name": "Member List",
+      "kind": "custom",
+      "refersTo": "member-row",
+      "description": "Ruled rows, one link each: 40px avatar or mascot, name (600) over a 13px secondary-ink meta line, main technologies as language badges on the right; hover takes the sheet. Loaded 30 at a time with Load more.",
+      "html": "<ul class=\"ds-members\"><li><a href=\"#\"><span class=\"ds-m-av\">A</span><span class=\"ds-m-main\"><b>Ana Souza</b><small>Back end developer, B1</small></span><span class=\"ds-m-badges\"><span>Go</span><span>Python</span></span></a></li><li><a href=\"#\"><span class=\"ds-m-av\">R</span><span class=\"ds-m-main\"><b>Rui Lima</b><small>Front end developer, A2</small></span><span class=\"ds-m-badges\"><span>TypeScript</span></span></a></li></ul>",
+      "css": ".ds-members{list-style:none;padding:0;margin:0;max-width:760px;border-top:1px solid var(--rule,#2b2f39);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-members li{border-bottom:1px solid var(--rule,#2b2f39)}.ds-members a{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 8px;border-radius:var(--r-control,6px);color:var(--ink,#e8e6e1);text-decoration:none}.ds-members a:hover{background:var(--sheet,#20232b)}.ds-members a:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}.ds-m-main{display:flex;flex-direction:column;min-width:0}.ds-m-main b{font-weight:600}.ds-m-main small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-m-av{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font-weight:600}.ds-m-badges{display:flex;flex-wrap:wrap;gap:6px}.ds-m-badges span{font-size:var(--text-sm,0.8125rem);color:var(--ink,#e8e6e1);border:1px solid var(--rule-strong,#3a3f4b);border-radius:999px;padding:2px 10px}"
+    },
+    {
+      "name": "Follow and Like",
+      "kind": "custom",
+      "refersTo": "like-button",
+      "description": "Under a profile's name: Follow (primary, the profile's one pencil action) or Following (secondary); a like control shaped like a secondary control with a heart filled in the text tone when liked and a tabular count; follower and following counts as secondary-ink links. Nothing is ranked.",
+      "html": "<div class=\"ds-social\"><button class=\"ds-follow\" aria-label=\"Follow Ana Souza\">Follow</button><button class=\"ds-like\" aria-pressed=\"true\" aria-label=\"Unlike Ana Souza's profile, 12 likes\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M8 13.5S2.5 10.2 2.5 6.2A2.9 2.9 0 0 1 8 4.6a2.9 2.9 0 0 1 5.5 1.6c0 4-5.5 7.3-5.5 7.3z\"/></svg><span>12</span></button><a href=\"#\">34 followers</a><a href=\"#\">21 following</a></div>",
+      "css": ".ds-social{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-social button{display:inline-flex;align-items:center;font:inherit;font-weight:500;border-radius:var(--r-control,6px);cursor:pointer;transition:transform 120ms cubic-bezier(0.23,1,0.32,1),background-color 180ms ease}.ds-social button:active{transform:scale(0.97)}.ds-social button:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}.ds-follow{padding:9px 16px;border:1px solid transparent;background:var(--pencil,#7fb2e5);color:var(--pencil-ink,#0d1622)}.ds-like{gap:6px;padding:9px 12px;border:1px solid var(--rule-strong,#3a3f4b);background:transparent;color:var(--ink,#e8e6e1);font-variant-numeric:tabular-nums}.ds-like:hover{background:var(--sheet-hover,#262a33)}.ds-like svg{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.ds-like[aria-pressed=true] svg{fill:currentColor}.ds-social a{color:var(--ink-2,#b4b9c5);font-size:var(--text-md,0.875rem);font-variant-numeric:tabular-nums}.ds-social a:hover{color:var(--ink,#e8e6e1)}"
     }
   ],
   "narrative": {
@@ -1126,7 +1153,10 @@
       "**Do** honour reduced motion: all durations drop to 0ms and looping animations stop.",
       "**Do** confirm destructive actions inline in a neutral panel, guarded by a typed e-mail or a required reason.",
       "**Do** let the icon carry a member badge's colour and keep its label in ink.",
-      "**Do** show an animated banner's first frame, still, under reduced motion or when \"Play animated banners\" is off."
+      "**Do** show an animated banner's first frame, still, under reduced motion or when \"Play animated banners\" is off.",
+      "**Do** make Follow the member profile's one primary action; once followed it becomes a secondary \"Following\" button.",
+      "**Do** mark the current People tab with a 2px ink underline on the rule, and keep Members marked on a member's profile and lists.",
+      "**Do** set follower, following and like counts in tabular figures as plain text beside their controls."
     ],
     "donts": [
       "**Don't** build a dashboard of stat cards or metric tiles; progress is facts, ruled lists and tallies.",
@@ -1137,7 +1167,9 @@
       "**Don't** uppercase or letter-space labels, or put small category labels above headings.",
       "**Don't** animate the command palette or the report dialog open or closed.",
       "**Don't** colour destructive actions amber or red; amber stays for problems with the app.",
-      "**Don't** colour avatars or stack logos; logos take the text tone. A mascot is the only picture shown when there is no photo, and only language badges carry brand colour."
+      "**Don't** colour avatars or stack logos; logos take the text tone. A mascot is the only picture shown when there is no photo, and only language badges carry brand colour.",
+      "**Don't** rank or sort people by followers or likes, or give a count its own tile.",
+      "**Don't** colour the like heart; liked is the heart filled in the text tone."
     ]
   }
 }
