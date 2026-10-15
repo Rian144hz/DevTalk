@@ -16,5 +16,5 @@ test('setup.sql runs as one script on a fresh project', async () => {
   const r = await db.query<{ n: number }>(
     `select count(*)::int as n from pg_tables where schemaname = 'public' and rowsecurity`,
   );
-  expect(r.rows[0]!.n).toBe(12);
+  expect(r.rows[0]!.n).toBe(17);
 });
