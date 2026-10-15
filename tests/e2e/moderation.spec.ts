@@ -50,12 +50,13 @@ test.describe('as a moderator', () => {
     expect(fakeState(dataDir).profiles[alex.id]!.suspendedUntil).toBeNull();
   });
 
-  test('an avatar that cannot be decoded falls back to the initial', async ({ page }) => {
+  test('an avatar that cannot be decoded falls back to the mascot', async ({ page }) => {
     await onboard(page);
     await page.getByRole('link', { name: 'Moderation' }).click();
     const sam = page.getByRole('list', { name: 'Open reports' }).getByRole('listitem').filter({ hasText: 'Sam' });
-    await expect(sam.locator('.avatar-initial')).toHaveText('S');
-    await expect(sam.locator('img')).toHaveCount(0);
+    await expect(sam.locator('img.avatar-mascot')).toBeVisible();
+    await expect(sam.locator('img.avatar-mascot')).not.toHaveAttribute('src', /^data:/);
+    await expect(sam.locator('.avatar-initial')).toHaveCount(0);
   });
 
   test('the palette can open Moderation', async ({ page }) => {

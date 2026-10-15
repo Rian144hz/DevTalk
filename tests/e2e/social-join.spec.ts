@@ -103,11 +103,11 @@ test('a profile photo shows on People; an SVG is refused', async ({ page }) => {
   await onboard(page);
   await joinCommunity(page);
   await page.getByRole('button', { name: 'Edit profile' }).click();
-  const input = page.locator('input[type="file"]');
+  const input = page.locator('.photo-row input[type="file"]');
   await input.setInputFiles({ name: 'logo.svg', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>') });
   await expect(page.getByText('Choose a JPEG, PNG or WebP image.')).toBeVisible();
   await input.setInputFiles(join(__dirname, 'assets', 'photo.png'));
-  await expect(page.locator('.profile-form img.avatar')).toBeVisible();
+  await expect(page.locator('.photo-row img.avatar')).toHaveAttribute('src', /^data:image\/webp;base64,/);
   await page.getByRole('button', { name: 'Save profile' }).click();
   await expect(page.locator('.profile img.avatar')).toHaveAttribute('src', /^data:image\/webp;base64,/);
 });

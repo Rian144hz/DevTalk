@@ -7,7 +7,7 @@ import { AppErrorException, api, unwrap } from '../lib/api';
 import { secondsUntilResend } from '../lib/resend';
 import { setReturnTo } from '../lib/returnTo';
 import { LEGAL_TITLES, type LegalDoc } from './LegalScreen';
-import { ProfileForm, type PhotoChange } from './ProfileForm';
+import { ProfileForm, type PhotoChange, type BannerChange } from './ProfileForm';
 
 const message = (e: unknown) => (e instanceof AppErrorException ? e.message : 'Something went wrong. Try again.');
 
@@ -19,11 +19,13 @@ const draft = {
 };
 
 /** Saves the profile, then the photo change. Shared by Join and Edit profile. */
-export async function saveProfileAndPhoto(profile: ProfileDraft, photo: PhotoChange): Promise<string | null> {
+export async function saveProfileAndPhoto(profile: ProfileDraft, photo: PhotoChange, banner: BannerChange = null): Promise<string | null> {
   try {
     unwrap(await api().social.saveProfile(profile));
     if (photo === 'remove') unwrap(await api().social.removeAvatar());
     else if (photo) unwrap(await api().social.setAvatar(photo.bytes));
+    if (banner === 'remove') unwrap(await api().social.removeBanner());
+    else if (banner) unwrap(await api().social.setBanner(banner.bytes));
     return null;
   } catch (e) {
     return message(e);

@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import type { Level } from '../../core/domain/types';
 import type { StoredProfile, Theme } from '../../core/ports';
 import { DEFAULT_MODELS, PROVIDER_LABELS, type ProviderId } from '../../shared/providers';
 import { useAppData } from '../app/AppData';
 import { AppErrorException, api, unwrap } from '../lib/api';
+import { setPlayAnimations, usePlayAnimationsSetting } from '../lib/motion';
 import { Button, Notice, PasswordField, Segmented, Select, TextField } from '../design-system';
 import { AccountSection } from './AccountSection';
 import { CURRENT_LEVELS, KEY_LINKS, PROVIDER_OPTIONS, languageOptions, TARGET_ERROR, TARGET_LEVELS, isTargetAbove } from './forms';
@@ -31,6 +32,8 @@ function OllamaCheck() {
 export function SettingsScreen({ profile }: { profile: StoredProfile }) {
   const { refresh } = useAppData();
   const provider = profile.provider as ProviderId;
+  const ids = { motion: useId() };
+  const playBanners = usePlayAnimationsSetting();
 
   // Profile form
   const [native, setNative] = useState(profile.nativeLanguage);
@@ -151,6 +154,16 @@ export function SettingsScreen({ profile }: { profile: StoredProfile }) {
         <Segmented<Theme> label="Theme" value={profile.theme}
           options={[{ value: 'system', label: 'System' }, { value: 'dark', label: 'Dark' }, { value: 'light', label: 'Light' }]}
           onChange={(t) => void setSettings({ theme: t })} />
+        <div className="field">
+          <label className="check-row" htmlFor={ids.motion}>
+            <input id={ids.motion} type="checkbox" checked={playBanners} onChange={(e) => setPlayAnimations(e.target.checked)}
+              aria-describedby={`${ids.motion}-hint`} />
+            <span>Play animated banners</span>
+          </label>
+          <span className="field-hint" id={`${ids.motion}-hint`}>
+            When off, or when your system asks to reduce motion, banners show their first frame and stay still.
+          </span>
+        </div>
       </section>
 
       <AccountSection />

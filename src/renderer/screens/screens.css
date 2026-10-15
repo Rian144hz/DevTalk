@@ -129,6 +129,32 @@
 .slots-read { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--s1); }
 .bio { max-width: var(--measure); }
 .people-next { max-width: 760px; margin-top: var(--s10); }
+
+/* Banner (3:1, cover) with the avatar overlapping its lower edge, Discord style; a plain band without one */
+.banner { aspect-ratio: 3 / 1; border-radius: var(--r-sheet); overflow: hidden; background: var(--bg-rail); }
+.banner img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.banner-empty { aspect-ratio: 6 / 1; }
+.profile > .banner + .profile-head { align-items: flex-end; padding-inline: var(--s5); }
+.profile-avatar { flex: none; display: inline-flex; margin-top: -48px; padding: 5px; border-radius: 50%; background: var(--bg); }
+.profile-name { min-width: 0; padding-bottom: var(--s1); }
+.profile-name h2 { overflow-wrap: anywhere; }
+.profile > .badge-row { margin-bottom: var(--s5); }
+.profile-graph { margin-top: var(--s8); display: flex; flex-direction: column; gap: var(--s3); }
+.profile-graph h3 { font-size: var(--text-lg); }
+
+/* Edit profile: banner preview, main-stack toggles and the mascot row */
+.banner-field { display: flex; flex-direction: column; gap: var(--s3); }
+.tag-main { height: 24px; padding: 0 var(--s2); border: 1px solid var(--rule-strong); border-radius: 999px; background: transparent; color: var(--ink-3); font-size: var(--text-xs); }
+.tag-main:hover:not(:disabled) { color: var(--ink); background: var(--sheet-hover); }
+.tag-main[aria-pressed="true"] { color: var(--ink); border-color: var(--ink-2); background: var(--sheet-hover); font-weight: 600; }
+.tag-main:disabled { opacity: 0.45; cursor: not-allowed; }
+.mascots { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: var(--s2); }
+.mascots legend { padding: 0; margin-bottom: var(--s2); }
+.mascot-row { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.mascot-option { display: inline-flex; border-radius: 50%; cursor: pointer; }
+.mascot-option img { display: block; border-radius: 50%; border: 1px solid var(--rule-strong); }
+.mascot-option:has(input:checked) img { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
+.mascot-option:has(input:focus-visible) img { outline: 2px solid var(--focus); outline-offset: 5px; }
 .people-intro { max-width: 640px; display: flex; flex-direction: column; gap: var(--s4); padding-top: var(--s6); border-top: 1px solid var(--rule); }
 .intro-points { padding-left: var(--s5); color: var(--ink-2); display: flex; flex-direction: column; gap: var(--s1); }
 .profile-skeleton { max-width: 760px; }

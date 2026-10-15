@@ -1,5 +1,5 @@
-import { AvatarInputError, centreSquare, prepareAvatar } from '../../src/renderer/lib/image';
-import type { AvatarDeps } from '../../src/renderer/lib/image';
+import { AvatarInputError, BannerInputError, centreCrop, centreSquare, parseDataUrl, prepareAvatar, prepareBanner } from '../../src/renderer/lib/image';
+import type { AvatarDeps, BannerDeps } from '../../src/renderer/lib/image';
 
 const MB = 1024 * 1024;
 
@@ -60,4 +60,83 @@ test.each([
 test('a file that cannot be decoded is unsupported', async () => {
   const d: AvatarDeps = { decode: async () => { throw new Error('bad image'); }, encode: async () => new Uint8Array(1) };
   await expect(prepareAvatar({ type: 'image/jpeg', size: 1000 }, d)).rejects.toMatchObject({ reason: 'unsupported' });
+});
+
+describe('banner', () => {
+  function bannerDeps(o: { animated?: boolean; sizes?: number[]; width?: number; height?: number } = {}) {
+    const calls: { crop: unknown; w: number; h: number; quality: number }[] = [];
+    let decoded = 0;
+    let read = 0;
+    const d: BannerDeps = {
+      isAnimated: async () => o.animated ?? false,
+      read: async () => {
+        read++;
+        return new Uint8Array([71, 73, 70]);
+      },
+      decode: async () => {
+        decoded++;
+        return { width: o.width ?? 3000, height: o.height ?? 1000 };
+      },
+      encode: async (_src, crop, w, h, quality) => {
+        calls.push({ crop, w, h, quality });
+        return new Uint8Array(o.sizes?.[calls.length - 1] ?? 100);
+      },
+    };
+    return { d, calls, decoded: () => decoded, read: () => read };
+  }
+
+  test('centreCrop keeps the middle 3:1 band', () => {
+    expect(centreCrop(3000, 1000)).toEqual({ sx: 0, sy: 0, sw: 3000, sh: 1000 });
+    expect(centreCrop(2000, 1000)).toEqual({ sx: 0, sy: 167, sw: 2000, sh: 667 });
+    expect(centreCrop(4000, 1000)).toEqual({ sx: 500, sy: 0, sw: 3000, sh: 1000 });
+  });
+
+  test('a still image becomes a 1500×500 WebP, re-encoded at 0.6 when over 2 MB', async () => {
+    const { d, calls } = bannerDeps({ sizes: [3 * MB, MB] });
+    const out = await prepareBanner({ type: 'image/png', size: 4 * MB }, d);
+    expect(out).toEqual({ bytes: new Uint8Array(MB), type: 'image/webp' });
+    expect(calls).toEqual([
+      { crop: { sx: 0, sy: 0, sw: 3000, sh: 1000 }, w: 1500, h: 500, quality: 0.8 },
+      { crop: { sx: 0, sy: 0, sw: 3000, sh: 1000 }, w: 1500, h: 500, quality: 0.6 },
+    ]);
+  });
+
+  test('an animated GIF or WebP is sent as chosen', async () => {
+    const gif = bannerDeps({ animated: true });
+    expect(await prepareBanner({ type: 'image/gif', size: MB }, gif.d)).toEqual({ bytes: new Uint8Array([71, 73, 70]), type: 'image/gif' });
+    expect(gif.decoded()).toBe(0);
+    const webp = bannerDeps({ animated: true });
+    expect((await prepareBanner({ type: 'image/webp', size: MB }, webp.d)).type).toBe('image/webp');
+  });
+
+  test('a single-frame GIF is treated as a still image', async () => {
+    const { d, calls, read } = bannerDeps({ animated: false });
+    expect((await prepareBanner({ type: 'image/gif', size: MB }, d)).type).toBe('image/webp');
+    expect(calls).toHaveLength(1);
+    expect(read()).toBe(0);
+  });
+
+  test.each([
+    ['an SVG', { type: 'image/svg+xml', size: 2_000 }, false, 'unsupported', 'Choose a GIF, WebP, JPEG or PNG image.'],
+    ['a 9 MB JPEG', { type: 'image/jpeg', size: 9 * MB }, false, 'too_large', 'Choose an image under 8 MB.'],
+    ['a 3 MB animated GIF', { type: 'image/gif', size: 3 * MB }, true, 'animated_too_large', 'An animated banner must be under 2 MB.'],
+  ])('refuses %s', async (_label, file, animated, reason, message) => {
+    const { d, read } = bannerDeps({ animated });
+    const err = await prepareBanner(file, d).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(BannerInputError);
+    expect(err).toMatchObject({ reason, message });
+    expect(read()).toBe(0);
+  });
+
+  test('a file that cannot be decoded is unsupported', async () => {
+    const { d } = bannerDeps();
+    d.decode = async () => { throw new Error('bad'); };
+    await expect(prepareBanner({ type: 'image/jpeg', size: 1000 }, d)).rejects.toMatchObject({ reason: 'unsupported' });
+  });
+});
+
+test('parseDataUrl reads base64 data: URLs and nothing else', () => {
+  expect(parseDataUrl('data:image/gif;base64,R0lGOA==')).toEqual({ type: 'image/gif', bytes: new Uint8Array([71, 73, 70, 56]) });
+  expect(parseDataUrl('https://example.com/a.gif')).toBeNull();
+  expect(parseDataUrl('data:image/gif,R0lGOA==')).toBeNull();
 });

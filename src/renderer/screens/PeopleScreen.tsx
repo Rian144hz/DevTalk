@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { SocialProfile } from '../../core/social/types';
+import { localDay, type PracticeGraphData } from '../../core/progress/practice';
+import type { Badge, SocialProfile } from '../../core/social/types';
 import type { SocialNotice, SocialStatus } from '../../shared/ipc-contract';
-import { Avatar, Button, EmptyState, Notice, Skeleton, StackList } from '../design-system';
+import { Avatar, BadgeRow, Banner, Button, EmptyState, Notice, PracticeGraph, Skeleton, StackList } from '../design-system';
 import { AppErrorException, api, unwrap } from '../lib/api';
 import { formatLongDate, formatSlot } from '../lib/format';
 import { setReturnTo } from '../lib/returnTo';
@@ -16,24 +17,34 @@ interface Loaded {
   status: SocialStatus;
   profile: SocialProfile | null;
   avatar: string | null;
+  banner: string | null;
+  badges: Badge[];
+  graph: PracticeGraphData;
   notices: SocialNotice[];
 }
+
+const NO_GRAPH: PracticeGraphData = { days: [], current: 0, longest: 0 };
 
 function suspendedText(until: string): string {
   return until === 'infinity' ? 'Your account is suspended.' : `Your account is suspended until ${formatLongDate(until)}.`;
 }
 
-function ProfileView({ profile, avatar }: { profile: SocialProfile; avatar: string | null }) {
+function ProfileView({ profile, avatar, banner, badges, graph }: Omit<Loaded, 'status' | 'notices' | 'profile'> & { profile: SocialProfile }) {
   const byDay = [...profile.availability].sort((a, b) => ((a.day + 6) % 7) - ((b.day + 6) % 7) || a.from.localeCompare(b.from));
+  const today = localDay(new Date(), Intl.DateTimeFormat().resolvedOptions().timeZone);
   return (
     <article className="profile">
+      <Banner src={banner} />
       <header className="profile-head">
-        <Avatar src={avatar} name={profile.displayName} size={72} userId={profile.id} mascot={profile.mascot} />
-        <div>
+        <span className="profile-avatar">
+          <Avatar src={avatar} name={profile.displayName} size={96} userId={profile.id} mascot={profile.mascot} />
+        </span>
+        <div className="profile-name">
           <h2>{profile.displayName}</h2>
           <p className="lede">{AREA_LABELS[profile.area]} developer, English level {profile.level}</p>
         </div>
       </header>
+      <BadgeRow badges={badges} />
       <dl className="profile-facts">
         <dt>Native language</dt>
         <dd>{profile.nativeLanguage}</dd>
@@ -56,6 +67,17 @@ function ProfileView({ profile, avatar }: { profile: SocialProfile; avatar: stri
           </>
         )}
       </dl>
+      <section className="profile-graph" aria-labelledby="profile-practice">
+        <h3 id="profile-practice">Practice</h3>
+        {!profile.showProgress && (
+          <p className="muted small">Only you see this. Other members do not see your practice graph or progress badges.</p>
+        )}
+        {graph.days.length > 0 ? (
+          <PracticeGraph days={graph.days} current={graph.current} longest={graph.longest} today={today} />
+        ) : (
+          <p className="muted">No practice shared yet. Days appear here a few seconds after you answer or review.</p>
+        )}
+      </section>
     </article>
   );
 }
@@ -69,13 +91,18 @@ export function PeopleScreen({ edit }: { edit: boolean }) {
     try {
       const status = unwrap(await api().social.status());
       if (!status.signedIn || status.needsDocuments || !status.hasProfile) {
-        setData({ status, profile: null, avatar: null, notices: [] });
+        setData({ status, profile: null, avatar: null, banner: null, badges: [], graph: NO_GRAPH, notices: [] });
         return;
       }
       const profile = unwrap(await api().social.getProfile());
-      const avatar = profile?.hasAvatar ? unwrap(await api().social.avatar(profile.id)) : null;
-      const notices = unwrap(await api().social.notices()).filter((n) => !n.read);
-      setData({ status, profile, avatar, notices });
+      const [avatar, banner, badges, graph, notices] = await Promise.all([
+        profile?.hasAvatar ? api().social.avatar(profile.id).then(unwrap) : null,
+        profile?.hasBanner ? api().social.banner(profile.id).then(unwrap) : null,
+        profile ? api().social.badges(profile.id).then(unwrap) : [],
+        profile ? api().social.practiceGraph(profile.id).then(unwrap) : NO_GRAPH,
+        api().social.notices().then((r) => unwrap(r).filter((n) => !n.read)),
+      ]);
+      setData({ status, profile, avatar, banner, badges, graph, notices });
     } catch (e) {
       setError(message(e));
     }
@@ -112,7 +139,7 @@ export function PeopleScreen({ edit }: { edit: boolean }) {
     );
   }
 
-  const { status, profile, avatar, notices } = data;
+  const { status, profile, avatar, banner, badges, graph, notices } = data;
   if (!status.configured) {
     return (
       <main className="page people">
@@ -160,6 +187,8 @@ export function PeopleScreen({ edit }: { edit: boolean }) {
         <ProfileForm
           submitLabel="Save profile"
           initialAvatar={avatar}
+          userId={profile.id}
+          initialBanner={banner}
           initial={{
             displayName: profile.displayName,
             nativeLanguage: profile.nativeLanguage,
@@ -174,8 +203,8 @@ export function PeopleScreen({ edit }: { edit: boolean }) {
             mascot: profile.mascot,
           }}
           onCancel={go('#/people')}
-          onSubmit={async (p, photo) => {
-            const failure = await saveProfileAndPhoto(p, photo);
+          onSubmit={async (p, photo, newBanner) => {
+            const failure = await saveProfileAndPhoto(p, photo, newBanner);
             if (!failure) window.location.hash = '#/people';
             return failure;
           }}
@@ -201,7 +230,7 @@ export function PeopleScreen({ edit }: { edit: boolean }) {
             }
           }}>Mark as read</Button>} />
       ))}
-      <ProfileView profile={profile} avatar={avatar} />
+      <ProfileView profile={profile} avatar={avatar} banner={banner} badges={badges} graph={graph} />
       <section className="people-next">
         <EmptyState title="Finding partners comes next"
           body="Soon you will see developers at your level here and practise with them in a 1:1 chat with corrections. Your profile is what they will see." />

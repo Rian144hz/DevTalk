@@ -1,5 +1,6 @@
-// Profile photo preparation: centre-crop, resize to 256×256 and re-encode as WebP in the window.
-// Re-encoding through a canvas drops EXIF data (including GPS) before anything leaves the machine.
+// Profile photo and banner preparation in the window. Still images are cropped, resized and re-encoded as WebP:
+// re-encoding through a canvas drops EXIF data (including GPS) before anything leaves the machine. Animated banners
+// are sent as chosen and the main process removes their metadata without re-encoding.
 
 export const AVATAR_SIZE = 256;
 export const MAX_INPUT_BYTES = 8 * 1024 * 1024;
@@ -54,4 +55,86 @@ export async function prepareAvatar(file: { type: string; size: number }, deps: 
   } finally {
     bitmap.close?.();
   }
+}
+
+// ---- Banner ----
+
+export const BANNER_WIDTH = 1500;
+export const BANNER_HEIGHT = 500;
+export const MAX_BANNER_BYTES = 2 * 1024 * 1024;
+const BANNER_ACCEPTED = ['image/gif', 'image/webp', 'image/jpeg', 'image/png'];
+
+export type BannerInputReason = 'unsupported' | 'too_large' | 'animated_too_large';
+const BANNER_MESSAGES: Record<BannerInputReason, string> = {
+  unsupported: 'Choose a GIF, WebP, JPEG or PNG image.',
+  too_large: 'Choose an image under 8 MB.',
+  animated_too_large: 'An animated banner must be under 2 MB.',
+};
+
+export class BannerInputError extends Error {
+  constructor(readonly reason: BannerInputReason) {
+    super(BANNER_MESSAGES[reason]);
+    this.name = 'BannerInputError';
+  }
+}
+
+export interface RectCrop {
+  sx: number;
+  sy: number;
+  sw: number;
+  sh: number;
+}
+
+export interface BannerDeps {
+  /** True when a GIF or WebP has more than one frame. */
+  isAnimated(file: { type: string; size: number }): Promise<boolean>;
+  read(file: { type: string; size: number }): Promise<Uint8Array>;
+  decode(file: { type: string; size: number }): Promise<ImageBitmapLike>;
+  encode(source: ImageBitmapLike, crop: RectCrop, width: number, height: number, quality: number): Promise<Uint8Array>;
+}
+
+/** The largest centred 3:1 band of a width × height image. */
+export function centreCrop(width: number, height: number): RectCrop {
+  const [sw, sh] = width / height > 3 ? [Math.round(height * 3), height] : [width, Math.round(width / 3)];
+  return { sx: Math.round((width - sw) / 2), sy: Math.round((height - sh) / 2), sw, sh };
+}
+
+/** An animated GIF/WebP as chosen (up to 2 MB), or any still image as a 1500 × 500 WebP. */
+export async function prepareBanner(
+  file: { type: string; size: number },
+  deps: BannerDeps,
+): Promise<{ bytes: Uint8Array; type: 'image/gif' | 'image/webp' }> {
+  if (!BANNER_ACCEPTED.includes(file.type)) throw new BannerInputError('unsupported');
+  if (file.size > MAX_INPUT_BYTES) throw new BannerInputError('too_large');
+  const mayAnimate = file.type === 'image/gif' || file.type === 'image/webp';
+  if (mayAnimate && (await deps.isAnimated(file).catch(() => false))) {
+    if (file.size > MAX_BANNER_BYTES) throw new BannerInputError('animated_too_large');
+    return { bytes: await deps.read(file), type: file.type as 'image/gif' | 'image/webp' };
+  }
+  let bitmap: ImageBitmapLike;
+  try {
+    bitmap = await deps.decode(file);
+  } catch {
+    throw new BannerInputError('unsupported');
+  }
+  try {
+    const crop = centreCrop(bitmap.width, bitmap.height);
+    for (const quality of [0.8, 0.6]) {
+      const bytes = await deps.encode(bitmap, crop, BANNER_WIDTH, BANNER_HEIGHT, quality);
+      if (bytes.byteLength <= MAX_BANNER_BYTES) return { bytes, type: 'image/webp' };
+    }
+    throw new BannerInputError('too_large');
+  } finally {
+    bitmap.close?.();
+  }
+}
+
+/** The bytes and type of a base64 data: URL (images reach the window this way), or null for anything else. */
+export function parseDataUrl(src: string): { type: string; bytes: Uint8Array } | null {
+  const m = /^data:([\w.+-]+\/[\w.+-]+);base64,([A-Za-z0-9+/=]*)$/.exec(src);
+  if (!m) return null;
+  const raw = atob(m[2]!);
+  const bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  return { type: m[1]!, bytes };
 }
