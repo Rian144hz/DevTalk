@@ -6,6 +6,8 @@ test('a cell says what was done that day', () => {
   expect(cellLabel({ day: '2026-01-01', answers: 1, reviews: 1 })).toBe('1 Jan: 1 answer, 1 review');
   expect(cellLabel({ day: '2026-03-09', answers: 0, reviews: 3 })).toBe('9 Mar: 0 answers, 3 reviews');
   expect(cellLabel({ day: '2026-10-13', answers: 0, reviews: 0 })).toBe('13 Oct: no practice');
+  expect(cellLabel({ day: '2026-10-14', answers: 0, reviews: 0, corrections: 1 })).toBe('14 Oct: 0 answers, 0 reviews, 1 correction');
+  expect(cellLabel({ day: '2026-10-14', answers: 1, reviews: 2, corrections: 3 })).toBe('14 Oct: 1 answer, 2 reviews, 3 corrections');
 });
 
 test('month labels sit on the week each month starts, across January', () => {

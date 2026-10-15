@@ -5,6 +5,8 @@ export interface DayActivity {
   day: string;
   answers: number;
   reviews: number;
+  /** Corrections given in chat (community graph only). */
+  corrections?: number;
 }
 
 export type GraphLevel = 0 | 1 | 2 | 3 | 4;
@@ -40,15 +42,15 @@ export function bucketByDay(answers: string[], reviews: string[], timeZone: stri
   return [...days.values()].sort((a, b) => a.day.localeCompare(b.day));
 }
 
-/** points = answers × 5 + reviews; levels 0 | 1–9 | 10–24 | 25–49 | 50+. */
+/** points = answers × 5 + reviews + corrections × 5; levels 0 | 1–9 | 10–24 | 25–49 | 50+. */
 export function graphLevel(a: DayActivity): GraphLevel {
-  const points = a.answers * 5 + a.reviews;
+  const points = a.answers * 5 + a.reviews + (a.corrections ?? 0) * 5;
   return points === 0 ? 0 : points < 10 ? 1 : points < 25 ? 2 : points < 50 ? 3 : 4;
 }
 
 /** Current streak (ending today or yesterday) and the longest run of active days. */
 export function streaks(days: DayActivity[], today: string): { current: number; longest: number } {
-  const active = new Set(days.filter((d) => d.answers + d.reviews > 0).map((d) => d.day));
+  const active = new Set(days.filter((d) => d.answers + d.reviews + (d.corrections ?? 0) > 0).map((d) => d.day));
   let longest = 0;
   for (const day of active) {
     if (active.has(addDays(day, -1))) continue;
@@ -76,7 +78,7 @@ export function graphWeeks(days: DayActivity[], today: string): (DayActivity & {
     for (let i = 0; i < 7; i++) {
       const day = addDays(first, w * 7 + i);
       const a = byDay.get(day) ?? { day, answers: 0, reviews: 0 };
-      week.push({ day, answers: a.answers, reviews: a.reviews, level: graphLevel(a) });
+      week.push({ day, answers: a.answers, reviews: a.reviews, corrections: a.corrections ?? 0, level: graphLevel(a) });
     }
     weeks.push(week);
   }

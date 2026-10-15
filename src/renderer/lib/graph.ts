@@ -9,8 +9,10 @@ const count = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
 /** "14 Oct: 2 answers, 15 reviews", or "14 Oct: no practice". */
 export function cellLabel(d: DayActivity): string {
   const when = `${Number(d.day.slice(8, 10))} ${monthOf(d.day)}`;
-  if (d.answers + d.reviews === 0) return `${when}: no practice`;
-  return `${when}: ${count(d.answers, 'answer')}, ${count(d.reviews, 'review')}`;
+  const corrections = d.corrections ?? 0;
+  if (d.answers + d.reviews + corrections === 0) return `${when}: no practice`;
+  const given = corrections > 0 ? `, ${count(corrections, 'correction')}` : '';
+  return `${when}: ${count(d.answers, 'answer')}, ${count(d.reviews, 'review')}${given}`;
 }
 
 /** Leave this many weeks before the next label, or the first column's month is not shown. */
@@ -32,7 +34,7 @@ export function monthLabels(weeks: DayActivity[][]): { week: number; label: stri
 
 /** "N days practised in the last year. Current streak: X days. Longest: Y days." */
 export function factsLine(days: DayActivity[], current: number, longest: number): string {
-  const practised = days.filter((d) => d.answers + d.reviews > 0).length;
+  const practised = days.filter((d) => d.answers + d.reviews + (d.corrections ?? 0) > 0).length;
   return `${count(practised, 'day')} practised in the last year. Current streak: ${count(current, 'day')}. Longest: ${count(longest, 'day')}.`;
 }
 

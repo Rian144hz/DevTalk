@@ -62,6 +62,12 @@ describe('practice days', () => {
     expect(graphLevel(day('d', 10, 0))).toBe(4);
   });
 
+  test('corrections given count like answers in the graph and keep a streak', () => {
+    expect(graphLevel({ day: 'd', answers: 0, reviews: 0, corrections: 2 })).toBe(2);
+    const days = [day('2026-10-13', 1), { day: '2026-10-14', answers: 0, reviews: 0, corrections: 1 }];
+    expect(streaks(days, '2026-10-14')).toEqual({ current: 2, longest: 2 });
+  });
+
   test('the current streak ends today or yesterday; a gap breaks it', () => {
     const run = ['2026-10-10', '2026-10-11', '2026-10-12', '2026-10-13'].map((d) => day(d, 1));
     expect(streaks(run, '2026-10-13')).toEqual({ current: 4, longest: 4 });
@@ -82,7 +88,7 @@ describe('practice days', () => {
     expect(new Date(`${weeks[0]![0]!.day}T12:00:00Z`).getUTCDay()).toBe(1);
     const last = weeks[52]!;
     expect(last[0]!.day).toBe('2026-10-12');
-    expect(last[2]).toEqual({ day: '2026-10-14', answers: 2, reviews: 3, level: 2 });
+    expect(last[2]).toEqual({ day: '2026-10-14', answers: 2, reviews: 3, corrections: 0, level: 2 });
   });
 });
 
