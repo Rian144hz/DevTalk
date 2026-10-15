@@ -233,7 +233,18 @@ describe('fake social backend', () => {
     expect(history[0]).toMatchObject({ action: 'suspend', reason: 'spam' });
     expect(history[0]!.until).not.toBeNull();
     await b.decide({ kind: 'unsuspend', target: second!.reported!.id });
-    expect((await b.actionsAbout(second!.reported!.id))[0]).toMatchObject({ action: 'unsuspend', until: null });
+    expect((await b.actionsAbout(second!.reported!.id))[0]).toMatchObject({ action: 'unsuspend', until: null, badge: null });
+  });
+
+  test('badge changes show in the history with the badge', async () => {
+    const b = createFakeSocialBackend({ seed: 'moderation' });
+    const [, alex] = b.seededUserIds();
+    await b.grantBadge(alex!, 'open_source', 'Merged a fix');
+    await b.revokeBadge(alex!, 'open_source', 'Wrong person');
+    expect((await b.actionsAbout(alex!)).map((h) => [h.action, h.badge, h.reason])).toEqual([
+      ['revoke_badge', 'open_source', 'Wrong person'],
+      ['grant_badge', 'open_source', 'Merged a fix'],
+    ]);
   });
 
   test('an account that has not accepted the documents cannot report, block or see others', async () => {

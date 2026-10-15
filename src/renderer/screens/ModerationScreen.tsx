@@ -4,6 +4,8 @@ import type { ModerationHistoryEntry } from '../../shared/ipc-contract';
 import { Avatar, Button, EmptyState, Notice, REPORT_REASON_LABELS, Segmented, Skeleton, TextArea, TextField } from '../design-system';
 import { AppErrorException, api, unwrap } from '../lib/api';
 import { formatLongDate } from '../lib/format';
+import { describeAction, isSuspended } from '../lib/moderation';
+import { BadgeModeration } from './BadgeModeration';
 
 const message = (e: unknown) => (e instanceof AppErrorException ? e.message : 'Something went wrong. Try again.');
 
@@ -15,19 +17,6 @@ const LENGTHS: { value: Length; label: string }[] = [
   { value: '30', label: '30 days' },
   { value: 'permanent', label: 'Permanent' },
 ];
-
-function describe(entry: ModerationHistoryEntry): string {
-  if (entry.action === 'warn') return 'Warned';
-  if (entry.action === 'unsuspend') return 'Suspension lifted';
-  if (entry.until === 'infinity') return 'Suspended permanently';
-  return `Suspended until ${entry.until ? formatLongDate(entry.until) : 'a later date'}`;
-}
-
-function isSuspended(history: ModerationHistoryEntry[]): boolean {
-  const last = history[0];
-  if (!last || last.action !== 'suspend') return false;
-  return last.until === 'infinity' || (!!last.until && Date.parse(last.until) > Date.now());
-}
 
 export function ModerationScreen() {
   const [reports, setReports] = useState<ModerationReport[] | null>(null);
@@ -174,7 +163,7 @@ export function ModerationScreen() {
                   <ul className="history-list" aria-label="Earlier actions">
                     {history.map((h, k) => (
                       <li key={k}>
-                        <span className="history-what">{describe(h)}</span>
+                        <span className="history-what">{describeAction(h)}</span>
                         {h.reason && <span className="history-why">{h.reason}</span>}
                         <span className="history-when">{formatLongDate(h.createdAt)}</span>
                       </li>
@@ -244,6 +233,7 @@ export function ModerationScreen() {
           </section>
         )}
       </div>
+      <BadgeModeration />
     </main>
   );
 }

@@ -344,11 +344,11 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
       const rows = check(
         await client
           .from('moderation_actions')
-          .select('action, reason, until, created_at')
+          .select('action, reason, until, badge, created_at')
           .eq('target', userId)
           .order('created_at', { ascending: false }),
-      ) as { action: string; reason: string; until: string | null; created_at: string }[];
-      return rows.map((r) => ({ action: r.action, reason: r.reason, until: r.until, createdAt: r.created_at }));
+      ) as { action: string; reason: string; until: string | null; badge: string | null; created_at: string }[];
+      return rows.map((r) => ({ action: r.action, reason: r.reason, until: r.until, badge: r.badge, createdAt: r.created_at }));
     },
 
     async decide(decision) {

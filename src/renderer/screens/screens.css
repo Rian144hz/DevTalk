@@ -195,6 +195,15 @@
 .report-date { font-size: var(--text-sm); color: var(--ink-3); white-space: nowrap; align-self: start; }
 .report-detail { display: flex; flex-direction: column; gap: var(--s5); max-width: 720px; min-width: 0; }
 .report-saved { color: var(--ink-2); }
+
+/* Badges given by hand: search on the left, the member's badges and the actions on the right */
+.badge-moderation { margin-top: var(--s14); padding-top: var(--s8); border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: var(--s2); }
+.badge-moderation > .lede { margin-bottom: var(--s5); }
+.badge-moderation .report-col { display: flex; flex-direction: column; gap: var(--s3); }
+.report-list .member-button { grid-template-columns: auto minmax(0, 1fr); }
+.member-title { font-size: var(--text-lg); }
+.badge-actions { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.badge-actions li { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); padding: var(--s2) 0; }
 .decision { display: flex; flex-direction: column; gap: var(--s3); padding-top: var(--s5); border-top: 1px solid var(--rule); }
 .decision .field { max-width: 560px; }
 .history-list { list-style: none; padding: 0; display: flex; flex-direction: column; }

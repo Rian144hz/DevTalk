@@ -21,6 +21,8 @@ export interface ModerationHistoryItem {
   action: string;
   reason: string;
   until: string | null;
+  /** The badge given or taken (grant_badge / revoke_badge), otherwise null. */
+  badge: string | null;
   createdAt: string;
 }
 

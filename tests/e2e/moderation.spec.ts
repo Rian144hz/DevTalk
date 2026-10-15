@@ -59,6 +59,31 @@ test.describe('as a moderator', () => {
     await expect(sam.locator('.avatar-initial')).toHaveCount(0);
   });
 
+  test('a moderator finds a member and gives and takes a badge with a reason', async ({ page, dataDir }) => {
+    await onboard(page);
+    await page.getByRole('link', { name: 'Moderation' }).click();
+    const badges = page.getByRole('region', { name: 'Badges', exact: true });
+    await badges.getByLabel('Find a member').fill('Sam');
+    const found = badges.getByRole('list', { name: 'Members found' }).getByRole('listitem');
+    await expect(found).toHaveCount(1);
+    await found.getByRole('button', { name: /Sam/ }).click();
+    const row = badges.getByRole('list', { name: 'Badges', exact: true });
+    await expect(row.getByText('Mentor')).toBeVisible();
+    await badges.getByRole('button', { name: 'Remove Mentor' }).click();
+    await expect(badges.getByText('Write a reason first.')).toBeVisible();
+    await badges.getByLabel('Reason').fill('Stopped mentoring');
+    await badges.getByRole('button', { name: 'Remove Mentor' }).click();
+    await expect(row.getByText('Mentor')).toHaveCount(0);
+    await badges.getByLabel('Reason').fill('Helped three people this week');
+    await badges.getByRole('button', { name: 'Give Mentor' }).click();
+    await expect(row.getByText('Mentor')).toBeVisible();
+    const state = fakeState(dataDir);
+    const sam = idOf(state, 'Sam');
+    expect(state.notices.filter((n) => n.userId === sam.id).map((n) => n.message)).toContain('You received the Mentor badge.');
+    await expect(badges.getByRole('list', { name: 'Badge history' }).getByText('Gave Mentor')).toBeVisible();
+    await expect(badges.getByRole('list', { name: 'Badge history' }).getByText('Removed Mentor')).toBeVisible();
+  });
+
   test('the palette can open Moderation', async ({ page }) => {
     await onboard(page);
     await page.keyboard.press('Control+k');
@@ -77,5 +102,6 @@ test.describe('as a member', () => {
     await expect(page.getByRole('link', { name: 'Moderation' })).toHaveCount(0);
     await page.evaluate(() => { location.hash = '#/moderation'; });
     await expect(page.getByText('Only moderators can see this.')).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Badges' })).toHaveCount(0);
   });
 });

@@ -30,6 +30,7 @@ interface StoredAction {
   action: 'warn' | 'suspend' | 'unsuspend' | 'grant_badge' | 'revoke_badge';
   reason: string;
   until: string | null;
+  badge?: string;
   createdAt: string;
 }
 
@@ -382,7 +383,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       return state.actions
         .filter((a) => a.target === userId)
         .reverse()
-        .map((a) => ({ action: a.action, reason: a.reason, until: a.until, createdAt: a.createdAt }));
+        .map((a) => ({ action: a.action, reason: a.reason, until: a.until, badge: a.badge ?? null, createdAt: a.createdAt }));
     },
 
     async decide(decision) {
@@ -551,7 +552,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       assertModerator();
       const mod = me().userId;
       if (userId === mod || !isActive(mod)) throw new SocialError('forbidden', 'Moderators cannot change their own badges.');
-      state.actions.push({ target: userId, action: 'grant_badge', reason, until: null, createdAt: iso() });
+      state.actions.push({ target: userId, action: 'grant_badge', reason, until: null, badge, createdAt: iso() });
       if (!state.badgeGrants.some((g) => g.userId === userId && g.badge === badge)) state.badgeGrants.push({ userId, badge });
       state.notices.push({ id: nextId(), userId, message: `You received the ${BADGE_LABELS[badge]} badge.`, createdAt: iso(), readAt: null });
       save();
@@ -562,7 +563,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       assertModerator();
       const mod = me().userId;
       if (userId === mod || !isActive(mod)) throw new SocialError('forbidden', 'Moderators cannot change their own badges.');
-      state.actions.push({ target: userId, action: 'revoke_badge', reason, until: null, createdAt: iso() });
+      state.actions.push({ target: userId, action: 'revoke_badge', reason, until: null, badge, createdAt: iso() });
       state.badgeGrants = state.badgeGrants.filter((g) => !(g.userId === userId && g.badge === badge));
       save();
     },

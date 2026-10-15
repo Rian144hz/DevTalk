@@ -298,4 +298,17 @@ describe('profile extras', () => {
       target: 'user-2', action: 'grant_badge', badge: 'mentor', reason: 'Helps a lot',
     });
   });
+
+  test('the moderation history includes the badge of badge actions', async () => {
+    const { b, calls } = signedIn({
+      'GET /rest/v1/moderation_actions': json(200, [
+        { action: 'grant_badge', reason: 'Helps a lot', until: null, badge: 'mentor', created_at: '2026-10-14T10:00:00Z' },
+      ]),
+    });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.actionsAbout('user-2')).toEqual([
+      { action: 'grant_badge', reason: 'Helps a lot', until: null, badge: 'mentor', createdAt: '2026-10-14T10:00:00Z' },
+    ]);
+    expect(calls.find((c) => c.path === '/rest/v1/moderation_actions')!.query).toContain('badge');
+  });
 });

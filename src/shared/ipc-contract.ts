@@ -64,6 +64,7 @@ export interface ModerationHistoryEntry {
   action: string;
   reason: string;
   until: string | null;
+  badge: string | null;
   createdAt: string;
 }
 
