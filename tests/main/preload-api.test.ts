@@ -75,6 +75,15 @@ test('social, safety and moderation methods map to their channels', async () => 
   await api.moderation.reports();
   await api.moderation.history('u3');
   await api.moderation.decide({ kind: 'dismiss', reportId: 4 });
+  await api.social.badges('u4');
+  await api.social.practiceGraph('u4');
+  await api.social.setBanner(bytes);
+  await api.social.removeBanner();
+  await api.social.banner('u4');
+  await api.moderation.searchMembers('al');
+  await api.moderation.grantBadge({ userId: 'u5', badge: 'mentor', reason: 'r' });
+  await api.moderation.revokeBadge({ userId: 'u5', badge: 'mentor', reason: 'r' });
+  await api.progress.graph();
   expect(calls).toEqual([
     ['social:status', {}],
     ['social:sendCode', { email: 'a@b.co' }],
@@ -95,5 +104,14 @@ test('social, safety and moderation methods map to their channels', async () => 
     ['moderation:reports', {}],
     ['moderation:history', { userId: 'u3' }],
     ['moderation:decide', { kind: 'dismiss', reportId: 4 }],
+    ['social:badges', { userId: 'u4' }],
+    ['social:practiceGraph', { userId: 'u4' }],
+    ['social:setBanner', { bytes }],
+    ['social:removeBanner', {}],
+    ['social:banner', { userId: 'u4' }],
+    ['moderation:searchMembers', { query: 'al' }],
+    ['moderation:grantBadge', { userId: 'u5', badge: 'mentor', reason: 'r' }],
+    ['moderation:revokeBadge', { userId: 'u5', badge: 'mentor', reason: 'r' }],
+    ['progress:graph', {}],
   ]);
 });

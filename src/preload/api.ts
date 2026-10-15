@@ -26,7 +26,7 @@ export function buildApi(invoke: Invoke, subscribe: Subscribe): DevtalkApi {
     },
     llm: { onProgress: (cb) => subscribe(PROGRESS_EVENT, cb) },
     review: { queue: () => call('review:queue'), rate: (input) => call('review:rate', input) },
-    progress: { summary: () => call('progress:summary'), history: (input) => call('progress:history', input) },
+    progress: { summary: () => call('progress:summary'), history: (input) => call('progress:history', input), graph: () => call('progress:graph') },
     settings: { get: () => call('settings:get'), set: (partial) => call('settings:set', partial) },
     llmCheck: () => call('llm:check'),
     social: {
@@ -44,6 +44,11 @@ export function buildApi(invoke: Invoke, subscribe: Subscribe): DevtalkApi {
       signOut: () => call('social:signOut'),
       exportData: (includeLocal) => call('social:export', { includeLocal }),
       deleteAccount: (input) => call('social:deleteAccount', input),
+      badges: (userId) => call('social:badges', { userId }),
+      practiceGraph: (userId) => call('social:practiceGraph', { userId }),
+      setBanner: (bytes) => call('social:setBanner', { bytes }),
+      removeBanner: () => call('social:removeBanner'),
+      banner: (userId) => call('social:banner', { userId }),
     },
     safety: {
       block: (userId) => call('safety:block', { userId }),
@@ -55,6 +60,9 @@ export function buildApi(invoke: Invoke, subscribe: Subscribe): DevtalkApi {
       reports: () => call('moderation:reports'),
       history: (userId) => call('moderation:history', { userId }),
       decide: (decision) => call('moderation:decide', decision),
+      searchMembers: (query) => call('moderation:searchMembers', { query }),
+      grantBadge: (change) => call('moderation:grantBadge', change),
+      revokeBadge: (change) => call('moderation:revokeBadge', change),
     },
   };
 }

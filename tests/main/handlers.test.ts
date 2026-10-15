@@ -39,7 +39,7 @@ function memoryVault(initial: string | null = 'sk-ant-test'): KeyVault {
   return { has: () => key !== null, get: () => key, set: (k) => { key = k.trim(); }, clear: () => { key = null; } };
 }
 
-function setup(opts: { provider?: LLMProvider; vault?: KeyVault; vaults?: Record<string, KeyVault>; onboarded?: boolean; activity?: string[] } = {}) {
+function setup(opts: { provider?: LLMProvider; vault?: KeyVault; vaults?: Record<string, KeyVault>; onboarded?: boolean; activity?: string[]; timeZone?: string } = {}) {
   const store = new MemoryStudyStore();
   if (opts.onboarded !== false) store.saveProfile(profile, t0);
   const provider = opts.provider ?? new FakeProvider([]);
@@ -56,6 +56,7 @@ function setup(opts: { provider?: LLMProvider; vault?: KeyVault; vaults?: Record
     templates,
     emitProgress: (requestId, stage) => progress.push([requestId, stage]),
     onActivity: (kind, detail) => opts.activity?.push(detail ? `${kind}:${detail}` : kind),
+    timeZone: () => opts.timeZone ?? 'UTC',
   });
   return { h, store, provider, progress };
 }
@@ -279,4 +280,16 @@ test('activity hooks: answers, reviews and a rising level are reported', async (
   await h['profile:save']({ ...profile, currentLevel: 'B2', targetLevel: 'C1' });
   await h['profile:save']({ ...profile, currentLevel: 'B1' });
   expect(activity).toEqual(['answer', 'review', 'level:B1>B2']);
+});
+
+test('progress:graph counts today\'s answer under today\'s local day', async () => {
+  // t0 is 12:00 UTC on 13 Oct: still 13 Oct in São Paulo, already 14 Oct in Auckland.
+  for (const [timeZone, day] of [['America/Sao_Paulo', '2026-10-13'], ['Pacific/Auckland', '2026-10-14']] as const) {
+    const { h } = setup({ provider: new FakeProvider([feedbackReply]), timeZone });
+    expect(await h['progress:graph']({})).toEqual({ ok: true, data: { days: [], current: 0, longest: 0 } });
+    await h['feedback:submit']({ requestId: 'r1', challengeId: null, text: 'I have fixed it.' });
+    expect(await h['progress:graph']({})).toEqual({ ok: true, data: { days: [{ day, answers: 1, reviews: 0 }], current: 1, longest: 1 } });
+  }
+  const { h } = setup();
+  expect(await h['progress:graph']({ extra: 1 })).toMatchObject({ ok: false, error: { kind: 'validation' } });
 });

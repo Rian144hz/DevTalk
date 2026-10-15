@@ -9,13 +9,25 @@ export interface DayActivity {
 
 export type GraphLevel = 0 | 1 | 2 | 3 | 4;
 
+/** What the profile graph shows: daily activity plus the current and longest streaks. */
+export interface PracticeGraphData {
+  days: DayActivity[];
+  current: number;
+  longest: number;
+}
+
 const toDay = (d: Date) => d.toISOString().slice(0, 10);
 const parse = (day: string) => new Date(`${day}T00:00:00Z`);
 export const addDays = (day: string, n: number): string => toDay(new Date(parse(day).getTime() + n * 86_400_000));
 
+const dayFormat = (timeZone: string) => new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' });
+
+/** YYYY-MM-DD of `date` in `timeZone`. */
+export const localDay = (date: Date, timeZone: string): string => dayFormat(timeZone).format(date);
+
 /** Groups ISO timestamps into local days of `timeZone`, sorted by day. */
 export function bucketByDay(answers: string[], reviews: string[], timeZone: string): DayActivity[] {
-  const fmt = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' });
+  const fmt = dayFormat(timeZone);
   const days = new Map<string, DayActivity>();
   const add = (iso: string, key: 'answers' | 'reviews') => {
     const day = fmt.format(new Date(iso));

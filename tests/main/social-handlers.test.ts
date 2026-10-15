@@ -4,6 +4,7 @@ import type { SocialHandlerDeps } from '../../src/main/ipc/social-handlers';
 import { createUnconfiguredBackend } from '../../src/main/social/backend';
 import { createFakeSocialBackend } from '../../src/main/social/fake-backend';
 import type { FakeSocialOptions } from '../../src/main/social/fake-backend';
+import { gif, webp as bannerWebp } from './banner-fixtures';
 
 const draft: ProfileDraft = {
   displayName: 'Rian',
@@ -229,5 +230,85 @@ describe('safety and moderation', () => {
     await signUp(h);
     const r = await h['moderation:reports']({});
     expect(r).toEqual({ ok: false, error: { kind: 'forbidden', message: 'Only moderators can see this.' } });
+  });
+});
+
+describe('profile extras', () => {
+  const kind = (r: { ok: boolean; error?: { kind: string } }) => (r.ok ? 'ok' : r.error!.kind);
+
+  test('badges and the practice graph of a visible member', async () => {
+    const { h, backend } = setup({ seed: 'moderation' });
+    const [sam] = backend.seededUserIds();
+    const badges = await ok(h['social:badges']({ userId: sam! }));
+    expect(badges.map((b) => b.id)).toContain('mentor');
+    const me = (await backend.session())!.userId;
+    const graph = await ok(h['social:practiceGraph']({ userId: me }));
+    expect(graph.days).toHaveLength(10);
+    expect(graph.current).toBe(10);
+    expect(kind(await h['social:badges']({ userId: '' }))).toBe('validation');
+  });
+
+  test('a banner is cleaned, stored and shown; then removed', async () => {
+    const { h, backend } = setup();
+    await signUp(h);
+    const me = (await backend.session())!.userId;
+    const url = await ok(h['social:setBanner']({ bytes: gif({ comment: 'taken at home' }) }));
+    expect(url.startsWith('data:image/gif;base64,')).toBe(true);
+    expect(Buffer.from(url.split(',')[1]!, 'base64').toString('latin1')).not.toContain('taken at home');
+    expect(await ok(h['social:banner']({ userId: me }))).toBe(url);
+    expect(await ok(h['social:setBanner']({ bytes: bannerWebp() }))).toMatch(/^data:image\/webp;base64,/);
+    await ok(h['social:removeBanner']({}));
+    expect(await ok(h['social:banner']({ userId: me }))).toBeNull();
+  });
+
+  test('a PNG, a tiny or a broken banner gets the plain-English message', async () => {
+    const { h } = setup();
+    await signUp(h);
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, ...new Array<number>(40).fill(0)]);
+    const rules = { ok: false, error: { kind: 'validation', message: 'The banner must be a GIF or WebP under 2 MB, at least 600 × 200.' } };
+    expect(await h['social:setBanner']({ bytes: png })).toEqual(rules);
+    expect(await h['social:setBanner']({ bytes: gif({ w: 300, h: 100 }) })).toEqual(rules);
+    const broken = gif();
+    expect(await h['social:setBanner']({ bytes: broken.slice(0, broken.length - 12) })).toEqual({
+      ok: false, error: { kind: 'validation', message: 'This image could not be read. Try another one.' },
+    });
+    expect(kind(await h['social:setBanner']({ bytes: new Uint8Array(8 * 1024 * 1024 + 1) }))).toBe('validation');
+  });
+
+  test('badge moderation input is validated', async () => {
+    const { h, backend } = setup({ seed: 'moderation' });
+    const [, alex] = backend.seededUserIds();
+    expect(kind(await h['moderation:grantBadge']({ userId: alex!, badge: 'creator', reason: 'x' }))).toBe('validation');
+    expect(kind(await h['moderation:grantBadge']({ userId: alex!, badge: 'mentor', reason: '  ' }))).toBe('validation');
+    expect(kind(await h['moderation:grantBadge']({ userId: alex!, badge: 'mentor', reason: 'x'.repeat(201) }))).toBe('validation');
+    expect(kind(await h['moderation:searchMembers']({ query: 'x'.repeat(41) }))).toBe('validation');
+    expect(kind(await h['moderation:searchMembers']({ query: '' }))).toBe('validation');
+  });
+
+  test('a moderator finds a member and gives and takes a badge', async () => {
+    const { h, backend } = setup({ seed: 'moderation' });
+    const [, alex] = backend.seededUserIds();
+    const found = await ok(h['moderation:searchMembers']({ query: 'ale' }));
+    expect(found.map((m) => m.displayName)).toEqual(['Alex']);
+    await ok(h['moderation:grantBadge']({ userId: alex!, badge: 'beta_tester', reason: 'Tested 0.2' }));
+    expect((await ok(h['social:badges']({ userId: alex! }))).map((b) => b.id)).toContain('beta_tester');
+    await ok(h['moderation:revokeBadge']({ userId: alex!, badge: 'beta_tester', reason: 'By mistake' }));
+    expect((await ok(h['social:badges']({ userId: alex! }))).map((b) => b.id)).not.toContain('beta_tester');
+  });
+
+  test('a non-moderator cannot search or give badges', async () => {
+    const { h } = setup();
+    await signUp(h);
+    const forbidden = { ok: false, error: { kind: 'forbidden', message: 'Only moderators can see this.' } };
+    expect(await h['moderation:searchMembers']({ query: 'sam' })).toEqual(forbidden);
+    expect(await h['moderation:grantBadge']({ userId: 'someone', badge: 'mentor', reason: 'x' })).toEqual(forbidden);
+    expect(await h['moderation:revokeBadge']({ userId: 'someone', badge: 'mentor', reason: 'x' })).toEqual(forbidden);
+  });
+
+  test('saving a profile keeps the new fields', async () => {
+    const { h } = setup();
+    await signUp(h);
+    const saved = await ok(h['social:saveProfile']({ ...draft, stack: ['python', 'java'], mainStack: ['python'], showProgress: false, mascot: 'bear-2' }));
+    expect(saved).toMatchObject({ mainStack: ['python'], showProgress: false, mascot: 'bear-2' });
   });
 });

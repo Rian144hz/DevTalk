@@ -60,6 +60,14 @@ export type ProfileDraft = Omit<SocialProfile, 'id' | 'hasAvatar' | 'suspendedUn
 
 export type BadgeGroup = 'community' | 'technical' | 'language' | 'evolution';
 /** One badge as the server computes it (`profile_badges`). */
+/** A member as moderators find them when giving badges. */
+export interface MemberSummary {
+  id: string;
+  displayName: string;
+  hasAvatar: boolean;
+  mascot: MascotId | null;
+}
+
 export interface Badge {
   id: string;
   group: BadgeGroup;

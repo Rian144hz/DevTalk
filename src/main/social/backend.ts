@@ -1,6 +1,6 @@
-import type { DayActivity } from '../../core/progress/practice';
+import type { DayActivity, PracticeGraphData } from '../../core/progress/practice';
 import type { ManualBadge } from '../../core/social/badges';
-import type { Badge, MascotId, ModerationDecision, ModerationReport, ProfileDraft, ReportInput, SocialProfile } from '../../core/social/types';
+import type { Badge, MemberSummary, ModerationDecision, ModerationReport, ProfileDraft, ReportInput, SocialProfile } from '../../core/social/types';
 import { SocialError } from './errors';
 
 export interface SocialSession {
@@ -15,18 +15,7 @@ export interface Notice {
   read: boolean;
 }
 
-export interface PracticeGraphData {
-  days: DayActivity[];
-  current: number;
-  longest: number;
-}
-
-export interface MemberSummary {
-  id: string;
-  displayName: string;
-  hasAvatar: boolean;
-  mascot: MascotId | null;
-}
+export type { MemberSummary, PracticeGraphData };
 
 export interface ModerationHistoryItem {
   action: string;

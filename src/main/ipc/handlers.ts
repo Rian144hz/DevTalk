@@ -4,6 +4,7 @@ import { LEVELS } from '../../core/domain/types';
 import type { LLMProvider } from '../../core/llm/provider';
 import type { ProgressStage } from '../../core/llm/structured';
 import type { Clock, StoredProfile, StudyStore } from '../../core/ports';
+import { addDays, bucketByDay, localDay, streaks } from '../../core/progress/practice';
 import { buildProgressSummary } from '../../core/progress/summary';
 import { previewDue, rate, REVIEW_RATINGS } from '../../core/srs/srs';
 import type { InvokeChannel, Settings } from '../../shared/ipc-contract';
@@ -26,11 +27,15 @@ export interface HandlerDeps {
   emitProgress: (requestId: string, stage: ProgressStage) => void;
   /** Practice happened (an answer, a review, or a level rise like 'B1>B2'); must not block or throw. */
   onActivity?: (kind: 'answer' | 'review' | 'level', detail?: string) => void;
+  /** IANA time zone of this machine (practice days are local days). */
+  timeZone?: () => string;
 }
 
 export type SocialChannel = Extract<InvokeChannel, `social:${string}` | `safety:${string}` | `moderation:${string}`>;
 export type CoreChannel = Exclude<InvokeChannel, SocialChannel>;
 export type Handlers = HandlerMap<InvokeChannel>;
+
+const GRAPH_DAYS = 53 * 7;
 
 const settingsOf = (p: StoredProfile): Settings => ({ provider: p.provider as ProviderId, model: p.model, theme: p.theme });
 
@@ -139,6 +144,15 @@ export function createHandlers(deps: HandlerDeps): HandlerMap<CoreChannel> {
 
     'progress:summary': handle('progress:summary', () => buildProgressSummary(store, clock.now())),
     'progress:history': handle('progress:history', ({ before, limit }) => store.history({ before, limit })),
+    'progress:graph': handle('progress:graph', () => {
+      const timeZone = deps.timeZone?.() ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const today = localDay(clock.now(), timeZone);
+      const { answers, reviews } = store.activityTimestamps(new Date(0));
+      const all = bucketByDay(answers, reviews, timeZone);
+      // The graph shows 53 weeks; the longest streak counts the whole history.
+      const first = addDays(today, -GRAPH_DAYS);
+      return { days: all.filter((d) => d.day > first && d.day <= today), ...streaks(all, today) };
+    }),
 
     'settings:get': handle('settings:get', () => {
       const p = store.getProfile();

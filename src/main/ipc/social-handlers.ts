@@ -2,6 +2,7 @@ import { normalizeStackTags } from '../../core/social/validate';
 import type { SocialStatus } from '../../shared/ipc-contract';
 import { validateAvatar } from '../social/avatar';
 import type { SocialBackend } from '../social/backend';
+import { prepareBannerUpload } from '../social/media';
 import { AppFailure, handle, type HandlerMap } from './handle';
 import type { SocialChannel } from './handlers';
 
@@ -84,6 +85,25 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
       return null;
     }),
     'social:avatar': handle('social:avatar', ({ userId }) => backend.avatarDataUrl(userId)),
+    'social:badges': handle('social:badges', ({ userId }) => backend.badges(userId)),
+    'social:practiceGraph': handle('social:practiceGraph', ({ userId }) => backend.practiceGraph(userId)),
+    'social:setBanner': handle('social:setBanner', async ({ bytes }) => {
+      const banner = prepareBannerUpload(bytes);
+      if ('error' in banner) {
+        throw new AppFailure(
+          'validation',
+          banner.error === 'corrupt' ? 'This image could not be read. Try another one.' : 'The banner must be a GIF or WebP under 2 MB, at least 600 × 200.',
+        );
+      }
+      await backend.uploadBanner(banner.bytes, banner.ext);
+      const me = await backend.session();
+      return (me && (await backend.bannerDataUrl(me.userId))) ?? '';
+    }),
+    'social:removeBanner': handle('social:removeBanner', async () => {
+      await backend.removeBanner();
+      return null;
+    }),
+    'social:banner': handle('social:banner', ({ userId }) => backend.bannerDataUrl(userId)),
     'social:notices': handle('social:notices', () => backend.listNotices()),
     'social:readNotice': handle('social:readNotice', async ({ id }) => {
       await backend.markNoticeRead(id);
@@ -136,6 +156,20 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
     'moderation:decide': handle('moderation:decide', async (decision) => {
       await requireModerator();
       await backend.decide(decision);
+      return null;
+    }),
+    'moderation:searchMembers': handle('moderation:searchMembers', async ({ query }) => {
+      await requireModerator();
+      return backend.searchMembers(query);
+    }),
+    'moderation:grantBadge': handle('moderation:grantBadge', async ({ userId, badge, reason }) => {
+      await requireModerator();
+      await backend.grantBadge(userId, badge, reason);
+      return null;
+    }),
+    'moderation:revokeBadge': handle('moderation:revokeBadge', async ({ userId, badge, reason }) => {
+      await requireModerator();
+      await backend.revokeBadge(userId, badge, reason);
       return null;
     }),
   };

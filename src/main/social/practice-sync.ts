@@ -3,7 +3,7 @@
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { LEVELS } from '../../core/domain/types';
 import type { Clock, StudyStore } from '../../core/ports';
-import { addDays, bucketByDay } from '../../core/progress/practice';
+import { addDays, bucketByDay, localDay } from '../../core/progress/practice';
 import type { SocialBackend } from './backend';
 
 export type ActivityKind = 'answer' | 'review' | 'level';
@@ -92,7 +92,7 @@ export function createPracticeSync(deps: {
 
   const sendDays = async (state: SyncState, timeZone: string) => {
     const now = clock.now();
-    const today = bucketByDay([now.toISOString()], [], timeZone)[0]!.day;
+    const today = localDay(now, timeZone);
     const first = addDays(today, -(WINDOW_DAYS - 1));
     // One extra day each side covers any time zone offset; the day filter does the rest.
     const { answers, reviews } = store.activityTimestamps(new Date(`${addDays(first, -1)}T00:00:00Z`));

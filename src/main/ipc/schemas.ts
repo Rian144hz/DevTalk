@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { InvokeChannel } from '../../shared/ipc-contract';
 import { LEVELS } from '../../core/domain/types';
 import { PROVIDERS } from '../../shared/providers';
+import { MANUAL_BADGES } from '../../core/social/badges';
 import { PROFILE_LIMITS, REPORT_CONTEXTS, REPORT_REASONS } from '../../core/social/types';
 import { ProfileDraftSchema } from '../../core/social/validate';
 
@@ -18,6 +19,10 @@ const language = z.string().trim().min(1).max(60);
 const email = z.string().trim().toLowerCase().max(254).regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Enter a valid e-mail address.');
 const userId = z.string().min(1).max(64);
 const MAX_AVATAR_INPUT = 8 * 1024 * 1024;
+const MAX_BANNER_INPUT = 8 * 1024 * 1024;
+const badgeChange = z
+  .object({ userId, badge: z.enum(MANUAL_BADGES), reason: z.string().trim().min(1, 'Write a reason.').max(200) })
+  .strict();
 const reportId = z.number().int().positive();
 const decision = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('dismiss'), reportId }).strict(),
@@ -64,6 +69,7 @@ export const INPUT_SCHEMAS = {
   'review:rate': z.object({ expressionId: z.number().int().positive(), rating: z.enum(['again', 'hard', 'good', 'easy']) }).strict(),
   'progress:summary': empty,
   'progress:history': z.object({ before: z.string().nullable(), limit: z.number().int().min(1).max(100).default(20) }).strict(),
+  'progress:graph': empty,
   'settings:get': empty,
   'settings:set': settings.partial().strict(),
   'llm:check': empty,
@@ -81,6 +87,11 @@ export const INPUT_SCHEMAS = {
   'social:signOut': empty,
   'social:export': z.object({ includeLocal: z.boolean() }).strict(),
   'social:deleteAccount': z.object({ confirmEmail: z.string().max(254), deleteLocal: z.boolean() }).strict(),
+  'social:badges': z.object({ userId }).strict(),
+  'social:practiceGraph': z.object({ userId }).strict(),
+  'social:setBanner': z.object({ bytes: z.instanceof(Uint8Array).refine((b) => b.byteLength <= MAX_BANNER_INPUT) }).strict(),
+  'social:removeBanner': empty,
+  'social:banner': z.object({ userId }).strict(),
   'safety:block': z.object({ userId }).strict(),
   'safety:unblock': z.object({ userId }).strict(),
   'safety:report': z
@@ -96,4 +107,7 @@ export const INPUT_SCHEMAS = {
   'moderation:reports': empty,
   'moderation:history': z.object({ userId }).strict(),
   'moderation:decide': decision,
+  'moderation:searchMembers': z.object({ query: z.string().trim().min(1).max(40) }).strict(),
+  'moderation:grantBadge': badgeChange,
+  'moderation:revokeBadge': badgeChange,
 } satisfies Record<InvokeChannel, z.ZodType>;
