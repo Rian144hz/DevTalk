@@ -79,6 +79,7 @@ The community (accounts, profiles, blocks, reports, moderation) runs on a free S
 3. **Database.** Open SQL Editor › New query, paste all of `supabase/setup.sql`, and click Run. It creates the tables, the row-level security rules and the private `avatars` bucket. Regenerate it after changing a migration with `npm run build:setup-sql`.
 4. **Delete-account function.** Edge Functions › Deploy a new function › Via editor, name it `delete-account`, paste `supabase/functions/delete-account/single-file.ts` (regenerate with `npm run build:edge`) and keep "Verify JWT" on. The service-role key it needs already exists in the function's environment and never leaves the server.
 5. **Moderators.** Sign in once in the app, then run in SQL Editor: `insert into moderators (user_id) select id from auth.users where email = 'you@example.com';`
+6. **Profile extras (badges, practice graph, banners).** A project set up before 2026-10-15 pastes only `supabase/migrations/0004_profile_extras.sql` in a new query and clicks Run (new projects get it inside `setup.sql`). Then deploy the `delete-account` function again from `single-file.ts`, so deleting an account also removes the banner. The Creator badge is given once in SQL Editor: `insert into badge_grants (user_id, badge, granted_by) select id, 'creator', id from auth.users where email = 'you@example.com';`
 
 Check it end to end (a zenity dialog asks for your e-mail and the code):
 
@@ -119,6 +120,7 @@ Set `DEVTALK_FAKE_LLM=1` to use the fixture coach and `DEVTALK_USER_DATA=<dir>` 
 - Your practice data: `~/.config/devtalk/devtalk.sqlite` (local SQLite)
 - API keys: `~/.config/devtalk/api-key-<provider>.bin`, encrypted by the system keyring
 - Community session: `~/.config/devtalk/social-session.bin`, encrypted by the system keyring
+- What the practice sync already sent (day counts and milestones, never text): `~/.config/devtalk/practice-sync.json`
 - Database migrations and the delete-account function: `supabase/`
 - Legal documents shown in the app: `docs/legal/`
 - Coach prompts: `prompts/coach.md` and `prompts/challenge.md` — edit them freely; they are read on every request

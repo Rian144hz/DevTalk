@@ -5,8 +5,8 @@ function deps(over: Partial<DeleteAccountDeps> = {}) {
   const calls: string[] = [];
   const d: DeleteAccountDeps = {
     getUserId: async (jwt) => (jwt === 'good' ? 'user-1' : null),
-    removeAvatars: async (uid) => {
-      calls.push(`avatars:${uid}`);
+    removeFiles: async (bucket, uid) => {
+      calls.push(`${bucket}:${uid}`);
     },
     deleteUser: async (uid) => {
       calls.push(`user:${uid}`);
@@ -42,17 +42,29 @@ test('an invalid token is refused', async () => {
   expect(calls).toEqual([]);
 });
 
-test('a valid request removes the avatars first, then the user', async () => {
+test('a valid request removes the photo and banner files first, then the user', async () => {
   const { d, calls } = deps();
   const res = await handle(post('Bearer good'), d);
   expect(res.status).toBe(200);
   expect(await res.json()).toEqual({ deleted: true });
-  expect(calls).toEqual(['avatars:user-1', 'user:user-1']);
+  expect(calls).toEqual(['avatars:user-1', 'banners:user-1', 'user:user-1']);
+});
+
+test('a failure while removing the banner stops before deleting the user', async () => {
+  const { d, calls } = deps({
+    removeFiles: async (bucket, uid) => {
+      if (bucket === 'banners') throw new Error('storage down');
+      calls.push(`${bucket}:${uid}`);
+    },
+  });
+  const res = await handle(post('Bearer good'), d);
+  expect(res.status).toBe(500);
+  expect(calls).toEqual(['avatars:user-1']);
 });
 
 test('a failure while removing avatars stops before deleting the user', async () => {
   const { d, calls } = deps({
-    removeAvatars: async () => {
+    removeFiles: async () => {
       throw new Error('storage down');
     },
   });

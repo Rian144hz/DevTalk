@@ -168,7 +168,7 @@ export function SettingsScreen({ profile }: { profile: StoredProfile }) {
 
       <AccountSection />
 
-      <p className="muted small settings-foot">Your practice data stays on this computer. Only the text you submit is sent to the coach you chose.</p>
+      <p className="muted small settings-foot">Your practice stays on this computer, and the text you submit goes only to the coach you chose. In the community, only daily counts of answers and reviews are shared.</p>
     </main>
   );
 }

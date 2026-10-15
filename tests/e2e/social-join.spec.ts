@@ -1,4 +1,4 @@
-import { rmSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, joinCommunity, launchApp, newDataDir, onboard, test } from './fixtures';
 
@@ -110,4 +110,31 @@ test('a profile photo shows on People; an SVG is refused', async ({ page }) => {
   await expect(page.locator('.photo-row img.avatar')).toHaveAttribute('src', /^data:image\/webp;base64,/);
   await page.getByRole('button', { name: 'Save profile' }).click();
   await expect(page.locator('.profile img.avatar')).toHaveAttribute('src', /^data:image\/webp;base64,/);
+});
+
+test('new document versions: a member who accepted older ones accepts again before using the community', async () => {
+  const dataDir = newDataDir();
+  try {
+    let app = await launchApp({ dataDir, social: '1' });
+    let page = await app.firstWindow();
+    await onboard(page);
+    await joinCommunity(page);
+    await app.close();
+
+    // The documents accepted at sign-up become an older version.
+    const file = join(dataDir, 'fake-social.json');
+    const state = JSON.parse(readFileSync(file, 'utf8')) as { consents: { version: string }[] };
+    for (const c of state.consents) c.version = '2026-10-14';
+    writeFileSync(file, JSON.stringify(state));
+
+    app = await launchApp({ dataDir, social: '1' });
+    page = await app.firstWindow();
+    await page.getByRole('link', { name: 'People' }).click();
+    await expect(page.getByText('Finish joining')).toBeVisible();
+    await page.getByRole('button', { name: 'Continue joining' }).click();
+    await expect(page.getByText('Step 3 of 4')).toBeVisible();
+    await app.close();
+  } finally {
+    rmSync(dataDir, { recursive: true, force: true });
+  }
 });

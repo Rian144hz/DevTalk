@@ -13,8 +13,8 @@ Deno.serve((req) =>
       const { data, error } = await admin.auth.getUser(jwt);
       return error || !data.user ? null : data.user.id;
     },
-    async removeAvatars(uid) {
-      const bucket = admin.storage.from('avatars');
+    async removeFiles(name, uid) {
+      const bucket = admin.storage.from(name);
       const { data, error } = await bucket.list(uid);
       if (error) throw new Error(error.message);
       if (data.length === 0) return;

@@ -3,11 +3,14 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2.117.3';
 
+/** Storage buckets that hold a member's files under {uid}/ (profile photo, profile banner). */
+const USER_BUCKETS = ['avatars', 'banners'] as const;
+
 interface DeleteAccountDeps {
   /** The user id for a valid access token, or null. */
   getUserId(jwt: string): Promise<string | null>;
-  /** Removes every file under avatars/{uid}/. */
-  removeAvatars(uid: string): Promise<void>;
+  /** Removes every file under {bucket}/{uid}/. */
+  removeFiles(bucket: (typeof USER_BUCKETS)[number], uid: string): Promise<void>;
   /** Deletes the auth user; database rows go with it (on delete cascade / set null). */
   deleteUser(uid: string): Promise<void>;
 }
@@ -24,7 +27,8 @@ async function handle(req: Request, deps: DeleteAccountDeps): Promise<Response> 
   const uid = await deps.getUserId(match[1]!);
   if (!uid) return json(401, { error: 'Sign in first.' });
   try {
-    await deps.removeAvatars(uid);
+    // Files first: once the user is gone, nothing links them to the account any more.
+    for (const bucket of USER_BUCKETS) await deps.removeFiles(bucket, uid);
     await deps.deleteUser(uid);
   } catch (err) {
     return json(500, { error: err instanceof Error ? err.message : String(err) });
@@ -42,8 +46,8 @@ Deno.serve((req) =>
       const { data, error } = await admin.auth.getUser(jwt);
       return error || !data.user ? null : data.user.id;
     },
-    async removeAvatars(uid) {
-      const bucket = admin.storage.from('avatars');
+    async removeFiles(name, uid) {
+      const bucket = admin.storage.from(name);
       const { data, error } = await bucket.list(uid);
       if (error) throw new Error(error.message);
       if (data.length === 0) return;

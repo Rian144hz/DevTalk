@@ -40,13 +40,14 @@ The loop closes on the learner's own output: corrections are shown as a code-sty
 
 ## Brand Commitments
 
-- A developer tool, not a children's app: focus, calm and precision, in the spirit of Linear, Raycast and VS Code. No mascots, no gamification.
+- A developer tool, not a children's app: focus, calm and precision, in the spirit of Linear, Raycast and VS Code. Public milestones of progress (streaks, level up, vocabulary) as badges, with no points, ranking or leaderboard. Mascots only as the default picture of members without a photo; the app itself has no mascot.
 - Dark theme by default with a light theme option; colors, spacing, type and radii defined once as tokens.
 - Readable sans-serif for the interface, monospace for diffs; comfortable line height because the user reads a lot of English.
 - Corrections shown as a diff: removed in red, added in green, never labelled "wrong".
 - Expressions shown as cards with a type badge (chunk, phrasal verb, collocation).
 - Interface copy in simple English.
-- Exception to "no third-party brands or assets" (confirmed 2026-10-14): technology logos from Simple Icons (CC0) may identify a profile's stack, drawn in one colour (the text tone), never as decoration.
+- Exception to "no third-party brands or assets" (confirmed 2026-10-14): technology logos from Simple Icons (CC0) may identify a profile's stack, drawn in one colour (the text tone), never as decoration. Since 2026-10-15, the up to two main technologies shown as badges use the language's real brand colour, adjusted per theme for 3:1 contrast.
+- Exception to "no third-party assets" (confirmed 2026-10-15): the nine default pictures (duck, bear and axolotl) from the ipaslogo.com library, free for commercial use; provenance in `docs/design/mascots/SOURCE.md`.
 
 ## Evidence on Hand
 

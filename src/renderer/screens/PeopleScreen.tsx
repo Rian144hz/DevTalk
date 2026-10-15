@@ -156,7 +156,7 @@ export function PeopleScreen({ edit }: { edit: boolean }) {
           <p>Create a profile now. Next, you will find partners at your level, practise in a 1:1 chat where you correct each other, and join voice rooms.</p>
           <ul className="intro-points">
             <li>Sign in with a code sent to your e-mail. There is no password.</li>
-            <li>Members see your profile, never your e-mail or your practice.</li>
+            <li>Members see your profile and badges, never your e-mail or what you write when you practise.</li>
             <li>For people 18 or older.</li>
           </ul>
           <div className="row-actions">
