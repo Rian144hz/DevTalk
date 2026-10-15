@@ -218,6 +218,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
     const ties: [keyof typeof p, string][] = [['Ana', p.Bia], ['Caio', p.Bia], ['Fabi', p.Bia], ['Gil', p.Bia], ['Edu', p.Max], ['Hugo', rian]];
     for (const [follower, followee] of ties) state.follows.push({ follower: p[follower], followee, at });
     state.blocks.push({ blocker: p.Gil, blocked: rian });
+    state.notices.push({ id: nextId(), userId: rian, message: 'Hugo followed you.', createdAt: at, readAt: null, kind: 'follow', actor: p.Hugo });
     state.seeded = Object.values(p);
     state.session = { userId: rian, email: 'rian@example.com' };
     save();

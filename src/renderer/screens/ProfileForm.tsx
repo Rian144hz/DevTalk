@@ -60,7 +60,7 @@ export function ProfileForm({
   onSubmit(draft: ProfileDraft, photo: PhotoChange, banner: BannerChange): Promise<string | null>;
   onCancel?(): void;
 }) {
-  const ids = { tz: useId(), stack: useId(), avail: useId(), mascot: useId(), progress: useId() };
+  const ids = { tz: useId(), stack: useId(), avail: useId(), mascot: useId(), progress: useId(), listed: useId() };
   const zones = useMemo(timeZones, []);
   const fileRef = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
@@ -75,6 +75,7 @@ export function ProfileForm({
   const [bio, setBio] = useState(initial.bio);
   const [mainStack, setMainStack] = useState<string[]>(initial.mainStack.filter((t) => initial.stack.includes(t)));
   const [showProgress, setShowProgress] = useState(initial.showProgress);
+  const [listed, setListed] = useState(initial.listed);
   const [mascot, setMascot] = useState<MascotId | null>(initial.mascot);
   const [banner, setBanner] = useState<BannerChange>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(initialBanner ?? null);
@@ -168,8 +169,7 @@ export function ProfileForm({
       mainStack: mainStack.filter((t) => finalStack.includes(t) && canBeMain(t)),
       showProgress,
       mascot,
-      // Edited in a later task (the "Show me in the member list" switch); kept as given until then.
-      listed: initial.listed,
+      listed,
     };
     const parsed = ProfileDraftSchema.safeParse(draft);
     const found: Partial<Record<keyof ProfileDraft, string>> = {};
@@ -332,6 +332,14 @@ export function ProfileForm({
         <span className="field-hint" id={`${ids.progress}-hint`}>
           They see how many answers and reviews you did each day, never what you wrote. When off, only you see them.
         </span>
+      </div>
+
+      <div className="field">
+        <label className="check-row" htmlFor={ids.listed}>
+          <input id={ids.listed} type="checkbox" checked={listed} onChange={(e) => setListed(e.target.checked)} aria-describedby={`${ids.listed}-hint`} />
+          <span>Show me in the member list</span>
+        </label>
+        <span className="field-hint" id={`${ids.listed}-hint`}>People who already follow you can still open your profile.</span>
       </div>
 
       {formError && <Notice tone="error" title={formError} />}

@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import type { PracticeGraphData } from '../../core/progress/practice';
 import type { Badge, SocialProfile, SocialStats } from '../../core/social/types';
 import type { SocialNotice, SocialStatus } from '../../shared/ipc-contract';
-import { Button, EmptyState, Notice, Skeleton, SocialActions } from '../design-system';
+import { Avatar, Button, EmptyState, Notice, Skeleton, SocialActions } from '../design-system';
 import { AppErrorException, api, unwrap } from '../lib/api';
 import { formatLongDate } from '../lib/format';
 import { setReturnTo } from '../lib/returnTo';
 import type { Route } from '../lib/router';
 import { saveProfileAndPhoto } from './JoinScreen';
+import { FollowList } from './FollowList';
 import { MemberProfile } from './MemberProfile';
 import { MembersTab } from './MembersTab';
 import { ProfileView } from './ProfileView';
@@ -196,17 +197,31 @@ export function PeopleScreen({ route }: { route: Route }) {
       {suspended && (
         <Notice tone="info" title={suspendedText(suspended)} detail="Until then you cannot edit your profile or send reports." />
       )}
-      {notices.map((n) => (
-        <Notice key={n.id} tone="info" title="Message from the moderators" detail={`${n.message} (${formatLongDate(n.createdAt)})`}
-          action={<Button variant="quiet" onClick={async () => {
+      {notices.map((n) => {
+        const markRead = (
+          <Button variant="quiet" onClick={async () => {
             try {
               unwrap(await api().social.readNotice(n.id));
               void load();
             } catch (e) {
               setError(message(e));
             }
-          }}>Mark as read</Button>} />
-      ))}
+          }}>Mark as read</Button>
+        );
+        if (n.kind === 'follow' && n.actor) {
+          return (
+            <div key={n.id} className="notice follow-notice" data-tone="info" role="status">
+              <Avatar src={null} name={n.actor.displayName} size={32} userId={n.actor.id} />
+              <p><a href={`#/people/u/${n.actor.id}`}>{n.actor.displayName}</a> followed you. <span className="notice-detail">{formatLongDate(n.createdAt)}</span></p>
+              {markRead}
+            </div>
+          );
+        }
+        return (
+          <Notice key={n.id} tone="info" title={n.kind === 'follow' ? 'New follower' : 'Message from the moderators'}
+            detail={`${n.message} (${formatLongDate(n.createdAt)})`} action={markRead} />
+        );
+      })}
       {!suspended && <PeopleTabs active={showing} />}
       {showing === 'members' && <MembersTab />}
       {showing === 'following' && (
@@ -227,7 +242,10 @@ export function PeopleScreen({ route }: { route: Route }) {
           </section>
         </>
       )}
-      {showing === null && route.userId && <MemberProfile userId={route.userId} myId={profile.id} />}
+      {showing === null && route.userId && !route.list && <MemberProfile userId={route.userId} myId={profile.id} />}
+      {showing === null && route.userId && route.list && (
+        <FollowList userId={route.userId} list={route.list} myId={profile.id} myName={profile.displayName} />
+      )}
     </main>
   );
 }

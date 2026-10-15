@@ -64,6 +64,8 @@ function Shell() {
       { id: 'go-practice', label: 'Go to Practice', keywords: ['write', 'answer'], shortcut: 'Ctrl 2', run: go('practice') },
       { id: 'go-review', label: 'Go to Review', keywords: ['cards', 'expressions'], shortcut: 'Ctrl 3', run: go('review') },
       { id: 'go-people', label: 'Go to People', keywords: ['partners', 'chat'], shortcut: 'Ctrl 4', run: go('people') },
+      { id: 'go-members', label: 'Go to Members', keywords: ['people', 'members', 'find', 'directory'], run: go('people') },
+      { id: 'go-following', label: 'Go to Following', keywords: ['people', 'follow'], run: () => navigate({ name: 'people', sub: 'following' }) },
       { id: 'go-rooms', label: 'Go to Rooms', keywords: ['voice'], shortcut: 'Ctrl 5', run: go('rooms') },
       { id: 'go-progress', label: 'Go to Progress', keywords: ['history', 'stats'], shortcut: 'Ctrl 6', run: go('progress') },
       { id: 'go-settings', label: 'Go to Settings', keywords: ['preferences', 'key', 'model', 'coach'], shortcut: 'Ctrl 7', run: go('settings') },

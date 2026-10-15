@@ -228,3 +228,8 @@
 }
 .profile > .social-actions { padding-inline: var(--s5); }
 .profile-safety { max-width: 760px; display: flex; gap: var(--s2); margin-top: var(--s6); padding-top: var(--s4); border-top: 1px solid var(--rule); }
+.follow-notice { display: flex; align-items: center; gap: var(--s3); }
+.follow-notice p { flex: 1; min-width: 0; }
+.follow-list { max-width: 760px; display: flex; flex-direction: column; gap: var(--s3); }
+.follow-list h2 { font-size: var(--text-xl); }
+.back-link { font-size: var(--text-sm); color: var(--ink-2); }
