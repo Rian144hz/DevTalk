@@ -237,7 +237,7 @@ export function JoinScreen() {
             }}
             onSubmit={async (p, photo) => {
               const failure = await saveProfileAndPhoto(p, photo);
-              if (!failure) window.location.hash = '#/people';
+              if (!failure) window.location.hash = '#/people/me';
               return failure;
             }}
           />

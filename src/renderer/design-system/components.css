@@ -176,3 +176,12 @@ kbd { font: var(--text-xs) var(--font-mono); color: var(--ink-2); border: 1px so
   .graph-months { column-gap: 2px; }
   .graph-days { row-gap: 2px; }
 }
+
+/* Member list: ruled rows that open the profile; the name leads, area and level under it */
+.member-list { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--rule); }
+.member-list li { border-bottom: 1px solid var(--rule); }
+.member-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--s3); align-items: center; padding: var(--s3) var(--s2); color: var(--ink); text-decoration: none; border-radius: var(--r-control); }
+.member-row:hover { background: var(--sheet); }
+.member-main { display: flex; flex-direction: column; min-width: 0; }
+.member-name { font-weight: 600; overflow-wrap: anywhere; }
+.member-meta { font-size: var(--text-sm); color: var(--ink-2); }

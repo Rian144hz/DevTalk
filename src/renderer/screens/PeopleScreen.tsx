@@ -6,8 +6,11 @@ import { Avatar, BadgeRow, Banner, Button, EmptyState, Notice, PracticeGraph, Sk
 import { AppErrorException, api, unwrap } from '../lib/api';
 import { formatLongDate, formatSlot } from '../lib/format';
 import { setReturnTo } from '../lib/returnTo';
+import type { Route } from '../lib/router';
 import { AREA_LABELS } from './forms';
 import { saveProfileAndPhoto } from './JoinScreen';
+import { MembersTab } from './MembersTab';
+import { PagedMembers } from './PagedMembers';
 import { ProfileForm } from './ProfileForm';
 
 const message = (e: unknown) => (e instanceof AppErrorException ? e.message : 'Something went wrong. Try again.');
@@ -82,7 +85,26 @@ function ProfileView({ profile, avatar, banner, badges, graph }: Omit<Loaded, 's
   );
 }
 
-export function PeopleScreen({ edit }: { edit: boolean }) {
+type Tab = 'members' | 'following' | 'me';
+const TABS: { id: Tab; label: string; hash: string }[] = [
+  { id: 'members', label: 'Members', hash: '#/people' },
+  { id: 'following', label: 'Following', hash: '#/people/following' },
+  { id: 'me', label: 'Your profile', hash: '#/people/me' },
+];
+
+function PeopleTabs({ active }: { active: Tab | null }) {
+  return (
+    <nav className="people-tabs" aria-label="People">
+      {TABS.map((t) => (
+        <a key={t.id} href={t.hash} aria-current={active === t.id ? 'page' : undefined}>{t.label}</a>
+      ))}
+    </nav>
+  );
+}
+
+export function PeopleScreen({ route }: { route: Route }) {
+  const edit = route.sub === 'edit';
+  const tab: Tab | null = route.userId ? null : route.sub === 'me' ? 'me' : route.sub === 'following' ? 'following' : 'members';
   const [data, setData] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -203,10 +225,10 @@ export function PeopleScreen({ edit }: { edit: boolean }) {
             mascot: profile.mascot,
             listed: profile.listed,
           }}
-          onCancel={go('#/people')}
+          onCancel={go('#/people/me')}
           onSubmit={async (p, photo, newBanner) => {
             const failure = await saveProfileAndPhoto(p, photo, newBanner);
-            if (!failure) window.location.hash = '#/people';
+            if (!failure) window.location.hash = '#/people/me';
             return failure;
           }}
         />
@@ -214,9 +236,11 @@ export function PeopleScreen({ edit }: { edit: boolean }) {
     );
   }
 
+  // Suspended members only see their own profile; the member list is closed to them until the end date.
+  const showing: Tab | null = suspended ? 'me' : tab;
   return (
     <main className="page people">
-      {head(suspended ? undefined : <Button variant="secondary" onClick={go('#/people/edit')}>Edit profile</Button>)}
+      {head(!suspended && showing === 'me' ? <Button variant="secondary" onClick={go('#/people/edit')}>Edit profile</Button> : undefined)}
       {suspended && (
         <Notice tone="info" title={suspendedText(suspended)} detail="Until then you cannot edit your profile or send reports." />
       )}
@@ -231,11 +255,26 @@ export function PeopleScreen({ edit }: { edit: boolean }) {
             }
           }}>Mark as read</Button>} />
       ))}
-      <ProfileView profile={profile} avatar={avatar} banner={banner} badges={badges} graph={graph} />
-      <section className="people-next">
-        <EmptyState title="Finding partners comes next"
-          body="Soon you will see developers at your level here and practise with them in a 1:1 chat with corrections. Your profile is what they will see." />
-      </section>
+      {!suspended && <PeopleTabs active={showing} />}
+      {showing === 'members' && <MembersTab />}
+      {showing === 'following' && (
+        <PagedMembers
+          reloadKey="following"
+          label="Following"
+          load={(page) => api().social.following(profile.id, page).then(unwrap)}
+          empty={<EmptyState title="You do not follow anyone yet." body="Find people in Members." action={<Button variant="secondary" onClick={go('#/people')}>Go to Members</Button>} />}
+        />
+      )}
+      {showing === 'me' && (
+        <>
+          <ProfileView profile={profile} avatar={avatar} banner={banner} badges={badges} graph={graph} />
+          <section className="people-next">
+            <EmptyState title="Private messages come next"
+              body="Soon you can send a private message to a member from their profile and practise together." />
+          </section>
+        </>
+      )}
+      {showing === null && <MembersTab />}
     </main>
   );
 }

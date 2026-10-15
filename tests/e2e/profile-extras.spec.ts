@@ -37,7 +37,7 @@ test.describe('as a new member', () => {
 
     await go(page, '#/settings');
     await page.getByRole('checkbox', { name: 'Play animated banners' }).uncheck();
-    await go(page, '#/people');
+    await go(page, '#/people/me');
     await expect(page.locator('.profile .banner img')).toHaveAttribute('src', /^data:image\/webp;base64,/);
   });
 
@@ -58,7 +58,7 @@ test.describe('as a new member', () => {
     await answerOnce(page);
     await expect(async () => {
       await go(page, '#/home');
-      await go(page, '#/people');
+      await go(page, '#/people/me');
       await expect(page.getByText('1 day practised in the last year.', { exact: false })).toBeVisible({ timeout: 1_000 });
     }).toPass({ timeout: 20_000 });
   });
@@ -79,7 +79,7 @@ test.describe('as a seeded moderator', () => {
 
   test('badges show on People; a main language becomes a badge', async ({ page }) => {
     await onboard(page);
-    await go(page, '#/people');
+    await go(page, '#/people/me');
     const badges = page.locator('.profile').getByRole('list', { name: 'Badges', exact: true });
     for (const name of ['Moderator', 'Founding member', 'Back end', 'Python', '7-day streak']) await expect(badges.getByText(name, { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Edit profile' }).click();
@@ -90,7 +90,7 @@ test.describe('as a seeded moderator', () => {
 
   test('only known technologies can be main; screen readers hear the badge group', async ({ page }) => {
     await onboard(page);
-    await go(page, '#/people');
+    await go(page, '#/people/me');
     await expect(page.locator('.member-badge-language').first()).toContainText('Main technology:');
     await page.getByRole('button', { name: 'Edit profile' }).click();
     const stack = page.getByLabel('Stack');
@@ -103,7 +103,7 @@ test.describe('as a seeded moderator', () => {
 
   test('hiding progress from others keeps it in the owner\'s own view', async ({ page }) => {
     await onboard(page);
-    await go(page, '#/people');
+    await go(page, '#/people/me');
     await page.getByRole('button', { name: 'Edit profile' }).click();
     await page.getByRole('checkbox', { name: 'Show my practice graph and progress badges to other members' }).uncheck();
     await page.getByRole('button', { name: 'Save profile' }).click();

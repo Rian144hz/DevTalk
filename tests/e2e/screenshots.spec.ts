@@ -135,7 +135,7 @@ test.describe('community', () => {
     await onboard(page);
     for (const theme of THEMES) {
       await setTheme(page, theme);
-      await go(page, '#/people', 'People');
+      await go(page, '#/people/me', 'People');
       await page.getByRole('button', { name: /Join the community|Edit profile/ }).waitFor();
       if (await page.getByRole('button', { name: 'Join the community' }).count()) {
         await shoot(page, 'people-signed-out', theme);
@@ -223,7 +223,7 @@ test.describe('moderation', () => {
 
   test('a profile with badges, banner and practice graph', async ({ page }) => {
     await onboard(page);
-    await go(page, '#/people', 'People');
+    await go(page, '#/people/me', 'People');
     await page.getByRole('button', { name: 'Edit profile' }).click();
     await page.locator('.banner-field input[type="file"]').setInputFiles(join(__dirname, 'assets', 'banner.gif'));
     await page.locator('.banner-field .banner img').waitFor();
@@ -232,7 +232,7 @@ test.describe('moderation', () => {
     await page.locator('.profile .banner img').waitFor();
     for (const theme of THEMES) {
       await setTheme(page, theme);
-      await go(page, '#/people', 'People');
+      await go(page, '#/people/me', 'People');
       await page.locator('.profile .graph').waitFor();
       await shoot(page, 'people-extras', theme);
       await page.locator('.profile-graph').scrollIntoViewIfNeeded();

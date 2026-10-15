@@ -32,7 +32,7 @@ export interface AppContext {
 export const useFixtureLLM = () => !app.isPackaged && process.env['DEVTALK_FAKE_LLM'] === '1';
 
 /**
- * Dev/e2e only: DEVTALK_FAKE_SOCIAL=1 (empty) or =moderation (seeded, signed in as a moderator) replaces Supabase;
+ * Dev/e2e only: DEVTALK_FAKE_SOCIAL=1 (empty), =moderation (seeded, signed in as a moderator) or =people (signed in as member Rian among varied members) replaces Supabase;
  * DEVTALK_FAKE_SOCIAL_FAIL=deleteAccount[:kind] makes that call fail (default kind: offline).
  */
 function fakeSocialBackend(userData: string): SocialBackend | null {
@@ -43,7 +43,7 @@ function fakeSocialBackend(userData: string): SocialBackend | null {
     const [name, kind] = item.split(':');
     fail[name as keyof SocialBackend] = (kind as SocialErrorKind | undefined) ?? 'offline';
   }
-  return createFakeSocialBackend({ seed: mode === 'moderation' ? 'moderation' : undefined, filePath: join(userData, 'fake-social.json'), fail });
+  return createFakeSocialBackend({ seed: mode === 'moderation' || mode === 'people' ? mode : undefined, filePath: join(userData, 'fake-social.json'), fail });
 }
 
 /** Every table of the local study database, as rows. */

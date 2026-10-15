@@ -11,7 +11,7 @@ export interface LaunchOptions {
   dataDir: string;
   keyring?: 'plain' | 'unavailable';
   /** '1' = empty fake community, 'moderation' = seeded and signed in as a moderator. */
-  social?: '' | '1' | 'moderation';
+  social?: '' | '1' | 'moderation' | 'people';
   /** e.g. 'deleteAccount' or 'deleteAccount:offline' */
   socialFail?: string;
 }
@@ -31,7 +31,7 @@ export const newDataDir = () => mkdtempSync(join(tmpdir(), 'devtalk-e2e-'));
 /** Launches the built app with the fixture coach and a throwaway data directory. */
 export const test = base.extend<{
   keyring: 'plain' | 'unavailable';
-  social: '' | '1' | 'moderation';
+  social: '' | '1' | 'moderation' | 'people';
   socialFail: string;
   /** The throwaway user-data directory of this test's app. */
   dataDir: string;

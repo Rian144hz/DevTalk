@@ -116,7 +116,7 @@ function Shell() {
         : name === 'feedback' && route.id ? <FeedbackRoute id={route.id} onNext={() => { window.location.hash = '#/practice'; }} />
         : name === 'review' ? <ReviewScreen />
         : name === 'progress' ? <ProgressScreen />
-        : name === 'people' ? <PeopleScreen edit={route.sub === 'edit'} />
+        : name === 'people' ? <PeopleScreen route={route} />
         : name === 'join' ? <JoinScreen />
         : name === 'legal' ? <LegalScreen doc={(route.sub ?? 'terms') as LegalDoc} />
         : name === 'rooms' ? <LaterScreen which="rooms" />

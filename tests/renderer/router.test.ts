@@ -22,3 +22,23 @@ test('sub-pages are kept only where they exist', () => {
   expect(parseHash('#/join')).toEqual({ name: 'join' });
   expect(toHash({ name: 'people', sub: 'edit' })).toBe('#/people/edit');
 });
+
+test('people pages: tabs, edit, another member and their lists', () => {
+  const id = '00000000-0000-4000-8000-000000000012';
+  expect(parseHash('#/people')).toEqual({ name: 'people' });
+  expect(parseHash('#/people/me')).toEqual({ name: 'people', sub: 'me' });
+  expect(parseHash('#/people/following')).toEqual({ name: 'people', sub: 'following' });
+  expect(parseHash(`#/people/u/${id}`)).toEqual({ name: 'people', userId: id });
+  expect(parseHash(`#/people/u/${id}/followers`)).toEqual({ name: 'people', userId: id, list: 'followers' });
+  expect(parseHash(`#/people/u/${id}/following`)).toEqual({ name: 'people', userId: id, list: 'following' });
+  expect(parseHash(`#/people/u/${id}/likes`)).toEqual({ name: 'people', userId: id });
+  for (const r of [{ name: 'people', userId: id }, { name: 'people', userId: id, list: 'followers' }, { name: 'people', sub: 'me' }] as const) {
+    expect(parseHash(toHash(r))).toEqual(r);
+  }
+});
+
+test('a user id that is not a uuid falls back to the member list', () => {
+  expect(parseHash('#/people/u/not-a-uuid')).toEqual({ name: 'people' });
+  expect(parseHash('#/people/u/')).toEqual({ name: 'people' });
+  expect(parseHash("#/people/u/'%3Cscript%3E")).toEqual({ name: 'people' });
+});

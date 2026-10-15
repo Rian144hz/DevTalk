@@ -10,6 +10,7 @@ export { ExpressionCard } from './ExpressionCard';
 export { PasswordField, Segmented, Select, TextArea, TextField } from './Field';
 export { Galley } from './Galley';
 export { Kbd } from './Kbd';
+export { MemberList } from './MemberList';
 export { Notice } from './Notice';
 export { PracticeGraph } from './PracticeGraph';
 export { REPORT_REASON_LABELS, ReportDialog } from './ReportDialog';
