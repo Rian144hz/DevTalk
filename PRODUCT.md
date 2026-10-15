@@ -40,7 +40,7 @@ The loop closes on the learner's own output: corrections are shown as a code-sty
 
 ## Brand Commitments
 
-- A developer tool, not a children's app: focus, calm and precision, in the spirit of Linear, Raycast and VS Code. Public milestones of progress (streaks, level up, vocabulary) as badges, with no points, ranking or leaderboard. Mascots only as the default picture of members without a photo; the app itself has no mascot.
+- A developer tool, not a children's app: focus, calm and precision, in the spirit of Linear, Raycast and VS Code. Public milestones of progress (streaks, level up, vocabulary) as badges; likes and follower counts are visible on profiles; no points, ranking or leaderboard anywhere (the member list orders by English level, never by popularity). Mascots only as the default picture of members without a photo; the app itself has no mascot.
 - Dark theme by default with a light theme option; colors, spacing, type and radii defined once as tokens.
 - Readable sans-serif for the interface, monospace for diffs; comfortable line height because the user reads a lot of English.
 - Corrections shown as a diff: removed in red, added in green, never labelled "wrong".

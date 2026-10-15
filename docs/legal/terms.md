@@ -1,6 +1,6 @@
 # Terms of use
 
-Version 2026-10-15. This is a plain-language draft. It has not been reviewed by a lawyer.
+Version 2026-10-15.2. This is a plain-language draft. It has not been reviewed by a lawyer.
 
 ## What DevTalk is
 
@@ -20,6 +20,7 @@ DevTalk is a free desktop app that helps developers practise English. The practi
 ## What you share
 
 - Your profile (name, photo, banner, level, languages, time zone, stack, available times, bio and badges) is visible to other signed-in members. Your practice graph and progress badges are too, unless you hide them in People › Edit profile.
+- Whom you follow, who follows you and how many likes your profile has are visible to other signed-in members. Following someone tells them once a week at most.
 - Your photo and banner must follow the code of conduct like everything else you share; an offensive banner can be reported with the profile.
 - Share only what you are comfortable with. Do not put phone numbers, addresses or other private details in your profile.
 - You must follow the [Code of conduct](#/legal/conduct).

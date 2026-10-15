@@ -80,6 +80,7 @@ The community (accounts, profiles, blocks, reports, moderation) runs on a free S
 4. **Delete-account function.** Edge Functions › Deploy a new function › Via editor, name it `delete-account`, paste `supabase/functions/delete-account/single-file.ts` (regenerate with `npm run build:edge`) and keep "Verify JWT" on. The service-role key it needs already exists in the function's environment and never leaves the server.
 5. **Moderators.** Sign in once in the app, then run in SQL Editor: `insert into moderators (user_id) select id from auth.users where email = 'you@example.com';`
 6. **Profile extras (badges, practice graph, banners).** A project set up before 2026-10-15 pastes only `supabase/migrations/0004_profile_extras.sql` in a new query and clicks Run (new projects get it inside `setup.sql`). Then deploy the `delete-account` function again from `single-file.ts`, so deleting an account also removes the banner. The Creator badge is given once in SQL Editor: `insert into badge_grants (user_id, badge, granted_by) select id, 'creator', id from auth.users where email = 'you@example.com';`
+7. **People (member list, follows, likes).** A project set up before 2026-10-16 pastes only `supabase/migrations/0005_review_fixes.sql` (if not yet) and then `supabase/migrations/0006_people.sql`, each alone, in a new query. Use the matching app build only after 0006 is in.
 
 Check it end to end (a zenity dialog asks for your e-mail and the code):
 

@@ -1,6 +1,6 @@
 # Privacy policy
 
-Version 2026-10-15. This is a plain-language draft for Brazil's data protection law (LGPD). It has not been reviewed by a lawyer.
+Version 2026-10-15.2. This is a plain-language draft for Brazil's data protection law (LGPD). It has not been reviewed by a lawyer.
 
 ## The short version
 
@@ -18,6 +18,7 @@ Version 2026-10-15. This is a plain-language draft for Brazil's data protection 
 - **Whether you use Linux**, to show the "Linux native" badge.
 - **Badges given by moderators** (Beta tester, Mentor, Open source contributor), with the reason, in the moderation records.
 - **Acceptances**: which version of the terms, this policy and the code of conduct you accepted, your confirmation that you are 18 or older, and when.
+- **Follows and likes**: whom you follow, who follows you and the profiles you like, with the date of each.
 - **Blocks** you make and **reports** you send.
 - **Moderation notices** sent to you, and moderation actions about your account.
 
@@ -27,6 +28,8 @@ We do not collect your practice text, your voice, your contacts or your location
 
 - Your profile, photo or default picture, banner, and these badges: Creator, Moderator, Founding member, Beta tester, Mentor, Open source contributor, your area, Linux native and your main technologies.
 - Your **practice graph and progress badges** (day streaks, level up, Vocabulary hunter), unless you turn off "Show my practice graph and progress badges to other members" in People › Edit profile. When it is off, only you see them; the daily numbers are still kept with your account so your own graph works.
+- **Whom you follow and who follows you** (the lists and their counts), and **how many likes your profile has**. Members do not see when you followed or liked someone.
+- You appear in the **member list**, where members search by name, English level, area and technology. Turn off "Show me in the member list" in People › Edit profile to leave it; members can still open your profile from a follower list or a link.
 - Members never see your e-mail, your practice text, your corrections or your reviews.
 
 ## Why, and on what legal basis
@@ -46,7 +49,7 @@ We do not sell your data and we do not use it for advertising.
 ## How long we keep it
 
 - Your community data is kept while your account exists.
-- When you delete your account, your profile, photo, banner, practice counts, milestones, badges, acceptances, blocks and notices are deleted.
+- When you delete your account, your profile, photo, banner, practice counts, milestones, badges, follows, followers, likes, acceptances, blocks and notices are deleted.
 - Reports that other people sent about you are kept for moderation, without your account attached. Reports you sent are kept without your name.
 
 ## Your rights under the LGPD
