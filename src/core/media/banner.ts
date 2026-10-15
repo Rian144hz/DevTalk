@@ -169,7 +169,7 @@ function webpInfo(b: Uint8Array): { kind: BannerKind; width: number; height: num
   throw new Corrupt();
 }
 
-/** Removes EXIF and XMP chunks, clears their VP8X flags and fixes the RIFF size. */
+/** Removes EXIF and XMP chunks, clears their VP8X flags and fixes the RIFF size. An animation loops forever. */
 export function stripWebpMetadata(bytes: Uint8Array): Uint8Array {
   const kept = walkWebp(bytes).filter((c) => c.fourcc !== 'EXIF' && c.fourcc !== 'XMP ');
   const bodyLength = kept.reduce((n, c) => n + (c.end - c.start), 0);
@@ -179,6 +179,8 @@ export function stripWebpMetadata(bytes: Uint8Array): Uint8Array {
   for (const c of kept) {
     out.set(bytes.subarray(c.start, c.end), at);
     if (c.fourcc === 'VP8X') out[at + 8] = out[at + 8]! & ~(0x08 | 0x04);
+    // ANIM payload: background colour (4 bytes), then the loop count (2 bytes); 0 means forever.
+    if (c.fourcc === 'ANIM' && c.size >= 6) out.set([0, 0], at + 8 + 4);
     at += c.end - c.start;
   }
   const riff = 4 + bodyLength;

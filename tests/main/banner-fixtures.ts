@@ -34,8 +34,8 @@ function chunk(fourcc: string, payload: number[]): number[] {
   return [...ascii(fourcc), ...u32(payload.length), ...payload, ...(payload.length % 2 ? [0] : [])];
 }
 
-export function webp(o: { w?: number; h?: number; animated?: boolean; exif?: boolean; xmp?: boolean; simple?: boolean } = {}) {
-  const { w = 960, h = 320, animated = true, exif, xmp, simple } = o;
+export function webp(o: { w?: number; h?: number; animated?: boolean; loops?: number; exif?: boolean; xmp?: boolean; simple?: boolean } = {}) {
+  const { w = 960, h = 320, animated = true, loops = 0, exif, xmp, simple } = o;
   let body: number[];
   if (simple) {
     const bits = (w - 1) | ((h - 1) << 14);
@@ -43,7 +43,7 @@ export function webp(o: { w?: number; h?: number; animated?: boolean; exif?: boo
   } else {
     const flags = (animated ? 0x02 : 0) | (exif ? 0x08 : 0) | (xmp ? 0x04 : 0);
     body = chunk('VP8X', [flags, 0, 0, 0, ...u24(w - 1), ...u24(h - 1)]);
-    if (animated) body.push(...chunk('ANIM', [0, 0, 0, 0, 0, 0]), ...chunk('ANMF', new Array<number>(20).fill(7)));
+    if (animated) body.push(...chunk('ANIM', [0, 0, 0, 0, ...u16(loops)]), ...chunk('ANMF', new Array<number>(20).fill(7)));
     else body.push(...chunk('VP8L', [0x2f, ...u32((w - 1) | ((h - 1) << 14)), 1, 2, 3]));
     if (exif) body.push(...chunk('EXIF', ascii('Exif\0\0GPSLatitude=12.3')));
     if (xmp) body.push(...chunk('XMP ', ascii('<x:xmpmeta GPS="1"/>')));

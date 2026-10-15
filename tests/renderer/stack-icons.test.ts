@@ -1,5 +1,5 @@
 import { STACK_ICONS } from '../../src/renderer/lib/stack-icons.generated';
-import { KNOWN_STACKS, stackIconFor } from '../../src/renderer/lib/stack-icons';
+import { canBeMain, KNOWN_STACKS, stackIconFor } from '../../src/renderer/lib/stack-icons';
 
 test('common stacks resolve by name, slug or alias, ignoring case and spaces', () => {
   expect(stackIconFor('Python')?.title).toBe('Python');
@@ -37,4 +37,11 @@ test('the label is what the person means, the logo is only decoration', () => {
   expect(stackIconFor('react')?.label).toBe('React');
   expect(stackIconFor('js')?.label).toBe('JavaScript');
   expect(stackIconFor('python')?.label).toBe('Python');
+});
+
+test('only known technologies can be marked as main, so a tag cannot pose as a badge', () => {
+  expect(canBeMain('python')).toBe(true);
+  expect(canBeMain('Java')).toBe(true);
+  expect(canBeMain('c++')).toBe(true);
+  for (const tag of ['moderator', 'creator', 'staff', 'verified', 'my-company-lib']) expect(canBeMain(tag), tag).toBe(false);
 });

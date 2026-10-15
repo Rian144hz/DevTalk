@@ -45,6 +45,12 @@ describe('practice days', () => {
     expect(bucketByDay(['2026-10-14T02:30:00Z'], [], 'UTC')).toEqual([day('2026-10-14', 1, 0)]);
   });
 
+  test('a day across the end of daylight saving time stays one day', () => {
+    // New York leaves daylight saving time at 06:00 UTC on 1 Nov 2026: 00:30 EDT and 23:30 EST are both the 1st.
+    expect(bucketByDay(['2026-11-01T04:30:00Z', '2026-11-02T04:30:00Z'], [], 'America/New_York')).toEqual([day('2026-11-01', 2, 0)]);
+    expect(bucketByDay(['2026-11-02T05:30:00Z'], [], 'America/New_York')).toEqual([day('2026-11-02', 1, 0)]);
+  });
+
   test('graph levels use answers × 5 + reviews', () => {
     expect(graphLevel(day('d'))).toBe(0);
     expect(graphLevel(day('d', 0, 1))).toBe(1);

@@ -42,6 +42,11 @@ describe('animation', () => {
     expect(isAnimatedBanner(new Uint8Array([1, 2, 3]))).toBe(false);
   });
 
+  test('an animated WebP that would play a few times is set to loop forever', () => {
+    expect(stripWebpMetadata(webp({ loops: 3 }))).toEqual(webp());
+    expect(stripWebpMetadata(webp({ loops: 3, exif: true }))).toEqual(webp());
+  });
+
   test('an animated GIF that would play once or a few times is set to loop forever', () => {
     expect(stripGifMetadata(gif({ netscape: false }))).toEqual(gif());
     expect(stripGifMetadata(gif({ loops: 3 }))).toEqual(gif());

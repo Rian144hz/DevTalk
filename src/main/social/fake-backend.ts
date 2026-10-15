@@ -428,8 +428,15 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
         moderationActions: state.actions
           .filter((a) => a.target === userId)
           .reverse()
-          .map((a) => ({ action: a.action, reason: a.reason, until: a.until, created_at: a.createdAt })),
+          .map((a) => ({ action: a.action, reason: a.reason, until: a.until, badge: a.badge ?? null, created_at: a.createdAt })),
         avatarUrl: userId in state.avatars ? 'fake://avatars/avatar.webp' : null,
+        bannerUrl: state.banners[userId] ? `fake://banners/banner.${state.banners[userId]!.ext}` : null,
+        usesLinux: state.usesLinux[userId] ?? false,
+        badges: await this.badges(userId),
+        progress: {
+          practiceDays: (state.practiceDays[userId] ?? []).map((d) => ({ ...d })),
+          milestones: state.milestones.filter((m) => m.userId === userId).map((m) => ({ kind: m.kind, value: m.value, achievedAt: m.at })),
+        },
       };
     },
 

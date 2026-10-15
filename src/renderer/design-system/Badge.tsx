@@ -29,6 +29,7 @@ export function Badge({ badge }: { badge: BadgeInfo }) {
   }
   return (
     <span className={`member-badge member-badge-${badge.group}`} style={style} title={hint ?? undefined}>
+      {badge.group === 'language' && <span className="visually-hidden">Main technology: </span>}
       {icon}
       <span>{badgeText(badge)}</span>
       {hint && <span className="visually-hidden">, {hint}</span>}

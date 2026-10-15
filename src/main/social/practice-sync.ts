@@ -26,6 +26,16 @@ interface SyncState {
 const WINDOW_DAYS = 400;
 const VOCABULARY_STEPS = [50, 100];
 
+/** The time zone when Intl knows it, else null. */
+function knownTimeZone(tz: string): string | null {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: tz });
+    return tz;
+  } catch {
+    return null;
+  }
+}
+
 const isLevelUp = (v: string) => {
   const [from, to] = v.split('>') as [string, string?];
   const a = LEVELS.indexOf(from as (typeof LEVELS)[number]);
@@ -81,13 +91,14 @@ export function createPracticeSync(deps: {
     renameSync(tmp, deps.statePath);
   };
 
-  const memberId = async (): Promise<string | null> => {
+  /** The member's id and the time zone their days are counted in (the profile's, as the server's streak). */
+  const member = async (): Promise<{ userId: string; timeZone: string } | null> => {
     const session = await backend.session();
     if (!session || !(await backend.hasAcceptedCurrentDocuments())) return null;
     const profile = await backend.getOwnProfile();
     if (!profile) return null;
     if (profile.suspendedUntil && (profile.suspendedUntil === 'infinity' || new Date(profile.suspendedUntil) > clock.now())) return null;
-    return session.userId;
+    return { userId: session.userId, timeZone: knownTimeZone(profile.timezone) ?? deps.timeZone() };
   };
 
   const sendDays = async (state: SyncState, timeZone: string) => {
@@ -97,11 +108,18 @@ export function createPracticeSync(deps: {
     // One extra day each side covers any time zone offset; the day filter does the rest.
     const { answers, reviews } = store.activityTimestamps(new Date(`${addDays(first, -1)}T00:00:00Z`));
     const inWindow = bucketByDay(answers, reviews, timeZone).filter((d) => d.day >= first && d.day <= today);
-    const changed = inWindow.filter((d) => state.days[d.day] !== `${d.answers}/${d.reviews}`);
+    const active = new Set(inWindow.map((d) => d.day));
+    // A day sent before that has no activity now (the time zone changed) is set to zero, or it would count twice.
+    const emptied = Object.keys(state.days)
+      .filter((day) => day >= first && day <= today && !active.has(day))
+      .map((day) => ({ day, answers: 0, reviews: 0 }));
+    const changed = [...emptied, ...inWindow.filter((d) => state.days[d.day] !== `${d.answers}/${d.reviews}`)].sort((a, b) =>
+      a.day.localeCompare(b.day),
+    );
     if (changed.length === 0) return;
     await backend.publishPracticeDays(changed);
-    const days = Object.fromEntries(Object.entries(state.days).filter(([day]) => day >= first));
-    for (const d of changed) days[d.day] = `${d.answers}/${d.reviews}`;
+    const days = Object.fromEntries(Object.entries(state.days).filter(([day]) => day >= first && active.has(day)));
+    for (const d of changed) if (active.has(d.day)) days[d.day] = `${d.answers}/${d.reviews}`;
     save({ ...state, days });
   };
 
@@ -115,13 +133,13 @@ export function createPracticeSync(deps: {
 
   const sync = async () => {
     try {
-      const userId = await memberId();
-      if (!userId) return;
+      const me = await member();
+      if (!me) return;
       if (!linuxReported) {
         await backend.setUsesLinux(deps.platform === 'linux');
         linuxReported = true;
       }
-      await sendDays(load(userId), deps.timeZone());
+      await sendDays(load(me.userId), me.timeZone);
       const words = store.expressionCount();
       for (const step of VOCABULARY_STEPS) if (words >= step) await sendMilestone('vocabulary', String(step));
       while (levelUps.length > 0) {

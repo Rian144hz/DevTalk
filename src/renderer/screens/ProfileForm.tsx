@@ -9,7 +9,7 @@ import { DAY_NAMES, halfHourTimes } from '../lib/format';
 import { AvatarInputError, BannerInputError, prepareAvatar, prepareBanner } from '../lib/image';
 import { browserAvatarDeps, browserBannerDeps, bytesToDataUrl } from '../lib/image-browser';
 import { MASCOT_NAMES, MASCOT_URLS } from '../lib/mascots';
-import { KNOWN_STACKS } from '../lib/stack-icons';
+import { canBeMain, KNOWN_STACKS } from '../lib/stack-icons';
 import { ALL_LEVELS, AREA_LABELS, languageOptions } from './forms';
 
 /** What happens to the photo when the form is saved. */
@@ -165,7 +165,7 @@ export function ProfileForm({
       stack: finalStack,
       availability: slots,
       bio: bio.trim(),
-      mainStack: mainStack.filter((t) => finalStack.includes(t)),
+      mainStack: mainStack.filter((t) => finalStack.includes(t) && canBeMain(t)),
       showProgress,
       mascot,
     };
@@ -261,8 +261,10 @@ export function ProfileForm({
               return (
                 <li key={t}>
                   <StackTag tag={t} />
-                  <button type="button" className="tag-main" aria-pressed={main} aria-label={`${t} as a main technology`}
-                    disabled={!main && mainStack.length >= MAX_MAIN} onClick={() => toggleMain(t)}>Main</button>
+                  {canBeMain(t) && (
+                    <button type="button" className="tag-main" aria-pressed={main} aria-label={`${t} as a main technology`}
+                      disabled={!main && mainStack.length >= MAX_MAIN} onClick={() => toggleMain(t)}>Main</button>
+                  )}
                   <button type="button" className="tag-remove" aria-label={`Remove ${t}`} onClick={() => removeTag(t)}>
                     <Icon name="x" size={12} />
                   </button>
@@ -277,7 +279,7 @@ export function ProfileForm({
           aria-describedby={`${ids.stack}-hint`} spellCheck={false} />
         <datalist id={`${ids.stack}-list`}>{KNOWN_STACKS.map((s) => <option key={s} value={s} />)}</datalist>
         <span className="field-hint" id={`${ids.stack}-hint`}>
-          Up to 10. Press Enter after each one. Mark up to 2 as Main to show them as badges on your profile.
+          Up to 10. Press Enter after each one. Mark up to 2 known technologies as Main to show them as badges on your profile.
         </span>
         {errors.stack && <span className="field-error" role="alert">{errors.stack}</span>}
         {errors.mainStack && <span className="field-error" role="alert">{errors.mainStack}</span>}

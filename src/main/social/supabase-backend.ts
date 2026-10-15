@@ -24,7 +24,7 @@ const avatarPath = (userId: string) => `${userId}/avatar.webp`;
 
 /** suspended_until is not a readable column (see 0001_profiles.sql): always name the columns. */
 const PROFILE_COLUMNS =
-  'id, display_name, native_language, level, timezone, area, stack, availability, bio, avatar_path, main_stack, show_progress, mascot, banner_path';
+  'id, display_name, native_language, level, timezone, area, stack, availability, bio, avatar_path, main_stack, show_progress, mascot, banner_path, uses_linux';
 const GRAPH_DAYS = 371;
 
 interface ProfileRow {
@@ -42,6 +42,7 @@ interface ProfileRow {
   show_progress: boolean | null;
   mascot: string | null;
   banner_path: string | null;
+  uses_linux?: boolean | null;
 }
 
 function toProfile(row: ProfileRow, suspendedUntil: string | null): SocialProfile {
@@ -387,6 +388,13 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
         const { data } = await client.storage.from('avatars').createSignedUrl(row.avatar_path, 3600);
         avatarUrl = data?.signedUrl ?? null;
       }
+      let bannerUrl: string | null = null;
+      if (row?.banner_path) {
+        const { data } = await client.storage.from('banners').createSignedUrl(row.banner_path, 3600);
+        bannerUrl = data?.signedUrl ?? null;
+      }
+      const progress = check(await client.rpc('my_progress_export'));
+      const badges = await this.badges(userId);
       return {
         exportedAt: new Date().toISOString(),
         account: { email },
@@ -397,6 +405,10 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
         notices,
         moderationActions,
         avatarUrl,
+        bannerUrl,
+        usesLinux: row?.uses_linux ?? false,
+        badges,
+        progress,
       };
     },
 
@@ -436,7 +448,8 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
 
     async setUsesLinux(on) {
       const { userId } = await me();
-      check(await client.from('profiles').update({ uses_linux: on }).eq('id', userId));
+      // Only when it changes: an update bumps profiles.updated_at, which members can read.
+      check(await client.from('profiles').update({ uses_linux: on }).eq('id', userId).neq('uses_linux', on));
     },
 
     async uploadBanner(bytes, ext) {

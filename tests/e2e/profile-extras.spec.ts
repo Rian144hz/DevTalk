@@ -88,6 +88,19 @@ test.describe('as a seeded moderator', () => {
     await expect(badges.getByText('Java', { exact: true })).toBeVisible();
   });
 
+  test('only known technologies can be main; screen readers hear the badge group', async ({ page }) => {
+    await onboard(page);
+    await go(page, '#/people');
+    await expect(page.locator('.member-badge-language').first()).toContainText('Main technology:');
+    await page.getByRole('button', { name: 'Edit profile' }).click();
+    const stack = page.getByLabel('Stack');
+    await stack.fill('moderator');
+    await stack.press('Enter');
+    await expect(page.getByRole('button', { name: 'Remove moderator' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'moderator as a main technology' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'java as a main technology' })).toBeVisible();
+  });
+
   test('hiding progress from others keeps it in the owner\'s own view', async ({ page }) => {
     await onboard(page);
     await go(page, '#/people');

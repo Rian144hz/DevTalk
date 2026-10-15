@@ -280,7 +280,10 @@ describe('fake social backend', () => {
     const b = await signUp();
     const data = await b.exportOwnData();
     expect(data).toMatchObject({ account: { email: 'rian@example.com' }, profile: { displayName: 'Rian' } });
-    expect(Object.keys(data).sort()).toEqual(['account', 'avatarUrl', 'blocks', 'consents', 'exportedAt', 'moderationActions', 'notices', 'profile', 'reportsMade']);
+    expect(Object.keys(data).sort()).toEqual([
+      'account', 'avatarUrl', 'badges', 'bannerUrl', 'blocks', 'consents', 'exportedAt', 'moderationActions', 'notices', 'profile', 'progress', 'reportsMade', 'usesLinux',
+    ]);
+    expect(data['progress']).toEqual({ practiceDays: [], milestones: [] });
     await b.deleteAccount();
     expect(await b.session()).toBeNull();
     await b.sendCode('rian@example.com');

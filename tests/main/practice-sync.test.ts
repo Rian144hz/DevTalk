@@ -26,15 +26,17 @@ function answer(store: MemoryStudyStore, when: Date, expressions = 0) {
   store.saveFeedback(input);
 }
 
-async function member() {
+const profileDraft = (timezone: string) => ({
+  displayName: 'Rian', nativeLanguage: 'Portuguese (Brazil)', level: 'B1' as const, timezone, area: 'backend' as const,
+  stack: [], availability: [], bio: '', mainStack: [], showProgress: true, mascot: null,
+});
+
+async function member(timezone = 'America/Sao_Paulo') {
   const backend = createFakeSocialBackend();
   await backend.sendCode('rian@example.com');
   await backend.verifyCode('rian@example.com', '123456');
   await backend.acceptDocuments();
-  await backend.saveProfile({
-    displayName: 'Rian', nativeLanguage: 'Portuguese (Brazil)', level: 'B1', timezone: 'America/Sao_Paulo', area: 'backend',
-    stack: [], availability: [], bio: '', mainStack: [], showProgress: true, mascot: null,
-  });
+  await backend.saveProfile(profileDraft(timezone));
   return backend;
 }
 
@@ -173,4 +175,44 @@ test('the cache file survives a restart and belongs to one account', async () =>
   writeFileSync(statePath, JSON.stringify({ ...other, userId: 'someone-else' }));
   await make().start();
   expect(calls.filter((c) => c.name === 'publishPracticeDays')).toHaveLength(2);
+});
+
+test('days are counted in the profile\'s time zone, the one the streak uses', async () => {
+  const { wrapped, calls } = spy(await member('Asia/Tokyo'));
+  const { sync, store } = setup(wrapped); // the machine is in São Paulo
+  answer(store, new Date('2026-10-14T15:30:00Z')); // 12:30 on the 14th in São Paulo, 00:30 on the 15th in Tokyo
+  await sync.start();
+  expect(calls.find((c) => c.name === 'publishPracticeDays')!.args[0]).toEqual([{ day: '2026-10-15', answers: 1, reviews: 0 }]);
+});
+
+test('after a time zone change, a day left without activity is sent as zero', async () => {
+  const backend = await member('America/Sao_Paulo');
+  const { wrapped, calls } = spy(backend);
+  const { sync, store } = setup(wrapped);
+  answer(store, new Date('2026-10-14T02:30:00Z')); // the 13th in São Paulo, the 14th in Tokyo
+  await sync.start();
+  await backend.saveProfile(profileDraft('Asia/Tokyo'));
+  await sync.flush();
+  const days = calls.filter((c) => c.name === 'publishPracticeDays').map((c) => c.args[0]);
+  expect(days).toEqual([
+    [{ day: '2026-10-13', answers: 1, reviews: 0 }],
+    [{ day: '2026-10-13', answers: 0, reviews: 0 }, { day: '2026-10-14', answers: 1, reviews: 0 }],
+  ]);
+  await sync.flush();
+  expect(calls.filter((c) => c.name === 'publishPracticeDays')).toHaveLength(2);
+});
+
+test('an invalid profile time zone falls back to the machine\'s', async () => {
+  const backend = await member('Asia/Tokyo');
+  const odd = new Proxy(backend, {
+    get(target, prop, receiver) {
+      if (prop === 'getOwnProfile') return async () => ({ ...(await target.getOwnProfile())!, timezone: 'Mars/Olympus' });
+      return Reflect.get(target, prop, receiver);
+    },
+  });
+  const { wrapped, calls } = spy(odd);
+  const { sync, store } = setup(wrapped); // the machine is in São Paulo
+  answer(store, new Date('2026-10-14T02:30:00Z')); // the 13th in São Paulo, the 14th in Tokyo
+  await sync.start();
+  expect(calls.find((c) => c.name === 'publishPracticeDays')!.args[0]).toEqual([{ day: '2026-10-13', answers: 1, reviews: 0 }]);
 });

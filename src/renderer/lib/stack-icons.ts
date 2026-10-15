@@ -28,6 +28,9 @@ export function stackIconFor(tag: string): StackIcon | null {
   return icon ? { ...icon, label: STACK_ALIAS_LABELS[key] ?? icon.title } : null;
 }
 
+/** Only technologies with a known logo can be a main technology (a badge), so a tag like "moderator" cannot pose as one. */
+export const canBeMain = (tag: string): boolean => stackIconFor(tag) !== null;
+
 /** Display names offered while typing a stack tag. */
 export const KNOWN_STACKS: string[] = [
   ...new Set([...Object.values(STACK_ICONS).map((i) => i.title), ...Object.values(STACK_ALIAS_LABELS)]),

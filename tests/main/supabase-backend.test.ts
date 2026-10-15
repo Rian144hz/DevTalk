@@ -212,10 +212,37 @@ test('the export includes the moderation actions about the person', async () => 
     'GET /rest/v1/reports': json(200, []),
     'GET /rest/v1/notices': json(200, []),
     'POST /rest/v1/rpc/my_moderation_actions': json(200, [{ action: 'warn', reason: 'Be kind', until: null, created_at: '2026-10-14T10:00:00Z' }]),
+    'POST /rest/v1/rpc/my_progress_export': json(200, { practiceDays: [], milestones: [] }),
+    'POST /rest/v1/rpc/profile_badges': json(200, []),
   });
   await b.verifyCode('rian@example.com', '123456');
   const data = await b.exportOwnData();
   expect(data['moderationActions']).toEqual([{ action: 'warn', reason: 'Be kind', until: null, created_at: '2026-10-14T10:00:00Z' }]);
+});
+
+test('the export includes practice days and milestones with their times, badges, uses_linux and the banner', async () => {
+  const progress = { practiceDays: [{ day: '2026-10-14', answers: 2, reviews: 5, updatedAt: '2026-10-14T21:00:00Z' }], milestones: [] };
+  const { b, calls } = backend({
+    'POST /auth/v1/verify': json(200, sessionBody()),
+    'GET /rest/v1/profiles': json(200, {
+      id: 'user-1', display_name: 'Rian', native_language: 'Portuguese (Brazil)', level: 'B1', timezone: 'America/Bahia',
+      area: 'backend', stack: [], availability: [], bio: '', avatar_path: null, uses_linux: true, banner_path: 'user-1/banner.gif',
+    }),
+    'POST /rest/v1/rpc/my_suspension': json(200, null),
+    'GET /rest/v1/consents': json(200, []),
+    'GET /rest/v1/blocks': json(200, []),
+    'GET /rest/v1/reports': json(200, []),
+    'GET /rest/v1/notices': json(200, []),
+    'POST /rest/v1/rpc/my_moderation_actions': json(200, []),
+    'POST /rest/v1/rpc/my_progress_export': json(200, progress),
+    'POST /rest/v1/rpc/profile_badges': json(200, [{ id: 'mentor', grp: 'community', label: 'Mentor', detail: null }]),
+    'POST /storage/v1/object/sign/banners/user-1/banner.gif': json(200, { signedURL: '/object/sign/banners/user-1/banner.gif?token=t' }),
+  });
+  await b.verifyCode('rian@example.com', '123456');
+  const data = await b.exportOwnData();
+  expect(data).toMatchObject({ progress, usesLinux: true, badges: [{ id: 'mentor', group: 'community', label: 'Mentor', detail: null }] });
+  expect(String(data['bannerUrl'])).toContain('banners/user-1/banner.gif');
+  expect(calls.find((c) => c.path === '/rest/v1/rpc/profile_badges')!.body).toEqual({ target: 'user-1' });
 });
 
 test('sign out clears the stored session even when the expired token cannot be refreshed offline', async () => {
@@ -297,6 +324,15 @@ describe('profile extras', () => {
     expect(calls.find((c) => c.path === '/rest/v1/moderation_actions')!.body).toEqual({
       target: 'user-2', action: 'grant_badge', badge: 'mentor', reason: 'Helps a lot',
     });
+  });
+
+  test('uses_linux is written only when it changes, so the profile is not touched on every start', async () => {
+    const { b, calls } = signedIn({ 'PATCH /rest/v1/profiles': () => new Response(null, { status: 204 }) });
+    await b.verifyCode('rian@example.com', '123456');
+    await b.setUsesLinux(true);
+    const patch = calls.find((c) => c.method === 'PATCH')!;
+    expect(patch.body).toEqual({ uses_linux: true });
+    expect(patch.query).toContain('uses_linux=neq.true');
   });
 
   test('the moderation history includes the badge of badge actions', async () => {
