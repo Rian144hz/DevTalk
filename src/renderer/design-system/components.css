@@ -141,3 +141,26 @@ kbd { font: var(--text-xs) var(--font-mono); color: var(--ink-2); border: 1px so
 .block-confirm { display: flex; flex-direction: column; gap: var(--s2); padding: var(--s4) var(--s5); border: 1px solid var(--rule-strong); border-radius: var(--r-sheet); background: var(--sheet); max-width: var(--measure); }
 .block-actions { display: flex; gap: var(--s2); }
 .block-done { color: var(--ink-2); }
+
+/* Practice graph: 53 Monday-first weeks of squares in the graph green (never shown next to a diff) */
+.graph { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }
+.graph-facts { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.graph-scroll { overflow-x: auto; padding: 2px 2px var(--s1); }
+.graph-body { display: grid; grid-template-columns: auto max-content; column-gap: var(--s2); row-gap: 4px; width: max-content; }
+.graph-months { grid-column: 2; display: grid; grid-template-columns: repeat(53, 12px); column-gap: 3px; font-size: var(--text-xs); line-height: 1; color: var(--ink-3); }
+.graph-days { grid-column: 1; grid-row: 2; display: grid; grid-template-rows: repeat(7, 12px); row-gap: 3px; font-size: var(--text-xs); line-height: 12px; color: var(--ink-3); }
+.graph-grid { grid-column: 2; grid-row: 2; display: grid; grid-template-columns: repeat(53, 12px); grid-template-rows: repeat(7, 12px); gap: 3px; border-radius: 2px; }
+.graph-grid:focus-visible { outline: none; }
+.graph-grid [role="row"] { display: contents; }
+.graph-cell { border-radius: 2px; }
+.graph-cell:hover { outline: 1px solid var(--ink); }
+.graph-grid:focus-visible .graph-cell[aria-selected="true"] { outline: 2px solid var(--focus); outline-offset: 1px; }
+.graph-l0 { background: var(--graph-0); }
+.graph-l1 { background: var(--graph-1); }
+.graph-l2 { background: var(--graph-2); }
+.graph-l3 { background: var(--graph-3); }
+.graph-l4 { background: var(--graph-4); }
+.graph-foot { display: flex; justify-content: space-between; align-items: center; gap: var(--s2) var(--s4); flex-wrap: wrap; }
+.graph-tip { font-size: var(--text-sm); color: var(--ink-2); min-height: 1.5em; font-variant-numeric: tabular-nums; }
+.graph-legend { display: inline-flex; align-items: center; gap: 3px; font-size: var(--text-xs); color: var(--ink-3); }
+.graph-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }

@@ -10,6 +10,7 @@ export { PasswordField, Segmented, Select, TextArea, TextField } from './Field';
 export { Galley } from './Galley';
 export { Kbd } from './Kbd';
 export { Notice } from './Notice';
+export { PracticeGraph } from './PracticeGraph';
 export { REPORT_REASON_LABELS, ReportDialog } from './ReportDialog';
 export { Skeleton } from './Skeleton';
 export { StackList, StackTag } from './StackTag';
