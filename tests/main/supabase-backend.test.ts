@@ -8,6 +8,7 @@ interface Recorded {
   method: string;
   path: string;
   query: string;
+  type: string | null;
   body: unknown;
   auth: string | null;
 }
@@ -25,6 +26,7 @@ function fakeFetch(routes: Record<string, Reply>) {
       method: req.method,
       path: u.pathname,
       query: decodeURIComponent(u.search),
+      type: req.headers.get('Content-Type'),
       body: text ? (() => { try { return JSON.parse(text); } catch { return text; } })() : null,
       auth: req.headers.get('Authorization'),
     });
@@ -235,5 +237,65 @@ describe('mapSupabaseError', () => {
   });
   test('a postgrest fetch failure (status 0) is offline', () => {
     expect(mapSupabaseError({ code: '', message: 'TypeError: fetch failed' }, 0).kind).toBe('offline');
+  });
+});
+
+describe('profile extras', () => {
+  const signedIn = (routes: Record<string, Reply>) => backend({ 'POST /auth/v1/verify': json(200, sessionBody()), ...routes });
+
+  test('badges come from profile_badges, with grp mapped to group', async () => {
+    const { b, calls } = signedIn({
+      'POST /rest/v1/rpc/profile_badges': json(200, [{ id: 'moderator', grp: 'community', label: 'Moderator', detail: null }]),
+    });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.badges('user-2')).toEqual([{ id: 'moderator', group: 'community', label: 'Moderator', detail: null }]);
+    expect(calls.find((c) => c.path === '/rest/v1/rpc/profile_badges')!.body).toEqual({ target: 'user-2' });
+  });
+
+  test('the practice graph reads the days and the streaks', async () => {
+    const { b, calls } = signedIn({
+      'GET /rest/v1/practice_days': json(200, [{ day: '2026-10-14', answers: 2, reviews: 3 }]),
+      'POST /rest/v1/rpc/practice_streaks': json(200, [{ current: 4, longest: 9 }]),
+    });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.practiceGraph('user-2')).toEqual({ days: [{ day: '2026-10-14', answers: 2, reviews: 3 }], current: 4, longest: 9 });
+    const read = calls.find((c) => c.path === '/rest/v1/practice_days')!;
+    expect(read.query).toMatch(/select=day,answers,reviews/);
+    expect(read.query).toMatch(/user_id=eq.user-2/);
+  });
+
+  test('practice days are upserted by day', async () => {
+    const { b, calls } = signedIn({ 'POST /rest/v1/practice_days': json(201, null) });
+    await b.verifyCode('rian@example.com', '123456');
+    await b.publishPracticeDays([{ day: '2026-10-14', answers: 1, reviews: 2 }]);
+    const post = calls.find((c) => c.path === '/rest/v1/practice_days')!;
+    expect(post.query).toMatch(/on_conflict=user_id,day/);
+    expect(post.body).toEqual([{ user_id: 'user-1', day: '2026-10-14', answers: 1, reviews: 2 }]);
+  });
+
+  test('a GIF banner replaces the WebP one and is recorded on the profile', async () => {
+    const { b, calls } = signedIn({
+      'POST /storage/v1/object/banners/user-1/banner.gif': json(200, { Key: 'banners/user-1/banner.gif' }),
+      'DELETE /storage/v1/object/banners': json(200, []),
+      'PATCH /rest/v1/profiles': () => new Response(null, { status: 204 }),
+    });
+    await b.verifyCode('rian@example.com', '123456');
+    await b.uploadBanner(new Uint8Array([0x47, 0x49, 0x46]), 'gif');
+    const up = calls.find((c) => c.path === '/storage/v1/object/banners/user-1/banner.gif')!;
+    expect(up.type).toBe('image/gif');
+    expect(calls.find((c) => c.method === 'DELETE')!.body).toEqual({ prefixes: ['user-1/banner.webp'] });
+    expect(calls.find((c) => c.method === 'PATCH')!.body).toEqual({ banner_path: 'user-1/banner.gif' });
+  });
+
+  test('granting a badge is a moderation action', async () => {
+    const { b, calls } = signedIn({
+      'POST /rest/v1/rpc/is_moderator': json(200, true),
+      'POST /rest/v1/moderation_actions': json(201, null),
+    });
+    await b.verifyCode('rian@example.com', '123456');
+    await b.grantBadge('user-2', 'mentor', 'Helps a lot');
+    expect(calls.find((c) => c.path === '/rest/v1/moderation_actions')!.body).toEqual({
+      target: 'user-2', action: 'grant_badge', badge: 'mentor', reason: 'Helps a lot',
+    });
   });
 });

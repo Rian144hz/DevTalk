@@ -1,4 +1,6 @@
-import type { ModerationDecision, ModerationReport, ProfileDraft, ReportInput, SocialProfile } from '../../core/social/types';
+import type { DayActivity } from '../../core/progress/practice';
+import type { ManualBadge } from '../../core/social/badges';
+import type { Badge, MascotId, ModerationDecision, ModerationReport, ProfileDraft, ReportInput, SocialProfile } from '../../core/social/types';
 import { SocialError } from './errors';
 
 export interface SocialSession {
@@ -11,6 +13,19 @@ export interface Notice {
   message: string;
   createdAt: string;
   read: boolean;
+}
+
+export interface PracticeGraphData {
+  days: DayActivity[];
+  current: number;
+  longest: number;
+}
+
+export interface MemberSummary {
+  id: string;
+  displayName: string;
+  hasAvatar: boolean;
+  mascot: MascotId | null;
 }
 
 export interface ModerationHistoryItem {
@@ -47,6 +62,22 @@ export interface SocialBackend {
   decide(decision: ModerationDecision): Promise<void>;
   exportOwnData(): Promise<Record<string, unknown>>;
   deleteAccount(): Promise<void>;
+  /** Badges of someone the caller may see (empty otherwise). */
+  badges(userId: string): Promise<Badge[]>;
+  practiceGraph(userId: string): Promise<PracticeGraphData>;
+  /** Upserts the caller's own practice days. */
+  publishPracticeDays(days: DayActivity[]): Promise<void>;
+  /** Inserts a milestone; duplicates are ignored, invalid values refused. */
+  publishMilestone(kind: 'level_up' | 'vocabulary', value: string): Promise<void>;
+  setUsesLinux(on: boolean): Promise<void>;
+  /** Stores the banner (already validated and cleaned) and records it on the profile. */
+  uploadBanner(bytes: Uint8Array, ext: 'gif' | 'webp'): Promise<void>;
+  removeBanner(): Promise<void>;
+  bannerDataUrl(userId: string): Promise<string | null>;
+  /** Moderators only: members whose display name contains `query`, at most 20. */
+  searchMembers(query: string): Promise<MemberSummary[]>;
+  grantBadge(userId: string, badge: ManualBadge, reason: string): Promise<void>;
+  revokeBadge(userId: string, badge: ManualBadge, reason: string): Promise<void>;
 }
 
 /** Used when the build has no Supabase settings: every call says so. */
@@ -79,5 +110,16 @@ export function createUnconfiguredBackend(): SocialBackend {
     decide: fail,
     exportOwnData: fail,
     deleteAccount: fail,
+    badges: fail,
+    practiceGraph: fail,
+    publishPracticeDays: fail,
+    publishMilestone: fail,
+    setUsesLinux: fail,
+    uploadBanner: fail,
+    removeBanner: fail,
+    bannerDataUrl: fail,
+    searchMembers: fail,
+    grantBadge: fail,
+    revokeBadge: fail,
   };
 }

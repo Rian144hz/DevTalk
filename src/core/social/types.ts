@@ -78,7 +78,7 @@ export interface ReportInput {
 export interface ModerationReport {
   id: number;
   reporter: string;
-  reported: { id: string; displayName: string } | null;
+  reported: { id: string; displayName: string; mascot: MascotId | null; hasAvatar: boolean } | null;
   contextType: ReportContext;
   contextId: string | null;
   reason: ReportReason;

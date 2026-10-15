@@ -8,10 +8,13 @@ import {
   isAuthRetryableFetchError,
 } from '@supabase/supabase-js';
 import { LEGAL_DOCUMENTS, LEGAL_VERSION } from '../../core/social/types';
+import type { DayActivity } from '../../core/progress/practice';
+import type { ManualBadge } from '../../core/social/badges';
+import type { Badge, BadgeGroup, MascotId } from '../../core/social/types';
 import type { AvailabilitySlot, ModerationReport, ProfileDraft, SocialProfile } from '../../core/social/types';
 import type { Level } from '../../core/domain/types';
 import type { Area, ReportContext, ReportReason } from '../../core/social/types';
-import type { ModerationHistoryItem, Notice, SocialBackend, SocialSession } from './backend';
+import type { MemberSummary, ModerationHistoryItem, Notice, PracticeGraphData, SocialBackend, SocialSession } from './backend';
 import { SocialError, mapSupabaseError } from './errors';
 import type { SessionStore } from './session-store';
 
@@ -20,7 +23,9 @@ const REQUIRED = [...LEGAL_DOCUMENTS, 'age_18'] as const;
 const avatarPath = (userId: string) => `${userId}/avatar.webp`;
 
 /** suspended_until is not a readable column (see 0001_profiles.sql): always name the columns. */
-const PROFILE_COLUMNS = 'id, display_name, native_language, level, timezone, area, stack, availability, bio, avatar_path';
+const PROFILE_COLUMNS =
+  'id, display_name, native_language, level, timezone, area, stack, availability, bio, avatar_path, main_stack, show_progress, mascot, banner_path';
+const GRAPH_DAYS = 371;
 
 interface ProfileRow {
   id: string;
@@ -33,6 +38,10 @@ interface ProfileRow {
   availability: AvailabilitySlot[];
   bio: string;
   avatar_path: string | null;
+  main_stack: string[] | null;
+  show_progress: boolean | null;
+  mascot: string | null;
+  banner_path: string | null;
 }
 
 function toProfile(row: ProfileRow, suspendedUntil: string | null): SocialProfile {
@@ -48,11 +57,10 @@ function toProfile(row: ProfileRow, suspendedUntil: string | null): SocialProfil
     bio: row.bio ?? '',
     hasAvatar: row.avatar_path !== null,
     suspendedUntil,
-    // Filled from their columns once 0004 is live (Task 4).
-    mainStack: [],
-    showProgress: true,
-    mascot: null,
-    hasBanner: false,
+    mainStack: row.main_stack ?? [],
+    showProgress: row.show_progress ?? true,
+    mascot: (row.mascot as MascotId | null) ?? null,
+    hasBanner: row.banner_path !== null && row.banner_path !== undefined,
   };
 }
 
@@ -200,6 +208,9 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
         stack: draft.stack,
         availability: draft.availability,
         bio: draft.bio,
+        main_stack: draft.mainStack,
+        show_progress: draft.showProgress,
+        mascot: draft.mascot,
       };
       const saved = check(await client.from('profiles').upsert(row, { onConflict: 'id' }).select(PROFILE_COLUMNS).single<ProfileRow>());
       if (!saved) throw new SocialError('unknown', 'The profile was not saved.');
@@ -299,18 +310,27 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
         created_at: string;
       }[];
       const ids = [...new Set(rows.map((r) => r.reported).filter((x): x is string => x !== null))];
-      const names = new Map<string, string>();
+      const people = new Map<string, { display_name: string; mascot: string | null; avatar_path: string | null }>();
       if (ids.length > 0) {
-        const people = check(await client.from('profiles').select('id, display_name').in('id', ids)) as {
+        const rows = check(await client.from('profiles').select('id, display_name, mascot, avatar_path').in('id', ids)) as {
           id: string;
           display_name: string;
+          mascot: string | null;
+          avatar_path: string | null;
         }[];
-        for (const p of people) names.set(p.id, p.display_name);
+        for (const p of rows) people.set(p.id, p);
       }
       return rows.map((r) => ({
         id: r.id,
         reporter: r.reporter ?? '',
-        reported: r.reported ? { id: r.reported, displayName: names.get(r.reported) ?? 'Deleted account' } : null,
+        reported: r.reported
+          ? {
+              id: r.reported,
+              displayName: people.get(r.reported)?.display_name ?? 'Deleted account',
+              mascot: (people.get(r.reported)?.mascot as MascotId | null) ?? null,
+              hasAvatar: !!people.get(r.reported)?.avatar_path,
+            }
+          : null,
         contextType: r.context_type,
         contextId: r.context_id,
         reason: r.reason,
@@ -378,6 +398,94 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
         moderationActions,
         avatarUrl,
       };
+    },
+
+    async badges(userId): Promise<Badge[]> {
+      await me();
+      const rows = check(await client.rpc('profile_badges', { target: userId })) as
+        | { id: string; grp: string; label: string; detail: string | null }[]
+        | null;
+      return (rows ?? []).map((r) => ({ id: r.id, group: r.grp as BadgeGroup, label: r.label, detail: r.detail }));
+    },
+
+    async practiceGraph(userId): Promise<PracticeGraphData> {
+      await me();
+      const since = new Date(Date.now() - GRAPH_DAYS * 86_400_000).toISOString().slice(0, 10);
+      const days = check(
+        await client.from('practice_days').select('day, answers, reviews').eq('user_id', userId).gte('day', since).order('day'),
+      ) as DayActivity[];
+      const streak = check(await client.rpc('practice_streaks', { target: userId })) as { current: number; longest: number }[] | null;
+      return { days: days ?? [], current: streak?.[0]?.current ?? 0, longest: streak?.[0]?.longest ?? 0 };
+    },
+
+    async publishPracticeDays(days) {
+      const { userId } = await me();
+      if (days.length === 0) return;
+      const rows = days.map((d) => ({ user_id: userId, day: d.day, answers: d.answers, reviews: d.reviews }));
+      check(await client.from('practice_days').upsert(rows, { onConflict: 'user_id,day' }));
+    },
+
+    async publishMilestone(kind, value) {
+      const { userId } = await me();
+      check(
+        await client
+          .from('milestones')
+          .upsert({ user_id: userId, kind, value }, { onConflict: 'user_id,kind,value', ignoreDuplicates: true }),
+      );
+    },
+
+    async setUsesLinux(on) {
+      const { userId } = await me();
+      check(await client.from('profiles').update({ uses_linux: on }).eq('id', userId));
+    },
+
+    async uploadBanner(bytes, ext) {
+      const { userId } = await me();
+      const bucket = client.storage.from('banners');
+      const path = `${userId}/banner.${ext}`;
+      const { error } = await bucket.upload(path, bytes, { upsert: true, contentType: `image/${ext}`, cacheControl: '3600' });
+      if (error) throw mapStorageError(error);
+      await bucket.remove([`${userId}/banner.${ext === 'gif' ? 'webp' : 'gif'}`]);
+      check(await client.from('profiles').update({ banner_path: path }).eq('id', userId));
+    },
+
+    async removeBanner() {
+      const { userId } = await me();
+      const { error } = await client.storage.from('banners').remove([`${userId}/banner.gif`, `${userId}/banner.webp`]);
+      if (error) throw mapStorageError(error);
+      check(await client.from('profiles').update({ banner_path: null }).eq('id', userId));
+    },
+
+    async bannerDataUrl(userId) {
+      await me();
+      const row = check(await client.from('profiles').select('banner_path').eq('id', userId).maybeSingle()) as {
+        banner_path: string | null;
+      } | null;
+      if (!row?.banner_path) return null;
+      const { data, error } = await client.storage.from('banners').download(row.banner_path);
+      if (error || !data) return null;
+      const mime = row.banner_path.endsWith('.gif') ? 'image/gif' : 'image/webp';
+      return `data:${mime};base64,${Buffer.from(await data.arrayBuffer()).toString('base64')}`;
+    },
+
+    async searchMembers(query): Promise<MemberSummary[]> {
+      await me();
+      if (!(await this.isModerator())) throw new SocialError('forbidden', 'Only moderators can do this.');
+      const pattern = `%${query.trim().replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+      const rows = check(
+        await client.from('profiles').select('id, display_name, avatar_path, mascot').ilike('display_name', pattern).order('display_name').limit(20),
+      ) as { id: string; display_name: string; avatar_path: string | null; mascot: string | null }[];
+      return rows.map((r) => ({ id: r.id, displayName: r.display_name, hasAvatar: !!r.avatar_path, mascot: (r.mascot as MascotId | null) ?? null }));
+    },
+
+    async grantBadge(userId, badge: ManualBadge, reason) {
+      await me();
+      check(await client.from('moderation_actions').insert({ target: userId, action: 'grant_badge', badge, reason }));
+    },
+
+    async revokeBadge(userId, badge: ManualBadge, reason) {
+      await me();
+      check(await client.from('moderation_actions').insert({ target: userId, action: 'revoke_badge', badge, reason }));
     },
 
     async deleteAccount() {

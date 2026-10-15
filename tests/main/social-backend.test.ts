@@ -278,6 +278,81 @@ describe('fake social backend', () => {
     expect(await b.hasAcceptedCurrentDocuments()).toBe(false);
   });
 
+  test('badges: the seeded moderator is Moderator and Founding member, and Sam has Mentor', async () => {
+    const b = createFakeSocialBackend({ seed: 'moderation' });
+    const me = (await b.session())!.userId;
+    const ids = (await b.badges(me)).map((x) => x.id);
+    expect(ids).toEqual(expect.arrayContaining(['moderator', 'founding_member', 'area:backend', 'lang:python']));
+    const [sam] = b.seededUserIds();
+    expect((await b.badges(sam!)).map((x) => x.id)).toContain('mentor');
+  });
+
+  test('evolution badges and the graph follow the progress switch for others', async () => {
+    const b = await signUp();
+    const me = (await b.session())!.userId;
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: draft.timezone }).format(new Date());
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(`${today}T12:00:00Z`);
+      d.setUTCDate(d.getUTCDate() - i);
+      return { day: d.toISOString().slice(0, 10), answers: 1, reviews: 0 };
+    });
+    await b.publishPracticeDays(days);
+    await b.signOut();
+    await signUp(b, 'friend@example.com');
+    expect((await b.badges(me)).map((x) => x.id)).toContain('streak_7');
+    expect((await b.practiceGraph(me)).current).toBe(7);
+    await b.signOut();
+    await b.sendCode('rian@example.com');
+    await b.verifyCode('rian@example.com', '123456');
+    await b.saveProfile({ ...draft, showProgress: false });
+    expect((await b.badges(me)).map((x) => x.id)).toContain('streak_7');
+    await b.signOut();
+    await b.sendCode('friend@example.com');
+    await b.verifyCode('friend@example.com', '123456');
+    expect((await b.badges(me)).map((x) => x.id)).not.toContain('streak_7');
+    expect(await b.practiceGraph(me)).toEqual({ days: [], current: 0, longest: 0 });
+  });
+
+  test('badge moderation: only moderators, never on themselves; the person gets a notice', async () => {
+    const m = createFakeSocialBackend({ seed: 'moderation' });
+    const mod = (await m.session())!.userId;
+    const [, alex] = m.seededUserIds();
+    expect(await kindOf(m.grantBadge(mod, 'mentor', 'self'))).toBe('forbidden');
+    await m.grantBadge(alex!, 'open_source', 'Helps the project');
+    expect((await m.badges(alex!)).map((x) => x.id)).toContain('open_source');
+    expect(m.noticesFor(alex!).map((n) => n.message)).toContain('You received the Open source contributor badge.');
+    await m.revokeBadge(alex!, 'open_source', 'By mistake');
+    expect((await m.badges(alex!)).map((x) => x.id)).not.toContain('open_source');
+    expect((await m.searchMembers('al')).map((x) => x.displayName)).toEqual(['Alex']);
+    const b = await signUp();
+    expect(await kindOf(b.grantBadge(alex!, 'mentor', 'x'))).toBe('forbidden');
+    expect(await kindOf(b.searchMembers('al'))).toBe('forbidden');
+  });
+
+  test('banner: upload, read back as a data URL, remove', async () => {
+    const b = await signUp();
+    const me = (await b.session())!.userId;
+    await b.uploadBanner(new Uint8Array([0x47, 0x49, 0x46]), 'gif');
+    expect((await b.getOwnProfile())!.hasBanner).toBe(true);
+    expect(await b.bannerDataUrl(me)).toBe('data:image/gif;base64,R0lG');
+    await b.removeBanner();
+    expect(await b.bannerDataUrl(me)).toBeNull();
+  });
+
+  test('milestones: valid values only, duplicates ignored', async () => {
+    const b = await signUp();
+    const me = (await b.session())!.userId;
+    await b.publishMilestone('level_up', 'B1>B2');
+    await b.publishMilestone('level_up', 'B1>B2');
+    await b.publishMilestone('vocabulary', '50');
+    expect(await kindOf(b.publishMilestone('level_up', 'B2>B1'))).toBe('unknown');
+    const evo = (await b.badges(me)).filter((x) => x.group === 'evolution');
+    expect(evo.map((x) => [x.id, x.label, x.detail])).toEqual([
+      ['level_up', 'B1 → B2', 'B1>B2'],
+      ['vocabulary', 'Vocabulary hunter', '50+'],
+    ]);
+  });
+
   test('injected failure: deleteAccount offline keeps the session', async () => {
     const b = await signUp(createFakeSocialBackend({ fail: { deleteAccount: 'offline' } }));
     expect(await kindOf(b.deleteAccount())).toBe('offline');
