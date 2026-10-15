@@ -3,7 +3,8 @@ import type { InvokeChannel } from '../../shared/ipc-contract';
 import { LEVELS } from '../../core/domain/types';
 import { PROVIDERS } from '../../shared/providers';
 import { MANUAL_BADGES } from '../../core/social/badges';
-import { PROFILE_LIMITS, REPORT_CONTEXTS, REPORT_REASONS } from '../../core/social/types';
+import { MEMBER_QUERY_MAX } from '../../core/social/people';
+import { AREAS, PROFILE_LIMITS, REPORT_CONTEXTS, REPORT_REASONS } from '../../core/social/types';
 import { ProfileDraftSchema } from '../../core/social/validate';
 
 export const MAX_ANSWER_CHARS = 4000;
@@ -20,6 +21,8 @@ const email = z.string().trim().toLowerCase().max(254).regex(/^[^\s@]+@[^\s@]+\.
 const userId = z.string().min(1).max(64);
 const MAX_AVATAR_INPUT = 8 * 1024 * 1024;
 const MAX_BANNER_INPUT = 8 * 1024 * 1024;
+const page = z.number().int().min(0).max(10_000);
+const byUser = z.object({ userId }).strict();
 const badgeChange = z
   .object({ userId, badge: z.enum(MANUAL_BADGES), reason: z.string().trim().min(1, 'Write a reason.').max(200) })
   .strict();
@@ -92,6 +95,23 @@ export const INPUT_SCHEMAS = {
   'social:setBanner': z.object({ bytes: z.instanceof(Uint8Array).refine((b) => b.byteLength <= MAX_BANNER_INPUT) }).strict(),
   'social:removeBanner': empty,
   'social:banner': z.object({ userId }).strict(),
+  'social:members': z
+    .object({
+      query: z.string().max(MEMBER_QUERY_MAX).optional(),
+      level: z.enum(LEVELS).optional(),
+      area: z.enum(AREAS).optional(),
+      stack: z.string().max(PROFILE_LIMITS.stackTagLength).optional(),
+      page,
+    })
+    .strict(),
+  'social:profileOf': byUser,
+  'social:socialStats': byUser,
+  'social:follow': byUser,
+  'social:unfollow': byUser,
+  'social:like': byUser,
+  'social:unlike': byUser,
+  'social:followers': z.object({ userId, page }).strict(),
+  'social:following': z.object({ userId, page }).strict(),
   'safety:block': z.object({ userId }).strict(),
   'safety:unblock': z.object({ userId }).strict(),
   'safety:report': z

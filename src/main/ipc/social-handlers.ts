@@ -56,6 +56,10 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
     if (!(await backend.isModerator())) throw new AppFailure('forbidden', 'Only moderators can see this.');
   }
 
+  async function refuseSelf(userId: string, message: string): Promise<void> {
+    if ((await backend.session())?.userId === userId) throw new AppFailure('validation', message);
+  }
+
   /** Badge changes are for other members; the server refuses them on oneself, so say why before asking it. */
   async function requireOtherMember(userId: string): Promise<void> {
     if ((await backend.session())?.userId === userId) {
@@ -111,6 +115,29 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
       return null;
     }),
     'social:banner': handle('social:banner', ({ userId }) => backend.bannerDataUrl(userId)),
+    'social:members': handle('social:members', ({ page, ...filters }) => backend.members(filters, page)),
+    'social:profileOf': handle('social:profileOf', ({ userId }) => backend.profileOf(userId)),
+    'social:socialStats': handle('social:socialStats', ({ userId }) => backend.socialStats(userId)),
+    'social:follow': handle('social:follow', async ({ userId }) => {
+      await refuseSelf(userId, 'You cannot follow yourself.');
+      await backend.follow(userId);
+      return null;
+    }),
+    'social:unfollow': handle('social:unfollow', async ({ userId }) => {
+      await backend.unfollow(userId);
+      return null;
+    }),
+    'social:like': handle('social:like', async ({ userId }) => {
+      await refuseSelf(userId, 'You cannot like your own profile.');
+      await backend.like(userId);
+      return null;
+    }),
+    'social:unlike': handle('social:unlike', async ({ userId }) => {
+      await backend.unlike(userId);
+      return null;
+    }),
+    'social:followers': handle('social:followers', ({ userId, page }) => backend.followers(userId, page)),
+    'social:following': handle('social:following', ({ userId, page }) => backend.following(userId, page)),
     'social:notices': handle('social:notices', () => backend.listNotices()),
     'social:readNotice': handle('social:readNotice', async ({ id }) => {
       await backend.markNoticeRead(id);

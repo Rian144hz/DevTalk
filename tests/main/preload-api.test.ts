@@ -84,6 +84,15 @@ test('social, safety and moderation methods map to their channels', async () => 
   await api.moderation.grantBadge({ userId: 'u5', badge: 'mentor', reason: 'r' });
   await api.moderation.revokeBadge({ userId: 'u5', badge: 'mentor', reason: 'r' });
   await api.progress.graph();
+  await api.social.members({ level: 'B1', page: 0 });
+  await api.social.profileOf('u6');
+  await api.social.socialStats('u6');
+  await api.social.follow('u6');
+  await api.social.unfollow('u6');
+  await api.social.like('u6');
+  await api.social.unlike('u6');
+  await api.social.followers('u6', 1);
+  await api.social.following('u6', 0);
   expect(calls).toEqual([
     ['social:status', {}],
     ['social:sendCode', { email: 'a@b.co' }],
@@ -113,5 +122,14 @@ test('social, safety and moderation methods map to their channels', async () => 
     ['moderation:grantBadge', { userId: 'u5', badge: 'mentor', reason: 'r' }],
     ['moderation:revokeBadge', { userId: 'u5', badge: 'mentor', reason: 'r' }],
     ['progress:graph', {}],
+    ['social:members', { level: 'B1', page: 0 }],
+    ['social:profileOf', { userId: 'u6' }],
+    ['social:socialStats', { userId: 'u6' }],
+    ['social:follow', { userId: 'u6' }],
+    ['social:unfollow', { userId: 'u6' }],
+    ['social:like', { userId: 'u6' }],
+    ['social:unlike', { userId: 'u6' }],
+    ['social:followers', { userId: 'u6', page: 1 }],
+    ['social:following', { userId: 'u6', page: 0 }],
   ]);
 });

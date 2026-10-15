@@ -321,3 +321,64 @@ describe('profile extras', () => {
     expect(saved).toMatchObject({ mainStack: ['python'], showProgress: false, mascot: 'bear-2' });
   });
 });
+
+describe('people', () => {
+  const kind = (r: { ok: boolean; error?: { kind: string } }) => (r.ok ? 'ok' : r.error!.kind);
+  async function people() {
+    const s = setup({ seed: 'people' });
+    const ids = Object.fromEntries((await s.backend.peopleForTest()).map((p) => [p.displayName, p.id])) as Record<string, string>;
+    return { ...s, ids, me: (await s.backend.session())!.userId };
+  }
+
+  test('members validates the filters and the page', async () => {
+    const { h } = await people();
+    expect((await ok(h['social:members']({ level: 'B2', page: 0 }))).map((m) => m.displayName)).toEqual(['Caio', 'Lia']);
+    expect(kind(await h['social:members']({ query: 'x'.repeat(41), page: 0 }))).toBe('validation');
+    expect(kind(await h['social:members']({ page: -1 }))).toBe('validation');
+    expect(kind(await h['social:members']({ page: 1.5 }))).toBe('validation');
+    expect(kind(await h['social:members']({ level: 'Z9', page: 0 }))).toBe('validation');
+    expect(kind(await h['social:members']({ area: 'marketing', page: 0 }))).toBe('validation');
+  });
+
+  test('profiles, counts and lists of another member', async () => {
+    const { h, ids } = await people();
+    expect((await ok(h['social:profileOf']({ userId: ids['Bia']! })))?.displayName).toBe('Bia');
+    expect(await ok(h['social:profileOf']({ userId: ids['Gil']! }))).toBeNull();
+    expect(await ok(h['social:socialStats']({ userId: ids['Bia']! }))).toMatchObject({ followers: 2, iFollow: false });
+    expect((await ok(h['social:followers']({ userId: ids['Bia']!, page: 0 }))).map((m) => m.displayName)).toEqual(['Ana', 'Caio']);
+    expect((await ok(h['social:following']({ userId: ids['Ana']!, page: 0 }))).map((m) => m.displayName)).toEqual(['Bia']);
+    expect(kind(await h['social:followers']({ userId: ids['Bia']!, page: -2 }))).toBe('validation');
+    expect(kind(await h['social:profileOf']({ userId: '' }))).toBe('validation');
+  });
+
+  test('follow, unfollow, like and unlike change the counts', async () => {
+    const { h, ids } = await people();
+    await ok(h['social:follow']({ userId: ids['Dani']! }));
+    await ok(h['social:like']({ userId: ids['Dani']! }));
+    expect(await ok(h['social:socialStats']({ userId: ids['Dani']! }))).toMatchObject({ followers: 1, likes: 1, iFollow: true, iLike: true });
+    await ok(h['social:unfollow']({ userId: ids['Dani']! }));
+    await ok(h['social:unlike']({ userId: ids['Dani']! }));
+    expect(await ok(h['social:socialStats']({ userId: ids['Dani']! }))).toMatchObject({ followers: 0, likes: 0, iFollow: false, iLike: false });
+  });
+
+  test('following or liking yourself is refused in plain words', async () => {
+    const { h, me } = await people();
+    expect(await h['social:follow']({ userId: me })).toEqual({ ok: false, error: { kind: 'validation', message: 'You cannot follow yourself.' } });
+    expect(await h['social:like']({ userId: me })).toEqual({ ok: false, error: { kind: 'validation', message: 'You cannot like your own profile.' } });
+  });
+
+  test('the daily limits get their own message', async () => {
+    const { h, backend, ids, me } = await people();
+    backend.addFollowsForTest(me, 200);
+    expect(await h['social:follow']({ userId: ids['Ana']! })).toEqual({
+      ok: false, error: { kind: 'rate_limited', message: 'You reached the limit of 200 follows a day. Try again tomorrow.' },
+    });
+  });
+
+  test('notices carry their kind and actor through the channel', async () => {
+    const { h, backend, me } = await people();
+    backend.addNoticeForTest(me, 'Be kind.');
+    const notices = await ok(h['social:notices']({}));
+    expect(notices.find((n) => n.message === 'Be kind.')).toMatchObject({ kind: 'moderation', actor: null });
+  });
+});

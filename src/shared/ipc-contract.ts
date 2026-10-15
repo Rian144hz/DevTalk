@@ -7,7 +7,9 @@ import type { HistoryItem, ProfileInput, StoredFeedback, StoredProfile, Theme } 
 import type { PracticeGraphData } from '../core/progress/practice';
 import type { ProgressSummary } from '../core/progress/summary';
 import type { ManualBadge } from '../core/social/badges';
-import type { Badge, MemberSummary, ModerationDecision, ModerationReport, ProfileDraft, ReportInput, SocialProfile } from '../core/social/types';
+import type {
+  Badge, MemberFilters, MemberRow, MemberSummary, ModerationDecision, ModerationReport, NoticeKind, ProfileDraft, ReportInput, SocialProfile, SocialStats,
+} from '../core/social/types';
 import type { ReviewRating, SrsCard } from '../core/srs/srs';
 import type { ProviderId } from './providers';
 
@@ -59,6 +61,9 @@ export interface SocialNotice {
   message: string;
   createdAt: string;
   read: boolean;
+  kind: NoticeKind;
+  /** Who caused it (a follower); null for moderation notices. */
+  actor: { id: string; displayName: string } | null;
 }
 export interface ModerationHistoryEntry {
   action: string;
@@ -114,6 +119,15 @@ export interface Channels {
   'social:setBanner': { in: { bytes: Uint8Array }; out: string };
   'social:removeBanner': { in: Record<string, never>; out: null };
   'social:banner': { in: { userId: string }; out: string | null };
+  'social:members': { in: MemberFilters & { page: number }; out: MemberRow[] };
+  'social:profileOf': { in: { userId: string }; out: SocialProfile | null };
+  'social:socialStats': { in: { userId: string }; out: SocialStats };
+  'social:follow': { in: { userId: string }; out: null };
+  'social:unfollow': { in: { userId: string }; out: null };
+  'social:like': { in: { userId: string }; out: null };
+  'social:unlike': { in: { userId: string }; out: null };
+  'social:followers': { in: { userId: string; page: number }; out: MemberRow[] };
+  'social:following': { in: { userId: string; page: number }; out: MemberRow[] };
   'safety:block': { in: { userId: string }; out: null };
   'safety:unblock': { in: { userId: string }; out: null };
   'safety:report': { in: ReportInput; out: null };
@@ -139,7 +153,8 @@ export const INVOKE_CHANNELS = [
   'social:status', 'social:sendCode', 'social:verifyCode', 'social:acceptDocuments', 'social:getProfile', 'social:saveProfile',
   'social:setAvatar', 'social:removeAvatar', 'social:avatar', 'social:notices', 'social:readNotice', 'social:signOut',
   'social:export', 'social:deleteAccount', 'social:badges', 'social:practiceGraph', 'social:setBanner', 'social:removeBanner',
-  'social:banner', 'safety:block', 'safety:unblock', 'safety:report',
+  'social:banner', 'social:members', 'social:profileOf', 'social:socialStats', 'social:follow', 'social:unfollow', 'social:like',
+  'social:unlike', 'social:followers', 'social:following', 'safety:block', 'safety:unblock', 'safety:report',
   'moderation:isModerator', 'moderation:reports', 'moderation:history', 'moderation:decide',
   'moderation:searchMembers', 'moderation:grantBadge', 'moderation:revokeBadge',
 ] as const satisfies readonly InvokeChannel[];
@@ -196,6 +211,15 @@ export interface DevtalkApi {
     setBanner(bytes: Uint8Array): R<'social:setBanner'>;
     removeBanner(): R<'social:removeBanner'>;
     banner(userId: string): R<'social:banner'>;
+    members(input: Channels['social:members']['in']): R<'social:members'>;
+    profileOf(userId: string): R<'social:profileOf'>;
+    socialStats(userId: string): R<'social:socialStats'>;
+    follow(userId: string): R<'social:follow'>;
+    unfollow(userId: string): R<'social:unfollow'>;
+    like(userId: string): R<'social:like'>;
+    unlike(userId: string): R<'social:unlike'>;
+    followers(userId: string, page: number): R<'social:followers'>;
+    following(userId: string, page: number): R<'social:following'>;
   };
   safety: {
     block(userId: string): R<'safety:block'>;

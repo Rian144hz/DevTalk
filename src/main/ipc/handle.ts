@@ -31,6 +31,8 @@ export const MESSAGES: Record<AppErrorKind, string> = {
 
 const CODES_LIMIT = 'Too many codes were sent. Wait a few minutes and try again.';
 const REPORTS_LIMIT = 'You reached the limit of 20 reports a day. Try again tomorrow.';
+const FOLLOWS_LIMIT = 'You reached the limit of 200 follows a day. Try again tomorrow.';
+const LIKES_LIMIT = 'You reached the limit of 200 likes a day. Try again tomorrow.';
 
 export class AppFailure extends Error {
   constructor(
@@ -50,7 +52,13 @@ export function suspendedMessage(until: string | undefined): string {
 function socialAppError(err: SocialError): AppError {
   switch (err.kind) {
     case 'rate_limited':
-      return { kind: 'rate_limited', message: /report limit/i.test(err.message) ? REPORTS_LIMIT : CODES_LIMIT };
+      return {
+        kind: 'rate_limited',
+        message: /report limit/i.test(err.message) ? REPORTS_LIMIT
+          : /follow limit/i.test(err.message) ? FOLLOWS_LIMIT
+          : /like limit/i.test(err.message) ? LIKES_LIMIT
+          : CODES_LIMIT,
+      };
     case 'suspended':
       return { kind: 'suspended', message: suspendedMessage(err.until) };
     case 'unknown':
