@@ -35,7 +35,7 @@ interface State {
   users: { id: string; email: string }[];
   session: SocialSession | null;
   consents: { userId: string; document: string; version: string; acceptedAt: string }[];
-  profiles: Record<string, Omit<SocialProfile, 'hasAvatar'>>;
+  profiles: Record<string, Omit<SocialProfile, 'hasAvatar' | 'hasBanner'>>;
   avatars: Record<string, string>; // base64 WebP
   blocks: { blocker: string; blocked: string }[];
   reports: StoredReport[];
@@ -77,7 +77,7 @@ const emptyState = (): State => ({
   seeded: [],
 });
 
-const SEED_PROFILE: Omit<SocialProfile, 'id' | 'displayName' | 'hasAvatar' | 'suspendedUntil'> = {
+const SEED_PROFILE: Omit<SocialProfile, 'id' | 'displayName' | 'hasAvatar' | 'suspendedUntil' | 'hasBanner'> = {
   nativeLanguage: 'Portuguese (Brazil)',
   level: 'B1',
   timezone: 'America/Sao_Paulo',
@@ -85,6 +85,9 @@ const SEED_PROFILE: Omit<SocialProfile, 'id' | 'displayName' | 'hasAvatar' | 'su
   stack: ['python', 'java'],
   availability: [{ day: 2, from: '19:00', to: '21:00' }],
   bio: '',
+  mainStack: ['python'],
+  showProgress: true,
+  mascot: null,
 };
 
 export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocialBackend {
@@ -173,7 +176,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
   };
   const hasAccepted = (userId: string) =>
     REQUIRED.every((d) => state.consents.some((c) => c.userId === userId && c.document === d && c.version === LEGAL_VERSION));
-  const toProfile = (p: Omit<SocialProfile, 'hasAvatar'>): SocialProfile => ({ ...p, hasAvatar: p.id in state.avatars });
+  const toProfile = (p: Omit<SocialProfile, 'hasAvatar' | 'hasBanner'>): SocialProfile => ({ ...p, hasAvatar: p.id in state.avatars, hasBanner: false });
   const noticesFor = (userId: string): Notice[] =>
     state.notices
       .filter((n) => n.userId === userId)

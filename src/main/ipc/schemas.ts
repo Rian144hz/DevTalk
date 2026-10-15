@@ -72,7 +72,7 @@ export const INPUT_SCHEMAS = {
   'social:verifyCode': z.object({ email, code: z.string().regex(/^\d{6,10}$/, 'The code has 6 to 10 digits.') }).strict(),
   'social:acceptDocuments': empty,
   'social:getProfile': empty,
-  'social:saveProfile': ProfileDraftSchema.strict(),
+  'social:saveProfile': ProfileDraftSchema,
   'social:setAvatar': z.object({ bytes: z.instanceof(Uint8Array).refine((b) => b.byteLength <= MAX_AVATAR_INPUT) }).strict(),
   'social:removeAvatar': empty,
   'social:avatar': z.object({ userId }).strict(),

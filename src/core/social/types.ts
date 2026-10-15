@@ -14,11 +14,16 @@ export const LEGAL_DOCUMENTS = ['terms', 'privacy', 'conduct'] as const;
 export type LegalDocument = (typeof LEGAL_DOCUMENTS)[number];
 export const LEGAL_VERSION = '2026-10-14';
 
+/** Default pictures for members without a photo (files in src/renderer/assets/mascots). */
+export const MASCOTS = ['duck-1', 'duck-2', 'duck-3', 'bear-1', 'bear-2', 'bear-3', 'axolotl-1', 'axolotl-2', 'axolotl-3'] as const;
+export type MascotId = (typeof MASCOTS)[number];
+
 export const PROFILE_LIMITS = {
   displayName: { min: 2, max: 40 },
   nativeLanguage: { min: 1, max: 60 },
   stackTags: 10,
   stackTagLength: 30,
+  mainStack: 2,
   availabilitySlots: 14,
   bio: 160,
   reportDetails: 1000,
@@ -42,9 +47,25 @@ export interface SocialProfile {
   bio: string;
   hasAvatar: boolean;
   suspendedUntil: string | null;
+  /** Up to two stacks shown as language badges. */
+  mainStack: string[];
+  /** Whether other members see the practice graph and evolution badges. */
+  showProgress: boolean;
+  /** Chosen default picture; null = the stable default for this account. */
+  mascot: MascotId | null;
+  hasBanner: boolean;
 }
 
-export type ProfileDraft = Omit<SocialProfile, 'id' | 'hasAvatar' | 'suspendedUntil'>;
+export type ProfileDraft = Omit<SocialProfile, 'id' | 'hasAvatar' | 'suspendedUntil' | 'hasBanner'>;
+
+export type BadgeGroup = 'community' | 'technical' | 'language' | 'evolution';
+/** One badge as the server computes it (`profile_badges`). */
+export interface Badge {
+  id: string;
+  group: BadgeGroup;
+  label: string;
+  detail: string | null;
+}
 
 export interface ReportInput {
   reported: string;

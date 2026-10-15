@@ -11,6 +11,9 @@ const valid: ProfileDraft = {
   stack: ['python', 'java'],
   availability: [{ day: 1, from: '19:00', to: '21:00' }],
   bio: 'CS student. I like C++ and Linux.',
+  mainStack: [],
+  showProgress: true,
+  mascot: null,
 };
 
 function issuePaths(draft: unknown): string[] {

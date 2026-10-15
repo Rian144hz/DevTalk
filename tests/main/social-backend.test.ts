@@ -35,6 +35,9 @@ const draft: ProfileDraft = {
   stack: ['python'],
   availability: [],
   bio: '',
+  mainStack: [],
+  showProgress: true,
+  mascot: null,
 };
 
 async function kindOf(p: Promise<unknown>): Promise<SocialErrorKind | 'resolved'> {

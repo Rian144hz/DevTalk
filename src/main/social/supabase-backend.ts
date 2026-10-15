@@ -48,6 +48,11 @@ function toProfile(row: ProfileRow, suspendedUntil: string | null): SocialProfil
     bio: row.bio ?? '',
     hasAvatar: row.avatar_path !== null,
     suspendedUntil,
+    // Filled from their columns once 0004 is live (Task 4).
+    mainStack: [],
+    showProgress: true,
+    mascot: null,
+    hasBanner: false,
   };
 }
 

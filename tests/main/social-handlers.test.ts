@@ -14,6 +14,9 @@ const draft: ProfileDraft = {
   stack: ['  Python', 'python', 'C++'],
   availability: [{ day: 1, from: '19:00', to: '21:00' }],
   bio: '',
+  mainStack: [],
+  showProgress: true,
+  mascot: null,
 };
 
 /** A tiny but well-formed WebP header ("RIFF....WEBP"). */

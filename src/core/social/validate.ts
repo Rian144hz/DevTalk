@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { LEVELS } from '../domain/types';
-import { AREAS, PROFILE_LIMITS } from './types';
+import { AREAS, MASCOTS, PROFILE_LIMITS } from './types';
 import type { AvailabilitySlot, ProfileDraft } from './types';
 
 const L = PROFILE_LIMITS;
@@ -22,7 +22,8 @@ const SlotSchema = z
   .object({ day: z.number().int().min(0).max(6), from: time, to: time })
   .refine((s) => !TIME.test(s.from) || !TIME.test(s.to) || s.from < s.to, { message: 'A time slot must start before it ends.' }) as unknown as z.ZodType<AvailabilitySlot>;
 
-export const ProfileDraftSchema = z.object({
+export const ProfileDraftSchema = z
+  .strictObject({
   displayName: z.string().trim().min(L.displayName.min).max(L.displayName.max),
   nativeLanguage: z.string().trim().min(L.nativeLanguage.min).max(L.nativeLanguage.max),
   level: z.enum(LEVELS),
@@ -31,4 +32,12 @@ export const ProfileDraftSchema = z.object({
   stack: z.array(z.string().min(1).max(L.stackTagLength)).max(L.stackTags),
   availability: z.array(SlotSchema).max(L.availabilitySlots),
   bio: z.string().max(L.bio),
-}) satisfies z.ZodType<ProfileDraft>;
+  mainStack: z.array(z.string()).max(L.mainStack),
+  showProgress: z.boolean(),
+  mascot: z.enum(MASCOTS).nullable(),
+  })
+  .superRefine((d, ctx) => {
+    if (d.mainStack.some((t) => !d.stack.includes(t))) {
+      ctx.addIssue({ code: 'custom', path: ['mainStack'], message: 'Main stacks must come from your stack.' });
+    }
+  }) satisfies z.ZodType<ProfileDraft>;

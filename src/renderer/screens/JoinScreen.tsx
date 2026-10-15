@@ -228,6 +228,9 @@ export function JoinScreen() {
               stack: [],
               availability: [],
               bio: '',
+              mainStack: [],
+              showProgress: true,
+              mascot: null,
             }}
             onSubmit={async (p, photo) => {
               const failure = await saveProfileAndPhoto(p, photo);

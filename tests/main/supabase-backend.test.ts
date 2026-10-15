@@ -169,11 +169,12 @@ test('saveProfile upserts the row in snake_case and maps it back', async () => {
   await b.verifyCode('rian@example.com', '123456');
   const p = await b.saveProfile({
     displayName: 'Rian', nativeLanguage: 'Portuguese (Brazil)', level: 'B1', timezone: 'America/Bahia', area: 'backend',
-    stack: ['python'], availability: [], bio: '',
+    stack: ['python'], availability: [], bio: '', mainStack: [], showProgress: true, mascot: null,
   });
   expect(p).toEqual({
     id: 'user-1', displayName: 'Rian', nativeLanguage: 'Portuguese (Brazil)', level: 'B1', timezone: 'America/Bahia',
     area: 'backend', stack: ['python'], availability: [], bio: '', hasAvatar: false, suspendedUntil: null,
+    mainStack: [], showProgress: true, mascot: null, hasBanner: false,
   });
   const post = calls.find((c) => c.method === 'POST' && c.path === '/rest/v1/profiles')!;
   expect(post.body).toMatchObject({ id: 'user-1', display_name: 'Rian', native_language: 'Portuguese (Brazil)' });

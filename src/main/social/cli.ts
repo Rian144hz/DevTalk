@@ -52,6 +52,9 @@ export async function runSocialSmoke(h: HandlerMap<SocialChannel>, io: SmokeIO, 
       stack: [],
       availability: [],
       bio: '',
+      mainStack: [],
+      showProgress: true,
+      mascot: null,
     });
     if (!saved.ok) return failed('profile', saved.error);
   }

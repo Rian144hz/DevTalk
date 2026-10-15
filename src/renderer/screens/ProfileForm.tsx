@@ -122,6 +122,10 @@ export function ProfileForm({
       stack: stackText.trim() ? normalizeStackTags([...stack, stackText]) : stack,
       availability: slots,
       bio: bio.trim(),
+      // Edited in Task 9 (main stack toggles, progress switch, mascot picker); kept as given until then.
+      mainStack: initial.mainStack.filter((t) => stack.includes(t)),
+      showProgress: initial.showProgress,
+      mascot: initial.mascot,
     };
     const parsed = ProfileDraftSchema.safeParse(draft);
     const found: Partial<Record<keyof ProfileDraft, string>> = {};
