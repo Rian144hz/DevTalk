@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { PracticeGraphData } from '../../core/progress/practice';
 import type { Badge, SocialProfile, SocialStats } from '../../core/social/types';
 import type { SocialNotice, SocialStatus } from '../../shared/ipc-contract';
@@ -14,6 +14,7 @@ import { MembersTab } from './MembersTab';
 import { ProfileView } from './ProfileView';
 import { PagedMembers } from './PagedMembers';
 import { ProfileForm } from './ProfileForm';
+import { useAvatars } from '../lib/useAvatars';
 
 const message = (e: unknown) => (e instanceof AppErrorException ? e.message : 'Something went wrong. Try again.');
 const go = (hash: string) => () => { window.location.hash = hash; };
@@ -58,6 +59,8 @@ export function PeopleScreen({ route }: { route: Route }) {
   const edit = route.sub === 'edit';
   const tab: Tab | null = route.userId ? null : route.sub === 'me' ? 'me' : route.sub === 'following' ? 'following' : 'members';
   const [data, setData] = useState<Loaded | null>(null);
+  const actors = useMemo(() => (data?.notices ?? []).flatMap((n) => (n.actor ? [n.actor] : [])), [data]);
+  const actorAvatars = useAvatars(actors);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -211,7 +214,7 @@ export function PeopleScreen({ route }: { route: Route }) {
         if (n.kind === 'follow' && n.actor) {
           return (
             <div key={n.id} className="notice follow-notice" data-tone="info" role="status">
-              <Avatar src={null} name={n.actor.displayName} size={32} userId={n.actor.id} />
+              <Avatar src={actorAvatars[n.actor.id] ?? null} name={n.actor.displayName} size={32} userId={n.actor.id} mascot={n.actor.mascot} />
               <p><a href={`#/people/u/${n.actor.id}`}>{n.actor.displayName}</a> followed you. <span className="notice-detail">{formatLongDate(n.createdAt)}</span></p>
               {markRead}
             </div>
@@ -222,7 +225,8 @@ export function PeopleScreen({ route }: { route: Route }) {
             detail={`${n.message} (${formatLongDate(n.createdAt)})`} action={markRead} />
         );
       })}
-      {!suspended && <PeopleTabs active={showing} />}
+      {/* A member's profile and their lists are reached from Members, so that tab stays marked. */}
+      {!suspended && <PeopleTabs active={showing ?? 'members'} />}
       {showing === 'members' && <MembersTab />}
       {showing === 'following' && (
         <PagedMembers

@@ -418,7 +418,7 @@ describe('fake backend: people', () => {
     await b.follow(ids['Bia']!);
     expect(await b.socialStats(ids['Bia']!)).toMatchObject({ followers: 3, iFollow: true });
     expect(b.noticesFor(ids['Bia']!).filter((n) => n.kind === 'follow')).toEqual([
-      expect.objectContaining({ message: 'Rian followed you.', kind: 'follow', actor: { id: me, displayName: 'Rian' } }),
+      expect.objectContaining({ message: 'Rian followed you.', kind: 'follow', actor: { id: me, displayName: 'Rian', hasAvatar: false, mascot: null } }),
     ]);
     await b.unfollow(ids['Bia']!);
     await b.follow(ids['Bia']!);

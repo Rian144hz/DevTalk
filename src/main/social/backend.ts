@@ -1,6 +1,6 @@
 import type { DayActivity, PracticeGraphData } from '../../core/progress/practice';
 import type { ManualBadge } from '../../core/social/badges';
-import type { Badge, MemberFilters, MemberRow, MemberSummary, NoticeKind, SocialStats, ModerationDecision, ModerationReport, ProfileDraft, ReportInput, SocialProfile } from '../../core/social/types';
+import type { Badge, MemberFilters, MemberRow, MemberSummary, NoticeActor, NoticeKind, SocialStats, ModerationDecision, ModerationReport, ProfileDraft, ReportInput, SocialProfile } from '../../core/social/types';
 import { SocialError } from './errors';
 
 export interface SocialSession {
@@ -15,7 +15,7 @@ export interface Notice {
   read: boolean;
   kind: NoticeKind;
   /** Who caused it (the follower of a follow notice); null for moderation notices. */
-  actor: { id: string; displayName: string } | null;
+  actor: NoticeActor | null;
 }
 
 export type { MemberSummary, PracticeGraphData };

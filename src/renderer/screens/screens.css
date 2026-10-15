@@ -135,6 +135,7 @@
 .people-tabs a { padding: var(--s2) 0; margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--ink-2); font-weight: 500; text-decoration: none; }
 .people-tabs a:hover { color: var(--ink); }
 .people-tabs a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--ink); }
+.people-tabs + .member-list { border-top: 0; }
 .members, .people .member-list, .member-skeleton { max-width: 760px; }
 .member-filters { display: grid; grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)) minmax(0, 1.2fr); gap: var(--s4); align-items: start; margin-bottom: var(--s5); }
 /* Text fields and selects render at different heights; the filter row lines them up. */
@@ -172,7 +173,7 @@
 
 /* Legal documents: a reading page */
 .legal { display: flex; flex-direction: column; gap: var(--s6); }
-.back-link { font-size: var(--text-md); align-self: flex-start; }
+.back-link { font-size: var(--text-md); color: var(--ink-2); align-self: flex-start; }
 .legal-doc { max-width: var(--measure); display: flex; flex-direction: column; gap: var(--s3); }
 .legal-doc h1 { margin-bottom: var(--s1); }
 .legal-doc h1 + p { color: var(--ink-3); font-size: var(--text-md); }
@@ -226,10 +227,8 @@
 @media (max-width: 1180px) {
   .moderation { grid-template-columns: minmax(0, 1fr); }
 }
-.profile > .social-actions { padding-inline: var(--s5); }
 .profile-safety { max-width: 760px; display: flex; gap: var(--s2); margin-top: var(--s6); padding-top: var(--s4); border-top: 1px solid var(--rule); }
 .follow-notice { display: flex; align-items: center; gap: var(--s3); }
 .follow-notice p { flex: 1; min-width: 0; }
 .follow-list { max-width: 760px; display: flex; flex-direction: column; gap: var(--s3); }
 .follow-list h2 { font-size: var(--text-xl); }
-.back-link { font-size: var(--text-sm); color: var(--ink-2); }

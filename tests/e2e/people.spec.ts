@@ -70,9 +70,10 @@ test('a member\'s followers list', async ({ page }) => {
   await expect(list.nth(1)).toContainText('Caio');
 });
 
-test('a follow notice names the follower and links to their profile', async ({ page }) => {
+test('a follow notice shows the follower\'s picture and links to their profile', async ({ page }) => {
   await onboard(page);
   await go(page, '#/people');
+  await expect(page.locator('.follow-notice img.avatar-mascot')).toHaveAttribute('src', /axolotl-2/);
   await page.getByRole('link', { name: 'Hugo', exact: true }).click();
   await expect(page.getByRole('heading', { level: 2, name: 'Hugo' })).toBeVisible();
 });
@@ -105,4 +106,21 @@ test('the palette opens Members and Following', async ({ page }) => {
   await page.keyboard.type('Go to Following');
   await page.keyboard.press('Enter');
   await expect(page.getByText('You do not follow anyone yet.')).toBeVisible();
+});
+
+test('a double click on Follow or on the heart ends in one consistent state', async ({ page, dataDir }) => {
+  await onboard(page);
+  await go(page, '#/people');
+  await members(page).filter({ hasText: 'Dani' }).getByRole('link').click();
+  await page.getByRole('button', { name: 'Follow' }).dblclick();
+  await page.getByRole('button', { name: /Like Dani's profile/ }).dblclick();
+  await expect(page.getByRole('button', { name: 'Following' })).toBeVisible();
+  await expect(page.getByRole('link', { name: '1 follower' })).toBeVisible();
+  await expect(page.getByRole('button', { name: "Unlike Dani's profile, 1 like" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Following' })).toBeVisible();
+  await expect(page.getByRole('link', { name: '1 follower' })).toBeVisible();
+  await expect(page.getByRole('button', { name: "Unlike Dani's profile, 1 like" })).toBeVisible();
+  const state = JSON.parse(readFileSync(join(dataDir, 'fake-social.json'), 'utf8')) as { follows: { followee: string }[] };
+  expect(state.follows.filter((f) => f.followee === idOf(fakeState(dataDir), 'Dani'))).toHaveLength(1);
 });

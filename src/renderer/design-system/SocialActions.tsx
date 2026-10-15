@@ -19,7 +19,8 @@ export function SocialActions({ userId, name, stats, self, busy, onFollow, onLik
   return (
     <div className="social-actions">
       {!self && (
-        <Button variant={stats.iFollow ? 'secondary' : 'primary'} aria-pressed={stats.iFollow} disabled={busy} onClick={onFollow}>
+        <Button variant={stats.iFollow ? 'secondary' : 'primary'} disabled={busy} onClick={onFollow}
+          aria-label={stats.iFollow ? `Stop following ${name}` : `Follow ${name}`}>
           {stats.iFollow ? 'Following' : 'Follow'}
         </Button>
       )}

@@ -240,3 +240,37 @@ test.describe('moderation', () => {
     }
   });
 });
+
+test.describe('people', () => {
+  test.use({ social: 'people' });
+
+  test('member list, a profile, a followers list and Following', async ({ page }) => {
+    test.setTimeout(240_000);
+    await onboard(page);
+    const rows = page.getByRole('list', { name: 'Members' });
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      await go(page, '#/people', 'People');
+      await rows.waitFor();
+      await shoot(page, 'members', theme);
+      await page.getByLabel('Area').selectOption('backend');
+      await expect(rows.getByRole('link')).toHaveCount(2);
+      await shoot(page, 'members-filtered', theme);
+      await page.getByLabel('Area').selectOption('');
+      await rows.getByRole('link', { name: /Bia/ }).click();
+      await page.getByRole('button', { name: /^(Follow|Stop following) Bia$/ }).waitFor();
+      if (await page.getByRole('button', { name: 'Follow Bia', exact: true }).count()) {
+        await page.getByRole('button', { name: 'Follow Bia', exact: true }).click();
+        await page.getByRole('button', { name: /Like Bia's profile/ }).click();
+      }
+      await page.getByRole('link', { name: '3 followers' }).waitFor();
+      await shoot(page, 'member-profile', theme);
+      await page.getByRole('link', { name: '3 followers' }).click();
+      await page.getByRole('heading', { name: "Bia's followers" }).waitFor();
+      await shoot(page, 'followers', theme);
+      await go(page, '#/people/following', 'People');
+      await page.getByRole('list', { name: 'Following' }).waitFor();
+      await shoot(page, 'following', theme);
+    }
+  });
+});

@@ -3,7 +3,7 @@ import type { MemberRow } from '../../core/social/types';
 import { api } from './api';
 
 /** Photos of the listed members that have one, fetched once each; a failed fetch shows the mascot. */
-export function useAvatars(rows: MemberRow[]): Record<string, string | null> {
+export function useAvatars(rows: Pick<MemberRow, 'id' | 'hasAvatar'>[]): Record<string, string | null> {
   const [avatars, setAvatars] = useState<Record<string, string | null>>({});
   useEffect(() => {
     let alive = true;

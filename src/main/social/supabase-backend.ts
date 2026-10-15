@@ -10,7 +10,7 @@ import {
 import { LEGAL_DOCUMENTS, LEGAL_VERSION } from '../../core/social/types';
 import type { DayActivity } from '../../core/progress/practice';
 import type { ManualBadge } from '../../core/social/badges';
-import type { Badge, BadgeGroup, MascotId, MemberRow, NoticeKind } from '../../core/social/types';
+import type { Badge, BadgeGroup, MascotId, MemberRow, NoticeActor, NoticeKind } from '../../core/social/types';
 import type { AvailabilitySlot, ModerationReport, ProfileDraft, SocialProfile } from '../../core/social/types';
 import type { Level } from '../../core/domain/types';
 import type { Area, ReportContext, ReportReason } from '../../core/social/types';
@@ -304,10 +304,17 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
         await client.from('notices').select('id, message, created_at, read_at, kind, actor').order('created_at', { ascending: false }),
       ) as { id: number; message: string; created_at: string; read_at: string | null; kind: NoticeKind | null; actor: string | null }[];
       const actorIds = [...new Set(rows.flatMap((r) => (r.actor ? [r.actor] : [])))];
-      const names = new Map<string, string>();
+      const actors = new Map<string, NoticeActor>();
       if (actorIds.length > 0) {
-        const found = check(await client.from('profiles').select('id, display_name').in('id', actorIds)) as { id: string; display_name: string }[];
-        for (const f of found) names.set(f.id, f.display_name);
+        const found = check(await client.from('profiles').select('id, display_name, avatar_path, mascot').in('id', actorIds)) as {
+          id: string;
+          display_name: string;
+          avatar_path: string | null;
+          mascot: string | null;
+        }[];
+        for (const f of found) {
+          actors.set(f.id, { id: f.id, displayName: f.display_name, hasAvatar: f.avatar_path !== null, mascot: (f.mascot as MascotId | null) ?? null });
+        }
       }
       return rows.map((r) => ({
         id: r.id,
@@ -316,7 +323,7 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
         read: r.read_at !== null,
         kind: r.kind ?? 'moderation',
         // A follower who is now blocked or gone keeps the notice text but no link.
-        actor: r.actor && names.has(r.actor) ? { id: r.actor, displayName: names.get(r.actor)! } : null,
+        actor: (r.actor && actors.get(r.actor)) || null,
       }));
     },
 

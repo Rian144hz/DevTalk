@@ -33,6 +33,11 @@ export function FollowList({ userId, list, myId, myName }: { userId: string; lis
   if (name === null) return <div className="member-skeleton" aria-busy="true"><Skeleton width="40%" /><Skeleton width="60%" /></div>;
 
   const title = list === 'followers' ? `${name}'s followers` : `People ${name} follows`;
+  const own = userId === myId;
+  const emptyTitle =
+    list === 'followers'
+      ? own ? 'No one follows you yet.' : `No one follows ${name} yet.`
+      : own ? 'You do not follow anyone yet.' : `${name} does not follow anyone yet.`;
   return (
     <section className="follow-list" aria-labelledby="follow-list-title">
       <a className="back-link" href={back}>Back to {userId === myId ? 'your profile' : `${name}'s profile`}</a>
@@ -41,7 +46,7 @@ export function FollowList({ userId, list, myId, myName }: { userId: string; lis
         reloadKey={`${userId}/${list}`}
         label={title}
         load={(page) => (list === 'followers' ? api().social.followers(userId, page) : api().social.following(userId, page)).then(unwrap)}
-        empty={<EmptyState title={list === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'} body="Members you can see appear here." />}
+        empty={<EmptyState title={emptyTitle} body={list === 'followers' ? 'New followers appear here.' : 'Find people in Members.'} />}
       />
     </section>
   );

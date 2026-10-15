@@ -424,11 +424,11 @@ describe('people (Supabase)', () => {
         { id: 1, message: 'Bia followed you.', created_at: '2026-10-15T10:00:00Z', read_at: null, kind: 'follow', actor: 'u2' },
         { id: 2, message: 'Be kind.', created_at: '2026-10-14T10:00:00Z', read_at: null, kind: 'moderation', actor: null },
       ]),
-      'GET /rest/v1/profiles': json(200, [{ id: 'u2', display_name: 'Bia' }]),
+      'GET /rest/v1/profiles': json(200, [{ id: 'u2', display_name: 'Bia', avatar_path: 'u2/avatar.webp', mascot: 'bear-2' }]),
     });
     await b.verifyCode('rian@example.com', '123456');
     expect(await b.listNotices()).toEqual([
-      { id: 1, message: 'Bia followed you.', createdAt: '2026-10-15T10:00:00Z', read: false, kind: 'follow', actor: { id: 'u2', displayName: 'Bia' } },
+      { id: 1, message: 'Bia followed you.', createdAt: '2026-10-15T10:00:00Z', read: false, kind: 'follow', actor: { id: 'u2', displayName: 'Bia', hasAvatar: true, mascot: 'bear-2' } },
       { id: 2, message: 'Be kind.', createdAt: '2026-10-14T10:00:00Z', read: false, kind: 'moderation', actor: null },
     ]);
   });

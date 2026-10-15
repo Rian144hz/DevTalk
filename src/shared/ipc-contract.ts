@@ -8,7 +8,7 @@ import type { PracticeGraphData } from '../core/progress/practice';
 import type { ProgressSummary } from '../core/progress/summary';
 import type { ManualBadge } from '../core/social/badges';
 import type {
-  Badge, MemberFilters, MemberRow, MemberSummary, ModerationDecision, ModerationReport, NoticeKind, ProfileDraft, ReportInput, SocialProfile, SocialStats,
+  Badge, MemberFilters, MemberRow, MemberSummary, ModerationDecision, ModerationReport, NoticeActor, NoticeKind, ProfileDraft, ReportInput, SocialProfile, SocialStats,
 } from '../core/social/types';
 import type { ReviewRating, SrsCard } from '../core/srs/srs';
 import type { ProviderId } from './providers';
@@ -63,7 +63,7 @@ export interface SocialNotice {
   read: boolean;
   kind: NoticeKind;
   /** Who caused it (a follower); null for moderation notices. */
-  actor: { id: string; displayName: string } | null;
+  actor: NoticeActor | null;
 }
 export interface ModerationHistoryEntry {
   action: string;

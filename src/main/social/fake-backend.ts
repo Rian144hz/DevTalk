@@ -208,7 +208,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       Edu: add('Edu', { level: 'B1', area: 'mobile', stack: ['kotlin'], listed: false }),
       Fabi: add('Fabi', { level: 'B2', area: 'backend', suspendedUntil: '2999-01-01T00:00:00.000Z' }),
       Gil: add('Gil', { level: 'B1', area: 'backend' }),
-      Hugo: add('Hugo', { level: 'C2', area: 'other' }),
+      Hugo: add('Hugo', { level: 'C2', area: 'other', mascot: 'axolotl-2' }),
       Iris: add('Iris', { level: 'A2', area: 'frontend' }),
       João: add('João', { level: 'B1', area: 'data' }),
       Lia: add('Lia', { level: 'B2', area: 'mobile' }),
@@ -282,7 +282,9 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
         createdAt: n.createdAt,
         read: n.readAt !== null,
         kind: n.kind ?? 'moderation',
-        actor: n.actor ? { id: n.actor, displayName: state.profiles[n.actor]?.displayName ?? 'A member' } : null,
+        actor: n.actor && state.profiles[n.actor]
+          ? { id: n.actor, displayName: state.profiles[n.actor]!.displayName, hasAvatar: n.actor in state.avatars, mascot: state.profiles[n.actor]!.mascot }
+          : null,
       }));
   /** Mirrors counts_for_viewer(): not suspended and no block with the caller. */
   const countsFor = (viewer: string, other: string) => isActive(other) && !blockedBetween(viewer, other);

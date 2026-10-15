@@ -130,3 +130,11 @@ export interface MemberFilters {
 }
 
 export type NoticeKind = 'moderation' | 'follow';
+
+/** Who caused a notice (the follower of a follow notice), enough to show their picture and link. */
+export interface NoticeActor {
+  id: string;
+  displayName: string;
+  hasAvatar: boolean;
+  mascot: MascotId | null;
+}
