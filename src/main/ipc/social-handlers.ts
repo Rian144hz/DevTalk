@@ -27,6 +27,9 @@ export interface SocialHandlerDeps {
   roomConnectTimeoutMs?: number;
 }
 
+/** Signing out waits at most this long for the voice-room seat to be given up; a half-open network must not hang it. */
+const LEAVE_ROOM_CAP_MS = 2000;
+
 const SIGNED_OUT: SocialStatus = {
   configured: true,
   signedIn: false,
@@ -47,6 +50,18 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
     deps.onSessionChange?.();
     return value;
   };
+
+  /** The room exit never throws; the cap only guards against a leave that never answers. Sign-out goes on either way. */
+  async function leaveRoomFirst(): Promise<void> {
+    if (!deps.roomLive) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const cap = new Promise<void>((resolve) => void (timer = setTimeout(resolve, LEAVE_ROOM_CAP_MS)));
+    try {
+      await Promise.race([deps.roomLive.exit(), cap]);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
 
   async function status(): Promise<SocialStatus> {
     if (!backend.configured) return { ...SIGNED_OUT, configured: false };
@@ -157,7 +172,7 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
     }),
     'social:signOut': handle('social:signOut', async () => {
       // Give up the seat while the session still exists, so the others do not wait 90 seconds for a ghost.
-      await deps.roomLive?.exit();
+      await leaveRoomFirst();
       await backend.signOut();
       return sessionChanged(await status());
     }),

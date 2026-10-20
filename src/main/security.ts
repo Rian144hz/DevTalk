@@ -90,3 +90,11 @@ export function installPermissionHandlers(
     allowPermissionCheck(permission, details, details.requestingUrl ?? requestingOrigin, appUrl),
   );
 }
+
+/**
+ * Dev/e2e only (DEVTALK_FAKE_MEDIA=1, never packaged): Chromium gets a fake microphone so voice rooms run without hardware.
+ * Never `use-fake-ui-for-media-stream`: it makes Chromium skip the app's own permission handler, which must keep deciding.
+ */
+export function fakeMediaSwitches(env: Record<string, string | undefined>, packaged: boolean): string[] {
+  return !packaged && env['DEVTALK_FAKE_MEDIA'] === '1' ? ['use-fake-device-for-media-stream'] : [];
+}

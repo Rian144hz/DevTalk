@@ -1,5 +1,5 @@
 import {
-  allowPermission, allowPermissionCheck, CONTENT_SECURITY_POLICY, devContentSecurityPolicy, installPermissionHandlers, isAppUrl, secureWebPreferences,
+  allowPermission, allowPermissionCheck, CONTENT_SECURITY_POLICY, devContentSecurityPolicy, fakeMediaSwitches, installPermissionHandlers, isAppUrl, secureWebPreferences,
 } from '../../src/main/security';
 
 test('window is isolated and sandboxed', () => {
@@ -128,5 +128,18 @@ describe('microphone-only permissions', () => {
     expect(check(null, 'media', 'https://example.com', { requestingUrl: 'https://example.com/', mediaType: 'audio', isMainFrame: true })).toBe(false);
     expect(check(null, 'geolocation', 'file:///', { requestingUrl: appFile, isMainFrame: true })).toBe(false);
     expect(check(null, 'media', 'file:///', { isMainFrame: true })).toBe(false);
+  });
+});
+
+describe('fakeMediaSwitches', () => {
+  test('DEVTALK_FAKE_MEDIA=1 gives Chromium a fake microphone and nothing else: no fake permission UI', () => {
+    // use-fake-ui-for-media-stream would make Chromium skip the app's own permission handler.
+    expect(fakeMediaSwitches({ DEVTALK_FAKE_MEDIA: '1' }, false)).toEqual(['use-fake-device-for-media-stream']);
+  });
+  test('no switches when it is off, set to anything else, or the app is packaged', () => {
+    expect(fakeMediaSwitches({}, false)).toEqual([]);
+    expect(fakeMediaSwitches({ DEVTALK_FAKE_MEDIA: '0' }, false)).toEqual([]);
+    expect(fakeMediaSwitches({ DEVTALK_FAKE_MEDIA: 'true' }, false)).toEqual([]);
+    expect(fakeMediaSwitches({ DEVTALK_FAKE_MEDIA: '1' }, true)).toEqual([]);
   });
 });

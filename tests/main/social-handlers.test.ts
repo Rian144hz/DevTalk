@@ -714,4 +714,38 @@ describe('room channels', () => {
     expect(sessionAtExit).toMatchObject({ email: 'rian@example.com' });
     expect(await backend.session()).toBeNull();
   });
+
+  test('a leave that never answers (half-open network) does not hang Sign out: it goes on after 2 seconds', async () => {
+    vi.useFakeTimers();
+    try {
+      const backend = createFakeSocialBackend({ seed: 'people' });
+      const { h } = setup({}, {
+        backend,
+        roomLive: { enter: () => {}, current: () => 'r1', leaving: () => true, exit: () => new Promise<void>(() => {}) },
+      });
+      let done: unknown = null;
+      void h['social:signOut']({}).then((r) => void (done = r));
+      await vi.advanceTimersByTimeAsync(1999);
+      expect(done).toBeNull();
+      expect(await backend.session()).not.toBeNull();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(done).toMatchObject({ ok: true, data: { signedIn: false } });
+      expect(await backend.session()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test('a leave that answers at once does not wait for the cap', async () => {
+    vi.useFakeTimers();
+    try {
+      const backend = createFakeSocialBackend({ seed: 'people' });
+      const { h } = setup({}, { backend, roomLive: { enter: () => {}, current: () => 'r1', leaving: () => false, exit: async () => {} } });
+      expect(await ok(h['social:signOut']({}))).toMatchObject({ signedIn: false });
+      // The cap timer is cleared once the leave is done: nothing is left waiting.
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

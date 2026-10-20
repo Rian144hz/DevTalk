@@ -7,7 +7,7 @@ import { isCliMode, runCli } from './cli';
 import { DatabaseTooNewError } from './db/open';
 import { registerIpc } from './ipc/register';
 import { linuxPasswordStoreSwitch } from './vault/key-vault';
-import { installPermissionHandlers, isAppUrl, secureWebPreferences } from './security';
+import { fakeMediaSwitches, installPermissionHandlers, isAppUrl, secureWebPreferences } from './security';
 
 const DEV_URL = process.env['ELECTRON_RENDERER_URL'];
 const RENDERER_FILE = join(__dirname, '../renderer/index.html');
@@ -24,12 +24,8 @@ if (process.platform === 'linux') {
 const overrideUserData = process.env['DEVTALK_USER_DATA'];
 if (overrideUserData && !app.isPackaged) app.setPath('userData', overrideUserData);
 
-// Dev/e2e only: Chromium supplies a fake microphone and skips its own prompt, so voice rooms can be tried without hardware.
-// The app's own permission rules (microphone only, own page only) still decide.
-if (!app.isPackaged && process.env['DEVTALK_FAKE_MEDIA'] === '1') {
-  app.commandLine.appendSwitch('use-fake-device-for-media-stream');
-  app.commandLine.appendSwitch('use-fake-ui-for-media-stream');
-}
+// Dev/e2e only: Chromium supplies a fake microphone; the app's permission handler still decides.
+for (const name of fakeMediaSwitches(process.env, app.isPackaged)) app.commandLine.appendSwitch(name);
 
 /** At most this long is spent giving up the voice-room seat when the app quits; then it quits anyway. */
 const QUIT_ROOM_WAIT_MS = 2000;
