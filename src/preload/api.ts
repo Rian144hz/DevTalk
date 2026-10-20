@@ -100,6 +100,7 @@ export function buildApi(invoke: Invoke, subscribe: Subscribe): DevtalkApi {
       removeModerator: (roomId, userId) => call('rooms:removeModerator', { roomId, userId }),
       passHost: (roomId, userId) => call('rooms:passHost', { roomId, userId }),
       mute: (roomId, userId) => call('rooms:mute', { roomId, userId }),
+      setMuted: (roomId, muted) => call('rooms:setMuted', { roomId, muted }),
       remove: (roomId, userId) => call('rooms:remove', { roomId, userId }),
       end: (roomId) => call('rooms:end', { roomId }),
       timer: (roomId, seconds) => call('rooms:timer', { roomId, seconds }),

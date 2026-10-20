@@ -110,17 +110,51 @@ export function RoomView({ session, myId, onExit }: { session: RoomSession; myId
 
   const startTimer = (seconds: RoomTimer | null) => run(`timer-${seconds}`, async () => unwrap(await api().rooms.timer(roomId, seconds)));
 
+  const isHost = state?.me.role === 'host';
+  const readError = snap.readError && (
+    <Notice tone="error" title={snap.readError} action={<Button variant="secondary" onClick={() => void session.refresh()}>Try again</Button>} />
+  );
+  // Mute/Unmute and Leave are always there, even while the room is loading or cannot be read: the microphone is live.
+  const bar = (
+    <footer className="room-bar" role="group" aria-label="Room controls">
+      <Button variant="secondary" shortcut="Ctrl M" aria-label={snap.muted ? 'Unmute' : 'Mute'} aria-keyshortcuts="Control+M"
+        onClick={() => session.setMuted(!snap.muted)}>
+        <Icon name={snap.muted ? 'micOff' : 'rooms'} />
+        {snap.muted ? 'Unmute' : 'Mute'}
+      </Button>
+      <Button variant="secondary" onClick={() => onExit(null)}>Leave</Button>
+      {isHost && !ending && <Button variant="quiet" onClick={() => setEnding(true)}>End room</Button>}
+      {isHost && ending && (
+        <div className="room-confirm" role="group" aria-label="End the room">
+          <p>End the room for everyone? The call stops for all.</p>
+          <div className="row-actions">
+            <Button variant="secondary" busy={busy === 'end'} autoFocus
+              onClick={() => void run('end', async () => unwrap(await api().rooms.end(roomId))).then((done) => done && onExit('You ended the room.'))}>
+              End room
+            </Button>
+            <Button variant="quiet" disabled={busy === 'end'} onClick={() => setEnding(false)}>Cancel</Button>
+          </div>
+        </div>
+      )}
+    </footer>
+  );
+
   if (!state) {
     return (
-      <main className="page room-page" aria-busy="true">
+      <main className="page room-page" aria-busy={snap.readError ? undefined : 'true'}>
         <header className="page-head"><h1>Rooms</h1></header>
-        <div className="profile-skeleton"><Skeleton width="40%" /><Skeleton width="60%" /><Skeleton width="50%" /></div>
+        {readError ? (
+          <div className="room-notices">{readError}</div>
+        ) : (
+          <div className="profile-skeleton"><Skeleton width="40%" /><Skeleton width="60%" /><Skeleton width="50%" /></div>
+        )}
+        <div className="room" />
+        {bar}
       </main>
     );
   }
 
   const host = state.people.find((p) => p.id === state.hostId);
-  const isHost = state.me.role === 'host';
   const left = timerLeft(state.timer, now);
   const nameOf = (id: string) => state.people.find((p) => p.id === id)?.displayName ?? 'someone';
 
@@ -142,6 +176,7 @@ export function RoomView({ session, myId, onExit }: { session: RoomSession; myId
         {snap.unreachable.map((id) => (
           <Notice key={id} tone="error" title={`Could not connect to ${nameOf(id)}. Your network may block calls.`} />
         ))}
+        {readError}
         {error && <Notice tone="error" title={error} />}
       </div>
       <p className="room-activity" role="status">{activity}</p>
@@ -188,26 +223,7 @@ export function RoomView({ session, myId, onExit }: { session: RoomSession; myId
         </div>
       </div>
 
-      <footer className="room-bar">
-        <Button variant="secondary" shortcut="Ctrl M" aria-keyshortcuts="Control+M" onClick={() => session.setMuted(!snap.muted)}>
-          <Icon name={snap.muted ? 'micOff' : 'rooms'} />
-          {snap.muted ? 'Unmute' : 'Mute'}
-        </Button>
-        <Button variant="secondary" onClick={() => onExit(null)}>Leave</Button>
-        {isHost && !ending && <Button variant="quiet" onClick={() => setEnding(true)}>End room</Button>}
-        {isHost && ending && (
-          <div className="room-confirm" role="group" aria-label="End the room">
-            <p>End the room for everyone? The call stops for all.</p>
-            <div className="row-actions">
-              <Button variant="secondary" busy={busy === 'end'} autoFocus
-                onClick={() => void run('end', async () => unwrap(await api().rooms.end(roomId))).then((done) => done && onExit('You ended the room.'))}>
-                End room
-              </Button>
-              <Button variant="quiet" disabled={busy === 'end'} onClick={() => setEnding(false)}>Cancel</Button>
-            </div>
-          </div>
-        )}
-      </footer>
+      {bar}
 
       <ReportDialog open={reporting !== null} targetName={reporting?.displayName ?? ''} onClose={() => setReporting(null)}
         onSubmit={async ({ reason, details }) => {

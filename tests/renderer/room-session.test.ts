@@ -9,8 +9,8 @@ const ROOM = '00000000-0000-4000-8000-000000000001';
 const TIMEOUT = 1_000;
 const ME = 'm';
 const ok = <T,>(data: T): Result<T> => ({ ok: true, data });
-const person = (id: string, displayName: string, role: RoomPerson['role'] = 'member'): RoomPerson => ({
-  id, displayName, hasAvatar: false, mascot: null, level: 'B1', role,
+const person = (id: string, displayName: string, role: RoomPerson['role'] = 'member', muted = false): RoomPerson => ({
+  id, displayName, hasAvatar: false, mascot: null, level: 'B1', role, muted,
 });
 const rian = person(ME, 'Rian');
 const bia = person('b', 'Bia', 'host');
@@ -36,6 +36,10 @@ function fakeRooms() {
     held,
     enter: ok(null) as Result<null>,
     created: ok(ROOM) as Result<string>,
+    /** What setMuted answers. */
+    muteAnswer: ok(null) as Result<null>,
+    /** What the next state reads answer instead of the room (one per read), before the room again. */
+    failReads: [] as Result<RoomState | null>[],
     /** Runs inside join/create, before it answers. */
     whileEntering: async () => {},
     /** Signals sent to someone. */
@@ -71,7 +75,13 @@ function fakeRooms() {
     state() {
       log.push('state');
       if (t.hold) return new Promise((resolve) => held.push(resolve));
+      const failed = t.failReads.shift();
+      if (failed) return Promise.resolve(failed);
       return Promise.resolve(ok(structuredClone(t.current)));
+    },
+    async setMuted(roomId, muted) {
+      log.push(`muted ${roomId === ROOM ? '' : `${roomId} `}${muted}`);
+      return t.muteAnswer;
     },
     async signal(_roomId, to, signal, payload) {
       log.push(`signal ${to} ${signal}`);
@@ -313,4 +323,49 @@ test('leave says bye to every peer before giving up the seat, stops the micropho
   await settle();
   expect(t.log).toHaveLength(calls);
   expect(updates).not.toHaveBeenCalled();
+});
+
+test('a failed read says so and can be tried again; the first good read clears it', async () => {
+  const { t, enter } = setup();
+  t.failReads.push({ ok: false, error: { kind: 'offline', message: 'You are offline.' } });
+  session = await enter();
+  await settle();
+  // The first read failed: no room yet, and the error shows (the view keeps Mute and Leave).
+  expect(session.snapshot().state).toBeNull();
+  expect(session.snapshot().readError).toBe('You are offline.');
+  expect(session.snapshot().outcome).toBeNull();
+  await session.refresh();
+  expect(session.snapshot().readError).toBeNull();
+  expect(session.snapshot().state?.people).toHaveLength(2);
+  // A later failure keeps the room shown and says so too.
+  t.failReads.push({ ok: false, error: { kind: 'asleep', message: 'The community server is asleep.' } });
+  await session.refresh();
+  expect(session.snapshot().state?.people).toHaveLength(2);
+  expect(session.snapshot().readError).toBe('The community server is asleep.');
+});
+
+test('your microphone state goes to the room on every change, on the host\'s request, and again when the room shows it wrong', async () => {
+  const { t, enter } = setup();
+  t.muteAnswer = { ok: false, error: { kind: 'offline', message: 'You are offline.' } };
+  session = await enter();
+  await settle();
+  expect(t.log.filter((l) => l.startsWith('muted'))).toEqual([]);
+
+  session.setMuted(true);
+  session.setMuted(false);
+  await settle();
+  expect(t.log.filter((l) => l.startsWith('muted'))).toEqual(['muted true', 'muted false']);
+  expect(session.snapshot().muted).toBe(false);
+
+  // The host asks: muted, and the room is told.
+  await changed(t, roomState([bia, rian], { muteRequestedAt: '2026-10-20T10:00:00Z' }));
+  expect(t.log.filter((l) => l.startsWith('muted')).at(-1)).toBe('muted true');
+
+  // The room shows you unmuted while you are muted (an earlier call failed): it is told again, once per read.
+  const before = t.log.filter((l) => l.startsWith('muted')).length;
+  await changed(t, roomState([bia, person(ME, 'Rian', 'member', false)], { muteRequestedAt: '2026-10-20T10:00:00Z' }));
+  expect(t.log.filter((l) => l.startsWith('muted')).slice(before)).toEqual(['muted true']);
+  // Once it shows the right state, nothing more is sent.
+  await changed(t, roomState([bia, person(ME, 'Rian', 'member', true)], { muteRequestedAt: '2026-10-20T10:00:00Z' }));
+  expect(t.log.filter((l) => l.startsWith('muted')).length).toBe(before + 1);
 });

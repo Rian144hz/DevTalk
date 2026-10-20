@@ -41,6 +41,7 @@ interface Person {
   mascot: string | null;
   level: string;
   role: string;
+  muted: boolean;
 }
 interface State {
   id: string;
@@ -112,7 +113,7 @@ describe('creating and listing', () => {
       card: 0,
       me: { live: true, removed: false, role: 'host', muteRequestedAt: null },
     });
-    expect(s!.people).toEqual([{ id: a, displayName: 'Ana', hasAvatar: false, mascot: 'duck-1', level: 'B2', role: 'host' }]);
+    expect(s!.people).toEqual([{ id: a, displayName: 'Ana', hasAvatar: false, mascot: 'duck-1', level: 'B2', role: 'host', muted: false }]);
     const listed = (await live(b)).find((r) => r.id === room);
     expect(listed).toMatchObject({
       title: 'Morning stand-up',
@@ -344,6 +345,9 @@ describe('roles', () => {
     const b = others[0]!;
     await call(host, 'remove_from_room', room, b);
     await expect(joinRoom(b, room)).rejects.toThrow(/not allowed/);
+    // The room leaves their list; others still see it.
+    expect(await liveIds(b)).not.toContain(room);
+    expect(await liveIds(await named('Bystander'))).toContain(room);
     expect(await heartbeat(b, room)).toBe(false);
     await t.as(b);
     await expect(t.db.query('insert into room_sessions (room_id, user_id) values ($1, $2)', [room, b])).rejects.toThrow(
@@ -417,6 +421,57 @@ describe('roles', () => {
     expect((await state(c, room))!.endedAt).not.toBeNull();
     await expect(joinRoom(c, room)).rejects.toThrow(/not allowed/);
     await expect(call(host, 'next_card', room)).rejects.toThrow(/not allowed/);
+  });
+});
+
+describe('microphone state', () => {
+  const mutedOf = async (viewer: string, room: string, who: string) => (await state(viewer, room))!.people.find((p) => p.id === who)!.muted;
+
+  test('set_room_muted changes your own live session only, the others see it, and a new session starts unmuted', async () => {
+    const { room, host, others } = await roomWith(1);
+    const b = others[0]!;
+    expect(await mutedOf(host, room, b)).toBe(false);
+    await call(b, 'set_room_muted', room, true);
+    expect(await mutedOf(host, room, b)).toBe(true);
+    expect(await mutedOf(b, room, host)).toBe(false);
+    await call(b, 'set_room_muted', room, false);
+    expect(await mutedOf(host, room, b)).toBe(false);
+    // Nobody writes it directly, not even for themselves.
+    await t.as(b);
+    await expect(t.db.query('update room_sessions set muted = true where user_id = $1', [b])).rejects.toThrow(/permission denied/);
+    await t.as(host);
+    await expect(t.db.query('update room_sessions set muted = true where user_id = $1', [b])).rejects.toThrow(/permission denied/);
+    await call(b, 'set_room_muted', room, true);
+    await leaveRoom(b, room);
+    await joinRoom(b, room);
+    expect(await mutedOf(host, room, b)).toBe(false);
+  });
+
+  test('only someone live in the room: an outsider, someone who left, a removed or silent person and a null value are refused', async () => {
+    const { room, host, others } = await roomWith(2);
+    const [b, c] = others as [string, string];
+    await expect(call(await named('Outsider'), 'set_room_muted', room, true)).rejects.toThrow(/not allowed/);
+    await expect(call(host, 'set_room_muted', room, null)).rejects.toThrow(/muted is not valid/);
+    await leaveRoom(b, room);
+    await expect(call(b, 'set_room_muted', room, true)).rejects.toThrow(/not allowed/);
+    await call(host, 'remove_from_room', room, c);
+    await expect(call(c, 'set_room_muted', room, true)).rejects.toThrow(/not allowed/);
+    await silence(host, room);
+    await expect(call(host, 'set_room_muted', room, true)).rejects.toThrow(/not allowed/);
+  });
+
+  test('the same state again changes no row, so Realtime sends nothing', async () => {
+    const { room, host } = await roomWith(0);
+    const version = async () =>
+      (await owner<{ v: string }>('select xmin::text as v from room_sessions where room_id = $1 and user_id = $2', [room, host]))[0]!.v;
+    const fresh = await version();
+    await call(host, 'set_room_muted', room, false);
+    expect(await version()).toBe(fresh);
+    await call(host, 'set_room_muted', room, true);
+    const muted = await version();
+    expect(muted).not.toBe(fresh);
+    await call(host, 'set_room_muted', room, true);
+    expect(await version()).toBe(muted);
   });
 });
 
@@ -509,6 +564,7 @@ describe('reading', () => {
       `select public.remove_room_moderator(${u}, ${u})`,
       `select public.pass_host(${u}, ${u})`,
       `select public.mute_member(${u}, ${u})`,
+      `select public.set_room_muted(${u}, true)`,
       `select public.remove_from_room(${u}, ${u})`,
       `select public.end_room(${u})`,
       `select public.start_timer(${u}, 60)`,

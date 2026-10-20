@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_MODELS, type ProviderId } from '../../shared/providers';
 import { useRoute } from '../lib/useRoute';
 import { useThemeEffect } from '../lib/useTheme';
@@ -46,7 +46,10 @@ const SCREEN_TITLES: Record<RouteName, string> = {
 const SHORTCUT_ROUTES: RouteName[] = ['home', 'practice', 'review', 'people', 'messages', 'rooms', 'progress', 'settings'];
 
 function Shell() {
-  const { profile, dueCount, refresh, unread, setUnread } = useAppData();
+  const { profile, dueCount, refresh, unread, setUnread, room } = useAppData();
+  // Inside a voice room, every way to Rooms leads back to that room; only leaving the Rooms screen (or Leave) ends it.
+  const roomRef = useRef(room);
+  roomRef.current = room;
   const [route, navigate] = useRoute();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [moderator, setModerator] = useState(false);
@@ -74,7 +77,7 @@ function Shell() {
   }, [profile, route.name]);
 
   const commands = useMemo<Command[]>(() => {
-    const go = (name: RouteName) => () => navigate({ name });
+    const go = (name: RouteName) => () => navigate(name === 'rooms' && roomRef.current ? { name, roomId: roomRef.current } : { name });
     const theme = (t: Theme) => () => void api().settings.set({ theme: t }).then(() => refresh());
     return [
       { id: 'go-home', label: 'Go to Home', keywords: ['today'], shortcut: 'Ctrl 1', run: go('home') },
@@ -110,7 +113,7 @@ function Shell() {
       if (Number.isInteger(n) && target) {
         e.preventDefault();
         setPaletteOpen(false);
-        navigate({ name: target });
+        navigate(target === 'rooms' && roomRef.current ? { name: target, roomId: roomRef.current } : { name: target });
       }
     };
     window.addEventListener('keydown', onKey);
@@ -129,7 +132,7 @@ function Shell() {
   return (
     <div className="app">
       <Rail active={name === 'join' ? 'people' : name} dueCount={dueCount} unread={unread} provider={provider} model={profile.model || DEFAULT_MODELS[provider]}
-        moderator={moderator} onOpenPalette={() => setPaletteOpen(true)} />
+        moderator={moderator} room={room} onOpenPalette={() => setPaletteOpen(true)} />
       {name === 'components' && GALLERY ? <ComponentsScreen />
         : name === 'home' ? <HomeScreen key={route.id ?? 0} />
         : name === 'practice' ? <PracticeScreen />

@@ -202,6 +202,8 @@ test('room methods map to their channels and onEvent listens to the room event',
   await api.rooms.timer('r1', 60);
   await api.rooms.timer('r1', null);
   await api.rooms.nextCard('r1');
+  await api.rooms.setMuted('r1', true);
+  await api.rooms.setMuted('r1', false);
   await api.rooms.settings();
   await api.moderation.roomContext(9);
   expect(calls).toEqual([
@@ -221,6 +223,8 @@ test('room methods map to their channels and onEvent listens to the room event',
     ['rooms:timer', { roomId: 'r1', seconds: 60 }],
     ['rooms:timer', { roomId: 'r1', seconds: null }],
     ['rooms:nextCard', { roomId: 'r1' }],
+    ['rooms:setMuted', { roomId: 'r1', muted: true }],
+    ['rooms:setMuted', { roomId: 'r1', muted: false }],
     ['rooms:settings', {}],
     ['moderation:roomContext', { reportId: 9 }],
   ]);

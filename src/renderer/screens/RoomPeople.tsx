@@ -153,8 +153,11 @@ function PersonRow({ p, me, peer, myRole, muted, micStream, avatar, mutedForMe, 
   const mine = useSpeaking(me ? micStream : null, me && !muted);
   const speaking = me ? mine : voice.speaking;
   const role = roleLabel(p.role);
-  const status = me ? (muted ? 'Muted' : null) : [mutedForMe ? 'Muted for you' : null, statusOf(peer)].filter(Boolean).join(', ') || null;
-  const quiet = me ? muted : mutedForMe;
+  // Your own state shows at once; the others' comes from the room (each person sets their own).
+  const status = me
+    ? (muted ? 'Muted' : null)
+    : [p.muted ? 'Muted' : null, mutedForMe ? 'Muted for you' : null, statusOf(peer)].filter(Boolean).join(', ') || null;
+  const quiet = me ? muted : p.muted || mutedForMe;
   return (
     <li className="room-person">
       <div className="room-person-row">

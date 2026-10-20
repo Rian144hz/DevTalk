@@ -21,6 +21,8 @@ export function Rail(props: {
   provider: ProviderId;
   model: string;
   moderator?: boolean;
+  /** The voice room the person is in: Rooms leads back to it. */
+  room?: string | null;
   onOpenPalette(): void;
 }) {
   const nav = props.moderator ? [...NAV, { route: 'moderation' as const, label: 'Moderation', icon: 'shield' as const }] : NAV;
@@ -34,7 +36,7 @@ export function Rail(props: {
         <ul className="nav">
           {nav.map((item) => (
             <li key={item.route}>
-              <a href={`#/${item.route}`} aria-current={props.active === item.route ? 'page' : undefined}>
+              <a href={item.route === 'rooms' && props.room ? `#/rooms/${props.room}` : `#/${item.route}`} aria-current={props.active === item.route ? 'page' : undefined}>
                 <Icon name={item.icon} />
                 {item.label}
                 {item.route === 'review' && props.dueCount > 0 && (

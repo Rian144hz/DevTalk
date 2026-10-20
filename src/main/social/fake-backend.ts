@@ -97,6 +97,8 @@ interface StoredRoomSession {
   leftAt: string | null;
   removed: boolean;
   muteRequestedAt: string | null;
+  /** The person's own microphone is off (set_room_muted). */
+  muted: boolean;
   /** Seeded room people count as live whatever the time, so e2e can rely on them. */
   pinned?: true;
 }
@@ -346,7 +348,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
     for (const [userId, ago] of [[p.Bia, 10], [p.Caio, 8]] as const) {
       const entry: StoredRoomSession = {
         id: nextId(), roomId: standup.id, userId, role: 'member', joinedAt: iso(now() - ago * 60_000), leftAt: null, removed: false,
-        muteRequestedAt: null, pinned: true,
+        muteRequestedAt: null, muted: false, pinned: true,
       };
       state.roomSessions.push(entry);
       state.roomSeen[entry.id] = entry.joinedAt;
@@ -509,7 +511,9 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
   /** Mirrors viewer_in_room(): a member who is live in the room. */
   const viewerIn = (roomId: string, viewer: string) => isViewerMember(viewer) && isLiveIn(roomId, viewer);
   const addSession = (roomId: string, userId: string) => {
-    const entry: StoredRoomSession = { id: nextId(), roomId, userId, role: 'member', joinedAt: iso(), leftAt: null, removed: false, muteRequestedAt: null };
+    const entry: StoredRoomSession = {
+      id: nextId(), roomId, userId, role: 'member', joinedAt: iso(), leftAt: null, removed: false, muteRequestedAt: null, muted: false,
+    };
     state.roomSessions.push(entry);
     state.roomSeen[entry.id] = entry.joinedAt;
   };
@@ -1321,7 +1325,9 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       return state.rooms
         .filter((r) => {
           const live = liveIn(r.id);
-          return r.endedAt === null && live.length > 0 && !live.some((s) => blockedBetween(viewer, s.userId));
+          // Mirrors live_rooms(): not ended, someone live, nobody live blocked with the viewer, not a room they were removed from.
+          return r.endedAt === null && live.length > 0 && !live.some((s) => blockedBetween(viewer, s.userId))
+            && !sessionsIn(r.id).some((s) => s.userId === viewer && s.removed);
         })
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id))
         .map((r) => ({
@@ -1412,7 +1418,12 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       const people: RoomPerson[] = live
         ? liveIn(roomId)
             .filter((s) => s.userId in state.profiles)
-            .map((s) => ({ ...personBase(s.userId), level: state.profiles[s.userId]!.level, role: r.host === s.userId ? 'host' : s.role }))
+            .map((s) => ({
+              ...personBase(s.userId),
+              level: state.profiles[s.userId]!.level,
+              role: r.host === s.userId ? 'host' : s.role,
+              muted: s.muted === true,
+            }))
         : [];
       return {
         id: r.id,
@@ -1486,6 +1497,17 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       }
       touch(roomId, () => {
         for (const s of sessionsIn(roomId)) if (s.userId === userId && s.leftAt === null) s.muteRequestedAt = iso();
+      });
+      save();
+    },
+
+    async setRoomMuted(roomId, muted) {
+      failIf('setRoomMuted');
+      const viewer = me().userId;
+      // Mirrors set_room_muted(): only your own live session; the same state again changes nothing and tells nobody.
+      if (!viewerIn(roomId, viewer)) throw notAllowed();
+      touch(roomId, () => {
+        for (const s of sessionsIn(roomId)) if (s.userId === viewer && s.leftAt === null && s.muted !== muted) s.muted = muted;
       });
       save();
     },

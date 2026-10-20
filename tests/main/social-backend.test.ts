@@ -760,7 +760,7 @@ describe('fake backend: rooms', () => {
   }
   const errorOf = async (p: Promise<unknown>) => p.then(() => null, (e: unknown) => e as SocialError);
   const titles = (list: { title: string }[]) => list.map((r) => r.title);
-  const personOf = (name: string, id: string, level = 'B1', role = 'member') => ({ id, displayName: name, hasAvatar: false, mascot: null, level, role });
+  const personOf = (name: string, id: string, level = 'B1', role = 'member', muted = false) => ({ id, displayName: name, hasAvatar: false, mascot: null, level, role, muted });
 
   test('the people seed has Bia\'s stand-up room with Caio inside, and seeded people stay live', async () => {
     const { b, ids, advance } = await rooms();
@@ -972,6 +972,31 @@ describe('fake backend: rooms', () => {
     expect(await kindOf(as('Hugo', (x) => x.muteMember(room, ids['Dani']!)))).toBe('forbidden');
   });
 
+  test('you set your own microphone state; the others see it; the same state again tells nobody; a new session starts unmuted', async () => {
+    const { b, ids, as, joinAll, stateOf, listen } = await rooms();
+    const room = await b.createRoom(draft);
+    await joinAll(room, ['Ana']);
+    const ana = await listen('Ana', room);
+    const rianMuted = async () => (await stateOf('Ana', room))!.people.find((p) => p.id === ids['Rian'])!.muted;
+    expect(await rianMuted()).toBe(false);
+    await b.setRoomMuted(room, true);
+    expect(await rianMuted()).toBe(true);
+    expect((await b.roomState(room))!.people.find((p) => p.id === ids['Ana'])!.muted).toBe(false);
+    expect(ana.changes()).toBe(1);
+    await b.setRoomMuted(room, true);
+    expect(ana.changes()).toBe(1);
+    await b.setRoomMuted(room, false);
+    expect(await rianMuted()).toBe(false);
+    expect(ana.changes()).toBe(2);
+    // Only someone live in the room.
+    expect(await kindOf(as('Hugo', (x) => x.setRoomMuted(room, true)))).toBe('forbidden');
+    await as('Ana', (x) => x.setRoomMuted(room, true));
+    await as('Ana', (x) => x.leaveRoom(room));
+    expect(await kindOf(as('Ana', (x) => x.setRoomMuted(room, false)))).toBe('forbidden');
+    await as('Ana', (x) => x.joinRoom(room));
+    expect((await b.roomState(room))!.people.find((p) => p.id === ids['Ana'])!.muted).toBe(false);
+  });
+
   test('the host removes anyone else, a room moderator removes a member only, and a removed person cannot return', async () => {
     const { b, ids, as, joinAll, stateOf } = await rooms();
     const room = await b.createRoom(draft);
@@ -986,6 +1011,9 @@ describe('fake backend: rooms', () => {
     await as('Ana', (x) => x.removeFromRoom(room, ids['Hugo']!));
     expect(await stateOf('Hugo', room)).toMatchObject({ me: { live: false, removed: true }, people: [] });
     expect(await kindOf(as('Hugo', (x) => x.joinRoom(room)))).toBe('forbidden');
+    // The room leaves the removed person's list; the others still see it.
+    expect((await as('Hugo', (x) => x.liveRooms())).map((r) => r.id)).not.toContain(room);
+    expect((await as('Lia', (x) => x.liveRooms())).map((r) => r.id)).toContain(room);
     expect(await as('Hugo', (x) => x.roomHeartbeat(room))).toBe(false);
     await b.removeFromRoom(room, ids['Dani']!);
     expect((await b.roomState(room))!.people.map((p) => p.displayName)).toEqual(['Rian', 'Ana', 'Iris']);
@@ -1391,6 +1419,7 @@ describe('fake backend: rooms', () => {
     expect(await kindOf(b.roomHeartbeat('r'))).toBe('not_configured');
     expect(await kindOf(b.sendRoomSignal('r', 'u', 'offer', '{}'))).toBe('not_configured');
     expect(await kindOf(b.setRoomTimer('r', null))).toBe('not_configured');
+    expect(await kindOf(b.setRoomMuted('r', true))).toBe('not_configured');
     expect(await kindOf(b.roomReportContext(1))).toBe('not_configured');
     const stop = b.subscribeRoom('r', () => {
       throw new Error('no events');

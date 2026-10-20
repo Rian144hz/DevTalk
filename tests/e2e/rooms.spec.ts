@@ -14,7 +14,7 @@ const fakeState = (dataDir: string) => JSON.parse(readFileSync(join(dataDir, 'fa
 const idOf = (dataDir: string, name: string) => Object.values(fakeState(dataDir).profiles).find((p) => p.displayName === name)!.id;
 const roomOf = (dataDir: string, title: string) => fakeState(dataDir).rooms.find((r) => r.title === title)!.id;
 
-type Act = 'muteMember' | 'removeFromRoom' | 'joinRoom' | 'createRoom' | 'roomState';
+type Act = 'muteMember' | 'removeFromRoom' | 'joinRoom' | 'createRoom' | 'roomState' | 'setRoomMuted';
 /** Dev and e2e builds only: another member calls the fake community, as if from their own app. */
 const asMember = (app: ElectronApplication, userId: string, act: Act, args: unknown[]) =>
   app.evaluate(async (_electron, [who, method, a]) => {
@@ -32,8 +32,10 @@ const go = (page: Page, hash: string) => page.evaluate((h) => { location.hash = 
 const roomRow = (page: Page, title: string) => page.getByRole('list', { name: 'Live rooms' }).getByRole('listitem').filter({ hasText: title });
 const people = (page: Page) => page.getByRole('list', { name: 'People in the room' });
 const personRow = (page: Page, name: string) => people(page).getByRole('listitem').filter({ hasText: name });
-const muteButton = (page: Page) => page.getByRole('button', { name: /^Mute\b/ });
-const unmuteButton = (page: Page) => page.getByRole('button', { name: /^Unmute\b/ });
+/** The bar under the room: Mute or Unmute, Leave, and End room for the host. */
+const controls = (page: Page) => page.getByRole('group', { name: 'Room controls' });
+const muteButton = (page: Page) => controls(page).getByRole('button', { name: 'Mute', exact: true });
+const unmuteButton = (page: Page) => controls(page).getByRole('button', { name: 'Unmute', exact: true });
 /** Opens a person's options in the room. */
 const options = async (page: Page, name: string) => {
   await people(page).getByRole('button', { name: `Options for ${name}` }).click();
@@ -73,6 +75,19 @@ test('the list, the microphone check and the room: people, card, timer, mute, a 
   await expect(personRow(page, 'Bia')).toContainText('Host');
   await expect(personRow(page, 'Caio')).toBeVisible();
   await expect(personRow(page, 'Rian')).toContainText('You');
+  // Inside a room, Rooms in the rail, Ctrl+6 and "Go to Rooms" bring you back to the room, not the list.
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Rooms' }).click();
+  await expect(page).toHaveURL(new RegExp(`#/rooms/${room}$`));
+  await expect(personRow(page, 'Bia')).toBeVisible();
+  await expect(muteButton(page)).toBeVisible();
+  await page.keyboard.press('Control+6');
+  await expect(page).toHaveURL(new RegExp(`#/rooms/${room}$`));
+  await page.keyboard.press('Control+k');
+  await page.keyboard.type('Go to Rooms');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(new RegExp(`#/rooms/${room}$`));
+  await expect(personRow(page, 'Caio')).toBeVisible();
+  expect(((await asMember(app, idOf(dataDir, 'Bia'), 'roomState', [room])) as { people: unknown[] }).people).toHaveLength(3);
   // The fake microphone beeps: your speaking ring lights up.
   await expect(personRow(page, 'Rian').getByText('Speaking', { exact: true })).toBeAttached();
 
@@ -82,7 +97,11 @@ test('the list, the microphone check and the room: people, card, timer, mute, a 
   await expect(card).toContainText('What will you work on today?');
   const timer = page.getByRole('region', { name: 'Timer' });
   await timer.getByRole('button', { name: 'Start a 60 s timer' }).click();
-  await expect(timer.getByText(/^(60|59|58) s left$/)).toBeVisible();
+  const left = async () => Number((await timer.getByText(/^\d+ s left$/).textContent())!.match(/^\d+/)![0]);
+  const first = await left();
+  expect(first).toBeGreaterThanOrEqual(50);
+  expect(first).toBeLessThanOrEqual(60);
+  await expect.poll(left).toBeLessThan(first);
   await expect(timer.getByRole('button', { name: 'Stop' })).toBeVisible();
   // Everyone sees the same card and timer: Bia's copy of the room.
   const seen = (await asMember(app, idOf(dataDir, 'Bia'), 'roomState', [room])) as { card: number; timer: { seconds: number } | null };
@@ -130,11 +149,30 @@ test('the host mutes Rian, who can unmute; then she removes him and he is back o
   await asMember(app, bia, 'removeFromRoom', [room, rian]);
   await expect(page).toHaveURL(/#\/rooms$/);
   await expect(page.getByText('You were removed from this room.')).toBeVisible();
-  // He cannot come back: the join is refused and the check says so.
-  await roomRow(page, 'Stand-up practice').getByRole('link', { name: 'Join Stand-up practice' }).click();
-  await page.getByRole('button', { name: 'Join room' }).click();
-  await expect(page.getByRole('alert')).toContainText('You are not allowed to do that.');
+  // He cannot come back: the room is no longer in his list.
   await expect(page.getByRole('heading', { level: 1, name: 'Rooms' })).toBeVisible();
+  await expect(roomRow(page, 'Stand-up practice')).toHaveCount(0);
+});
+
+test('everyone sees who is muted: Bia mutes herself, and Rian\'s own Mute reaches the room', async ({ page, app, dataDir }) => {
+  await onboard(page);
+  await joinStandup(page);
+  const bia = idOf(dataDir, 'Bia');
+  const rian = idOf(dataDir, 'Rian');
+  const room = roomOf(dataDir, 'Stand-up practice');
+  await expect(personRow(page, 'Bia').locator('.room-person-muted')).toHaveCount(0);
+  await asMember(app, bia, 'setRoomMuted', [room, true]);
+  await expect(personRow(page, 'Bia').locator('.room-person-muted')).toBeVisible();
+  await expect(personRow(page, 'Bia')).toContainText('Muted');
+  await asMember(app, bia, 'setRoomMuted', [room, false]);
+  await expect(personRow(page, 'Bia').locator('.room-person-muted')).toHaveCount(0);
+
+  const rianSeenByBia = async () =>
+    ((await asMember(app, bia, 'roomState', [room])) as { people: { id: string; muted: boolean }[] }).people.find((p) => p.id === rian)!.muted;
+  await muteButton(page).click();
+  await expect.poll(rianSeenByBia).toBe(true);
+  await page.keyboard.press('Control+m');
+  await expect.poll(rianSeenByBia).toBe(false);
 });
 
 test('Rian opens a room; Ana joins, becomes room moderator, is removed and cannot come back', async ({ page, app, dataDir }) => {
@@ -263,4 +301,24 @@ test('a report made in the room shows the room to a moderator', async ({ page, a
   await expect(who).toContainText('Bia');
   await expect(who).toContainText('Caio');
   await expect(who).toContainText('Rian');
+});
+
+test.describe('when the room cannot be read', () => {
+  test.use({ socialFail: 'roomState' });
+
+  test('Mute and Leave still work, and the error offers Try again', async ({ page }) => {
+    await onboard(page);
+    await go(page, '#/rooms');
+    await roomRow(page, 'Stand-up practice').getByRole('link', { name: 'Join Stand-up practice' }).click();
+    await page.getByRole('button', { name: 'Join room' }).click();
+    const failure = page.getByRole('alert').filter({ hasText: 'You are offline.' });
+    await expect(failure).toBeVisible();
+    await failure.getByRole('button', { name: 'Try again' }).click();
+    await expect(failure).toBeVisible();
+    await muteButton(page).click();
+    await expect(unmuteButton(page)).toBeVisible();
+    await controls(page).getByRole('button', { name: 'Leave', exact: true }).click();
+    await expect(page).toHaveURL(/#\/rooms$/);
+    await expect(roomRow(page, 'Stand-up practice')).toContainText('2 / 6');
+  });
 });

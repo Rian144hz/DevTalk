@@ -674,7 +674,7 @@ describe('rooms (Supabase)', () => {
   test('joining, leaving, the roles, muting, removing, ending, the timer and the card call the right functions', async () => {
     const names = [
       'join_room', 'leave_room', 'make_room_moderator', 'remove_room_moderator', 'pass_host', 'mute_member', 'remove_from_room',
-      'end_room', 'start_timer', 'stop_timer', 'next_card',
+      'end_room', 'start_timer', 'stop_timer', 'next_card', 'set_room_muted',
     ];
     const { b, calls } = chatBackend(Object.fromEntries(names.map((n) => [`POST /rest/v1/rpc/${n}`, ok])));
     await b.verifyCode('rian@example.com', '123456');
@@ -690,6 +690,8 @@ describe('rooms (Supabase)', () => {
     await b.setRoomTimer(room, 90);
     await b.setRoomTimer(room, null);
     await b.nextCard(room);
+    await b.setRoomMuted(room, true);
+    await b.setRoomMuted(room, false);
     const sent = calls.filter((c) => c.path.startsWith('/rest/v1/rpc/')).map((c) => [c.path.replace('/rest/v1/rpc/', ''), c.body]);
     expect(sent).toEqual([
       ['join_room', { room }],
@@ -704,6 +706,8 @@ describe('rooms (Supabase)', () => {
       ['start_timer', { room, seconds: 90 }],
       ['stop_timer', { room }],
       ['next_card', { room }],
+      ['set_room_muted', { room, muted: true }],
+      ['set_room_muted', { room, muted: false }],
     ]);
   });
 
@@ -722,13 +726,19 @@ describe('rooms (Supabase)', () => {
       timer: { startedAt: '2026-10-20T10:05:00+00:00', seconds: 60 }, card: 3,
       me: { live: true, removed: false, role: 'moderator', muteRequestedAt: '2026-10-20T10:06:00+00:00' },
       people: [
-        { id: 'u2', displayName: 'Bia', hasAvatar: true, mascot: null, level: 'B1', role: 'host' },
-        { id: 'user-1', displayName: 'Rian', hasAvatar: false, mascot: 'duck-1', level: 'B1', role: 'moderator' },
+        { id: 'u2', displayName: 'Bia', hasAvatar: true, mascot: null, level: 'B1', role: 'host', muted: true },
+        { id: 'user-1', displayName: 'Rian', hasAvatar: false, mascot: 'duck-1', level: 'B1', role: 'moderator', muted: false },
       ],
     };
     const { b, calls } = chatBackend({ 'POST /rest/v1/rpc/room_state': json(200, state) });
     await b.verifyCode('rian@example.com', '123456');
     expect(await b.roomState(room)).toEqual(state);
+    // A person without the field counts as not muted; anything but true is not muted.
+    const odd = chatBackend({
+      'POST /rest/v1/rpc/room_state': json(200, { ...state, people: [{ ...state.people[0], muted: undefined }, { ...state.people[1], muted: 'yes' }] }),
+    });
+    await odd.b.verifyCode('rian@example.com', '123456');
+    expect((await odd.b.roomState(room))!.people.map((p) => p.muted)).toEqual([false, false]);
     expect(body(calls, '/rest/v1/rpc/room_state')).toEqual({ room });
     const ended = { ...state, hostId: null, endedAt: '2026-10-20T11:00:00+00:00', timer: null, me: { ...state.me, live: false, muteRequestedAt: null }, people: [] };
     const other = chatBackend({ 'POST /rest/v1/rpc/room_state': json(200, ended) });

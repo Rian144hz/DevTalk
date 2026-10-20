@@ -14,6 +14,7 @@ import { micProblem, roomMeta, seatsText } from '../lib/rooms';
 import { parseHash } from '../lib/router';
 import { useAvatars } from '../lib/useAvatars';
 import { useRoute } from '../lib/useRoute';
+import { useAppData } from '../app/AppData';
 import { RoomView } from './RoomView';
 
 const message = (e: unknown) => (e instanceof AppErrorException ? e.message : 'Something went wrong. Try again.');
@@ -240,6 +241,7 @@ function RoomList({ rooms }: { rooms: LiveRoom[] }) {
  */
 export function RoomsScreen() {
   const [route] = useRoute();
+  const { setRoom } = useAppData();
   const [ready, setReady] = useState<Ready | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [rooms, setRooms] = useState<LiveRoom[] | null>(null);
@@ -311,6 +313,12 @@ export function RoomsScreen() {
     const s = sessionRef.current;
     if (s && parseHash(window.location.hash).roomId !== s.roomId) exit(null);
   }, [route.roomId, session, exit]);
+
+  // The rail, the palette and Ctrl+6 lead back to the room you are in.
+  useEffect(() => {
+    setRoom(session?.roomId ?? null);
+    return () => setRoom(null);
+  }, [session, setRoom]);
 
   // Closing the screen leaves the room and gives up any entry still on its way.
   useEffect(() => {

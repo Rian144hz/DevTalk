@@ -8,7 +8,7 @@ import { latestOnly } from './latest';
 import { RoomCall, type PeerLike, type PeerState } from './room-call';
 import type { RoomOutcome } from './rooms';
 
-export type RoomsApi = Pick<DevtalkApi['rooms'], 'join' | 'create' | 'leave' | 'state' | 'signal' | 'settings' | 'onEvent'>;
+export type RoomsApi = Pick<DevtalkApi['rooms'], 'join' | 'create' | 'leave' | 'state' | 'signal' | 'settings' | 'setMuted' | 'onEvent'>;
 
 export interface PeerView {
   state: PeerState;
@@ -19,6 +19,8 @@ export interface PeerView {
 export interface RoomSnapshot {
   /** Null until the first state arrives. */
   state: RoomState | null;
+  /** Why the last read of the room failed; null once a read works. The room shown, if any, stays. */
+  readError: string | null;
   /** The call to each person, by id. */
   peers: Readonly<Record<string, PeerView>>;
   /** Your microphone is off. */
@@ -82,7 +84,7 @@ export async function enterRoom(o: EnterOptions): Promise<RoomSession> {
 export class RoomSession {
   readonly stream: MediaStream;
   private snap: RoomSnapshot = {
-    state: null, peers: {}, muted: false, hostMuted: false, offline: false, unreachable: [], activity: null, outcome: null,
+    state: null, readError: null, peers: {}, muted: false, hostMuted: false, offline: false, unreachable: [], activity: null, outcome: null,
   };
   private readonly listeners = new Set<() => void>();
   private readonly call: RoomCall;
@@ -143,11 +145,12 @@ export class RoomSession {
     }
   }
 
-  /** Turns your microphone off or on for everyone. Unmuting also clears the host's request. */
+  /** Turns your microphone off or on for everyone, and tells the room so it can show it. Unmuting also clears the host's request. */
   setMuted(muted: boolean): void {
     if (this.closed) return;
     this.call.setMuted(muted);
     this.set({ muted, hostMuted: muted && this.snap.hostMuted });
+    this.tellMuted(muted);
   }
 
   /** You are removing this person: when they go, say so instead of "<name> left.". */
@@ -163,8 +166,12 @@ export class RoomSession {
   }
 
   private apply(r: Result<RoomState | null>): void {
-    // A failed read keeps what is shown; the next change or reconnection reads again.
-    if (this.closed || !r.ok) return;
+    if (this.closed) return;
+    // A failed read keeps what is shown and says why; Try again, the next change or reconnection reads again.
+    if (!r.ok) {
+      this.set({ readError: r.error.message });
+      return;
+    }
     const s = r.data;
     if (!s || s.me.removed || s.endedAt !== null || !s.me.live) {
       this.finish(s?.me.removed ? 'removed' : s?.endedAt ? 'ended' : 'gone');
@@ -193,14 +200,25 @@ export class RoomSession {
     }
     this.muteRequest = asked;
 
+    // The room shows your microphone from what you told it: when that is not what it is (the host's request, or an
+    // earlier call that did not get through), tell it again.
+    const shown = s.people.find((p) => p.id === myId);
+    if (shown && shown.muted !== muted) this.tellMuted(muted);
+
     this.set({
       state: s,
+      readError: null,
       muted,
       hostMuted,
       unreachable: this.snap.unreachable.filter((id) => next.has(id)),
       activity: said.length > 0 ? { id: ++this.lines, text: said.join(' ') } : this.snap.activity,
     });
     this.call.sync(s.people.map((p) => p.id));
+  }
+
+  /** Best effort: when it fails, the next read of the room shows the difference and tells it again. */
+  private tellMuted(muted: boolean): void {
+    void this.o.rooms.setMuted(this.roomId, muted).catch(() => {});
   }
 
   private onPeer(id: string, state: PeerState, stream: MediaStream | null): void {

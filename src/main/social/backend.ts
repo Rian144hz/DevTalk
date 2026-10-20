@@ -119,6 +119,8 @@ export interface SocialBackend {
   passHost(roomId: string, userId: string): Promise<void>;
   /** Asks a person to mute; they can unmute whenever they are ready. */
   muteMember(roomId: string, userId: string): Promise<void>;
+  /** The caller's own microphone went off or on, so the others can show it. Only while live in the room. */
+  setRoomMuted(roomId: string, muted: boolean): Promise<void>;
   removeFromRoom(roomId: string, userId: string): Promise<void>;
   endRoom(roomId: string): Promise<void>;
   /** Starts the shared speaking timer (60 or 90 seconds); null stops it. */
@@ -202,6 +204,7 @@ export function createUnconfiguredBackend(): SocialBackend {
     removeRoomModerator: fail,
     passHost: fail,
     muteMember: fail,
+    setRoomMuted: fail,
     removeFromRoom: fail,
     endRoom: fail,
     setRoomTimer: fail,

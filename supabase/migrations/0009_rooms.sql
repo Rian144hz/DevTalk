@@ -25,7 +25,8 @@ create index rooms_host on public.rooms (host);
 create index rooms_open on public.rooms (created_at) where ended_at is null;
 
 -- One row each time someone enters a room. It changes only when something people see changes (leaving, removal,
--- role, a mute request), because Realtime sends every change to the people in the room.
+-- role, a mute request, the person's own microphone going off or on), because Realtime sends every change to the
+-- people in the room.
 create table public.room_sessions (
   id bigint generated always as identity primary key,
   room_id uuid not null references public.rooms (id) on delete cascade,
@@ -35,6 +36,8 @@ create table public.room_sessions (
   left_at timestamptz,
   removed boolean not null default false,
   mute_requested_at timestamptz,
+  -- The person's own microphone is off; only they set it (set_room_muted), so the others can show it.
+  muted boolean not null default false,
   check (not removed or left_at is not null)
 );
 create index room_sessions_room on public.room_sessions (room_id, joined_at);
@@ -437,6 +440,22 @@ begin
 end
 $$;
 
+-- Your own microphone went off or on, so the others can show it. Only your own live session; setting the state it
+-- already has changes no row, so Realtime sends nothing.
+create or replace function public.set_room_muted(room uuid, muted boolean) returns void
+language plpgsql volatile security definer set search_path = public as $$
+begin
+  if muted is null then
+    raise exception 'muted is not valid' using errcode = '22023';
+  end if;
+  if not public.viewer_in_room(room) then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+  update public.room_sessions s set muted = set_room_muted.muted
+    where s.room_id = room and s.user_id = auth.uid() and s.left_at is null and s.muted is distinct from set_room_muted.muted;
+end
+$$;
+
 -- Remove someone from the room for good: the host, or a live room moderator against a member. Never the host.
 create or replace function public.remove_from_room(room uuid, member uuid) returns void
 language plpgsql volatile security definer set search_path = public as $$
@@ -510,8 +529,8 @@ begin
 end
 $$;
 
--- The room list: rooms not ended with someone live, and nobody live inside blocked with the caller (either way).
--- People are the live ones, in the order they joined.
+-- The room list: rooms not ended with someone live, nobody live inside blocked with the caller (either way), and
+-- not a room the caller was removed from. People are the live ones, in the order they joined.
 create or replace function public.live_rooms()
 returns table (id uuid, title text, theme text, level text, host_name text, people jsonb, created_at timestamptz)
 language sql stable security definer set search_path = public as $$
@@ -536,6 +555,7 @@ language sql stable security definer set search_path = public as $$
       where s.room_id = r.id and s.left_at is null and public.room_session_live(s.id)
         and public.is_blocked_between(auth.uid(), s.user_id)
     )
+    and not exists (select 1 from public.room_sessions s where s.room_id = r.id and s.user_id = auth.uid() and s.removed)
   order by r.created_at desc, r.id
 $$;
 
@@ -571,7 +591,8 @@ begin
       'muteRequestedAt', mine.mute_requested_at),
     'people', case when is_live then coalesce((
       select json_agg(json_build_object('id', p.id, 'displayName', p.display_name, 'hasAvatar', p.avatar_path is not null,
-        'mascot', p.mascot, 'level', p.level, 'role', case when s.user_id = r.host then 'host' else s.role end)
+        'mascot', p.mascot, 'level', p.level, 'role', case when s.user_id = r.host then 'host' else s.role end,
+        'muted', s.muted)
         order by s.joined_at, s.id)
       from public.room_sessions s join public.profiles p on p.id = s.user_id
       where s.room_id = room and s.left_at is null and public.room_session_live(s.id)
@@ -638,13 +659,15 @@ $$;
 
 revoke execute on function public.create_room(text, text, text), public.join_room(uuid), public.leave_room(uuid),
   public.room_heartbeat(uuid), public.make_room_moderator(uuid, uuid), public.remove_room_moderator(uuid, uuid),
-  public.pass_host(uuid, uuid), public.mute_member(uuid, uuid), public.remove_from_room(uuid, uuid),
+  public.pass_host(uuid, uuid), public.mute_member(uuid, uuid), public.set_room_muted(uuid, boolean),
+  public.remove_from_room(uuid, uuid),
   public.end_room(uuid), public.start_timer(uuid, int), public.stop_timer(uuid), public.next_card(uuid),
   public.live_rooms(), public.room_state(uuid), public.room_report_context(bigint), public.my_rooms_export()
   from public, anon;
 grant execute on function public.create_room(text, text, text), public.join_room(uuid), public.leave_room(uuid),
   public.room_heartbeat(uuid), public.make_room_moderator(uuid, uuid), public.remove_room_moderator(uuid, uuid),
-  public.pass_host(uuid, uuid), public.mute_member(uuid, uuid), public.remove_from_room(uuid, uuid),
+  public.pass_host(uuid, uuid), public.mute_member(uuid, uuid), public.set_room_muted(uuid, boolean),
+  public.remove_from_room(uuid, uuid),
   public.end_room(uuid), public.start_timer(uuid, int), public.stop_timer(uuid), public.next_card(uuid),
   public.live_rooms(), public.room_state(uuid), public.room_report_context(bigint), public.my_rooms_export()
   to authenticated;

@@ -216,6 +216,7 @@ function toRoomState(r: RoomState): RoomState {
       mascot: (p.mascot as MascotId | null) ?? null,
       level: p.level,
       role: p.role,
+      muted: p.muted === true,
     })),
   };
 }
@@ -918,6 +919,11 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
     async muteMember(roomId, userId) {
       await me();
       check(await client.rpc('mute_member', { room: roomId, member: userId }));
+    },
+
+    async setRoomMuted(roomId, muted) {
+      await me();
+      check(await client.rpc('set_room_muted', { room: roomId, muted }));
     },
 
     async removeFromRoom(roomId, userId) {

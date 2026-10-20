@@ -313,6 +313,10 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
       await backend.muteMember(roomId, userId);
       return null;
     }),
+    'rooms:setMuted': handle('rooms:setMuted', async ({ roomId, muted }) => {
+      await backend.setRoomMuted(roomId, muted);
+      return null;
+    }),
     'rooms:remove': handle('rooms:remove', async ({ roomId, userId }) => {
       await backend.removeFromRoom(roomId, userId);
       return null;

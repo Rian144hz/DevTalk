@@ -173,6 +173,7 @@ export const INPUT_SCHEMAS = {
   'rooms:removeModerator': onMember,
   'rooms:passHost': onMember,
   'rooms:mute': onMember,
+  'rooms:setMuted': z.object({ roomId, muted: z.boolean() }).strict(),
   'rooms:remove': onMember,
   'rooms:end': inRoom,
   'rooms:timer': z.object({ roomId, seconds: z.union([z.literal(60), z.literal(90), z.null()]) }).strict(),

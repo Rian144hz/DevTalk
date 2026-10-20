@@ -94,6 +94,8 @@ export interface RoomPerson {
   mascot: MascotId | null;
   level: Level;
   role: RoomRole;
+  /** Their own microphone is off (they set it; others only show it). */
+  muted: boolean;
 }
 
 /** A row of the room list. */
@@ -103,7 +105,7 @@ export interface LiveRoom {
   theme: RoomTheme;
   level: Level | null;
   hostName: string;
-  people: Omit<RoomPerson, 'level' | 'role'>[];
+  people: Omit<RoomPerson, 'level' | 'role' | 'muted'>[];
 }
 
 /** Everything the window needs to draw the room the person is in. */

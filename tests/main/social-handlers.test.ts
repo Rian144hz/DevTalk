@@ -552,6 +552,10 @@ describe('room channels', () => {
 
     await ok(h['rooms:mute']({ roomId: mine, userId: ids['Dani']! }));
     expect((await as('Dani', (x) => x.roomState(mine)))?.me.muteRequestedAt).not.toBeNull();
+    await ok(h['rooms:setMuted']({ roomId: mine, muted: true }));
+    expect((await as('Dani', (x) => x.roomState(mine)))?.people.find((p) => p.id === ids['Rian'])?.muted).toBe(true);
+    await ok(h['rooms:setMuted']({ roomId: mine, muted: false }));
+    expect((await people()).find((p) => p.id === ids['Rian'])?.muted).toBe(false);
 
     await ok(h['rooms:timer']({ roomId: mine, seconds: 90 }));
     expect((await ok(h['rooms:state']({ roomId: mine })))?.timer).toMatchObject({ seconds: 90 });
@@ -610,6 +614,19 @@ describe('room channels', () => {
     for (const title of ['abc', 'x'.repeat(60), '  abc  ', '😀'.repeat(60), '😀😀😀', 'مرحبا بالعالم']) {
       expect(kindOf(await bad(title))).toBe('ok');
     }
+  });
+
+  test('your microphone state is true or false, nothing else', async () => {
+    const { h, backend } = await rooms();
+    const set = vi.spyOn(backend, 'setRoomMuted');
+    const mine = await ok(h['rooms:create'](create));
+    for (const muted of ['true', 1, null, undefined, 'yes']) {
+      expect(kindOf(await h['rooms:setMuted']({ roomId: mine, muted }))).toBe('validation');
+    }
+    expect(kindOf(await h['rooms:setMuted']({ roomId: mine, muted: true, userId: 'x' }))).toBe('validation');
+    expect(set).not.toHaveBeenCalled();
+    expect(kindOf(await h['rooms:setMuted']({ roomId: mine, muted: true }))).toBe('ok');
+    expect(set.mock.calls).toEqual([[mine, true]]);
   });
 
   test('the speaking timer is 60 or 90 seconds, or off', async () => {

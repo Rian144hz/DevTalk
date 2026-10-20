@@ -167,6 +167,8 @@ export interface Channels {
   'rooms:passHost': { in: { roomId: string; userId: string }; out: null };
   /** Asks a person to mute; they can unmute whenever they are ready. */
   'rooms:mute': { in: { roomId: string; userId: string }; out: null };
+  /** Your own microphone went off or on, so the others in the room can show it. */
+  'rooms:setMuted': { in: { roomId: string; muted: boolean }; out: null };
   'rooms:remove': { in: { roomId: string; userId: string }; out: null };
   'rooms:end': { in: { roomId: string }; out: null };
   /** Starts the shared speaking timer (60 or 90 seconds); null stops it. */
@@ -202,6 +204,7 @@ export const INVOKE_CHANNELS = [
   'moderation:roomContext',
   'rooms:list', 'rooms:create', 'rooms:join', 'rooms:leave', 'rooms:state', 'rooms:signal', 'rooms:makeModerator', 'rooms:removeModerator',
   'rooms:passHost', 'rooms:mute', 'rooms:remove', 'rooms:end', 'rooms:timer', 'rooms:nextCard', 'rooms:settings',
+  'rooms:setMuted',
 ] as const satisfies readonly InvokeChannel[];
 
 export const PROGRESS_EVENT = 'llm:progress';
@@ -313,6 +316,7 @@ export interface DevtalkApi {
     removeModerator(roomId: string, userId: string): R<'rooms:removeModerator'>;
     passHost(roomId: string, userId: string): R<'rooms:passHost'>;
     mute(roomId: string, userId: string): R<'rooms:mute'>;
+    setMuted(roomId: string, muted: boolean): R<'rooms:setMuted'>;
     remove(roomId: string, userId: string): R<'rooms:remove'>;
     end(roomId: string): R<'rooms:end'>;
     timer(roomId: string, seconds: RoomTimer | null): R<'rooms:timer'>;
