@@ -17,6 +17,8 @@ export interface Route {
   conversationId?: string;
   /** A first message to someone: #/messages/to/<uuid>. */
   to?: string;
+  /** One voice room: #/rooms/<uuid>. */
+  roomId?: string;
 }
 
 const SUB_PAGES: Partial<Record<RouteName, readonly string[]>> = {
@@ -41,6 +43,7 @@ export function parseHash(hash: string): Route {
     if (rest === 'to') return userId && UUID.test(userId) ? { name: route, to: userId } : { name: route };
     return rest && UUID.test(rest) ? { name: route, conversationId: rest } : { name: route };
   }
+  if (route === 'rooms') return rest && UUID.test(rest) ? { name: route, roomId: rest } : { name: route };
   if (rest && SUB_PAGES[route]?.includes(rest)) return { name: route, sub: rest };
   const n = Number(rest);
   return rest && Number.isInteger(n) && n > 0 ? { name: route, id: n } : { name: route };
@@ -48,6 +51,7 @@ export function parseHash(hash: string): Route {
 
 export function toHash(route: Route): string {
   if (route.conversationId) return `#/${route.name}/${route.conversationId}`;
+  if (route.roomId) return `#/${route.name}/${route.roomId}`;
   if (route.to) return `#/${route.name}/to/${route.to}`;
   if (route.userId) return `#/${route.name}/u/${route.userId}${route.list ? `/${route.list}` : ''}`;
   return `#/${route.name}${route.sub ? `/${route.sub}` : route.id ? `/${route.id}` : ''}`;

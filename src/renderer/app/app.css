@@ -10,7 +10,6 @@
 .nav a:hover { background: var(--sheet); color: var(--ink); }
 .nav a[aria-current="page"] { background: var(--sheet); color: var(--ink); font-weight: 600; }
 .nav .count { margin-left: auto; font: var(--text-xs) var(--font-mono); color: var(--ink-2); }
-.nav .later { margin-left: auto; font-size: var(--text-xs); color: var(--ink-3); }
 .rail-foot { margin-top: auto; padding: var(--s3); font-size: var(--text-xs); color: var(--ink-3); overflow-wrap: anywhere; }
 .rail-model { display: block; font-family: var(--font-mono); }
 .page { padding: var(--s10) var(--s14) var(--s14); min-width: 0; }

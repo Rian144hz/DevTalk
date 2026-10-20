@@ -17,12 +17,12 @@ import { PracticeScreen } from '../screens/PracticeScreen';
 import { FeedbackRoute } from '../screens/FeedbackScreen';
 import { ReviewScreen } from '../screens/ReviewScreen';
 import { ProgressScreen } from '../screens/ProgressScreen';
-import { LaterScreen } from '../screens/LaterScreen';
 import { JoinScreen } from '../screens/JoinScreen';
 import { LegalScreen, type LegalDoc } from '../screens/LegalScreen';
 import { PeopleScreen } from '../screens/PeopleScreen';
 import { ModerationScreen } from '../screens/ModerationScreen';
 import { MessagesScreen } from '../screens/MessagesScreen';
+import { RoomsScreen } from '../screens/RoomsScreen';
 import { unreadTotal } from '../lib/chat';
 
 /** The component gallery ships only in dev builds (or a build made for screenshots). */
@@ -84,7 +84,7 @@ function Shell() {
       { id: 'go-messages', label: 'Go to Messages', keywords: ['chat', 'conversations', 'requests'], shortcut: 'Ctrl 5', run: go('messages') },
       { id: 'go-members', label: 'Go to Members', keywords: ['people', 'members', 'find', 'directory'], run: go('people') },
       { id: 'go-following', label: 'Go to Following', keywords: ['people', 'follow'], run: () => navigate({ name: 'people', sub: 'following' }) },
-      { id: 'go-rooms', label: 'Go to Rooms', keywords: ['voice'], shortcut: 'Ctrl 6', run: go('rooms') },
+      { id: 'go-rooms', label: 'Go to Rooms', keywords: ['voice', 'talk', 'speak', 'call', 'audio'], shortcut: 'Ctrl 6', run: go('rooms') },
       { id: 'go-progress', label: 'Go to Progress', keywords: ['history', 'stats'], shortcut: 'Ctrl 7', run: go('progress') },
       { id: 'go-settings', label: 'Go to Settings', keywords: ['preferences', 'key', 'model', 'coach'], shortcut: 'Ctrl 8', run: go('settings') },
       { id: 'new-challenge', label: 'Get a new challenge', keywords: ['practice'], run: go('practice') },
@@ -140,7 +140,7 @@ function Shell() {
         : name === 'messages' ? <MessagesScreen route={route} />
         : name === 'join' ? <JoinScreen />
         : name === 'legal' ? <LegalScreen doc={(route.sub ?? 'terms') as LegalDoc} />
-        : name === 'rooms' ? <LaterScreen which="rooms" />
+        : name === 'rooms' ? <RoomsScreen />
         : name === 'moderation' ? <ModerationScreen />
         : name === 'settings' ? <SettingsScreen profile={profile} />
         : <Placeholder title={SCREEN_TITLES[name]} />}

@@ -7,6 +7,7 @@ const PATHS: Record<string, ReactElement> = {
   review: <><rect x="2.5" y="3" width="11" height="10" rx="1.5" /><path d="M5 6.5h6M5 9.5h4" /></>,
   people: <><circle cx="6" cy="6" r="2.4" /><path d="M2 13c.5-2.4 2-3.4 4-3.4s3.5 1 4 3.4M10.8 3.8a2.2 2.2 0 0 1 0 4.4M12.6 13c-.2-1.4-.8-2.3-1.6-2.8" /></>,
   rooms: <><rect x="6" y="2" width="4" height="7" rx="2" /><path d="M3.5 8a4.5 4.5 0 0 0 9 0M8 12.5V14" /></>,
+  micOff: <><path d="M10 6.5V4a2 2 0 0 0-4 0v3.5M6.6 8.6A2 2 0 0 0 10 7.5" /><path d="M3.5 8a4.5 4.5 0 0 0 7.4 3.4M12.4 9a4.5 4.5 0 0 0 .1-1M8 12.5V14M2.5 2.5l11 11" /></>,
   progress: <path d="M2.5 13.5h11M4.5 11V8.5M8 11V4.5M11.5 11V6.5" />,
   settings: <><circle cx="8" cy="8" r="2.2" /><path d="M8 1.8v1.8M8 12.4v1.8M1.8 8h1.8M12.4 8h1.8M3.6 3.6l1.3 1.3M11.1 11.1l1.3 1.3M3.6 12.4l1.3-1.3M11.1 4.9l1.3-1.3" /></>,
   pencil: <><path d="M3 12.5 11.2 4.3l1.5 1.5L4.5 14H3z" /><path d="M10 5.5l1.5 1.5" /></>,

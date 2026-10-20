@@ -54,3 +54,18 @@ test('messages: the list, one conversation and a new message to someone', () => 
     expect(parseHash(toHash(r))).toEqual(r);
   }
 });
+
+test('rooms: the list and one room', () => {
+  const id = '00000000-0000-4000-8000-0000000000aa';
+  expect(parseHash('#/rooms')).toEqual({ name: 'rooms' });
+  expect(parseHash(`#/rooms/${id}`)).toEqual({ name: 'rooms', roomId: id });
+  expect(parseHash('#/rooms/not-a-uuid')).toEqual({ name: 'rooms' });
+  expect(parseHash("#/rooms/'%3Cscript%3E")).toEqual({ name: 'rooms' });
+  expect(parseHash(`#/rooms/${id}/extra`)).toEqual({ name: 'rooms', roomId: id });
+  // A room id belongs to rooms only.
+  expect(parseHash(`#/people/${id}`)).toEqual({ name: 'people' });
+  expect(toHash({ name: 'rooms', roomId: id })).toBe(`#/rooms/${id}`);
+  for (const r of [{ name: 'rooms' }, { name: 'rooms', roomId: id }] as const) {
+    expect(parseHash(toHash(r))).toEqual(r);
+  }
+});

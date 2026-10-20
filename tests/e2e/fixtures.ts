@@ -14,6 +14,10 @@ export interface LaunchOptions {
   social?: '' | '1' | 'moderation' | 'people';
   /** e.g. 'deleteAccount' or 'deleteAccount:offline' */
   socialFail?: string;
+  /** Chromium's fake microphone (voice rooms without hardware). */
+  fakeMedia?: boolean;
+  /** How long a room peer may take to connect, in milliseconds (e.g. '3000'); empty keeps 20 s. */
+  roomTimeoutMs?: string;
 }
 
 /** Launches the built app with the fixture coach and the given data directory. */
@@ -21,6 +25,8 @@ export async function launchApp(o: LaunchOptions): Promise<ElectronApplication> 
   const env = { ...process.env, DEVTALK_FAKE_LLM: '1', DEVTALK_USER_DATA: o.dataDir, DEVTALK_TEST_KEYRING: o.keyring ?? 'plain' } as Record<string, string>;
   if (o.social) env['DEVTALK_FAKE_SOCIAL'] = o.social;
   if (o.socialFail) env['DEVTALK_FAKE_SOCIAL_FAIL'] = o.socialFail;
+  if (o.fakeMedia) env['DEVTALK_FAKE_MEDIA'] = '1';
+  if (o.roomTimeoutMs) env['DEVTALK_ROOM_TIMEOUT_MS'] = o.roomTimeoutMs;
   delete env['ELECTRON_RUN_AS_NODE'];
   delete env['ELECTRON_RENDERER_URL'];
   return electron.launch({ args: ['.'], cwd: ROOT, env });
@@ -33,6 +39,8 @@ export const test = base.extend<{
   keyring: 'plain' | 'unavailable';
   social: '' | '1' | 'moderation' | 'people';
   socialFail: string;
+  fakeMedia: boolean;
+  roomTimeoutMs: string;
   /** The throwaway user-data directory of this test's app. */
   dataDir: string;
   app: ElectronApplication;
@@ -41,13 +49,15 @@ export const test = base.extend<{
   keyring: ['plain', { option: true }],
   social: ['', { option: true }],
   socialFail: ['', { option: true }],
+  fakeMedia: [false, { option: true }],
+  roomTimeoutMs: ['', { option: true }],
   dataDir: async ({}, use) => {
     const dir = newDataDir();
     await use(dir);
     rmSync(dir, { recursive: true, force: true });
   },
-  app: async ({ keyring, social, socialFail, dataDir }, use) => {
-    const app = await launchApp({ dataDir, keyring, social, socialFail });
+  app: async ({ keyring, social, socialFail, fakeMedia, roomTimeoutMs, dataDir }, use) => {
+    const app = await launchApp({ dataDir, keyring, social, socialFail, fakeMedia, roomTimeoutMs });
     await use(app);
     await app.close();
   },

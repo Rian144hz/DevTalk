@@ -27,11 +27,12 @@ test('history opens a past feedback', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Your answer' })).toBeVisible();
 });
 
-test('Rooms explains it is coming later; People invites you to join', async ({ page }) => {
-  await page.getByRole('link', { name: /Rooms/ }).click();
-  await expect(page.getByRole('heading', { name: 'Coming in a later version' })).toBeVisible();
-  await expect(page.getByText('voice rooms')).toBeVisible();
-  // People is real now: it invites you to join, or says the build has no community server (no .env at build time).
+test('Rooms and People invite you to join the community', async ({ page }) => {
+  // Without a community account Rooms invites you to join, or says the build has no community server (no .env at build time).
+  await page.getByRole('link', { name: 'Rooms' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Rooms' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Join the community to talk in rooms|Community is not set up in this build/ })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Main' })).not.toContainText('Later');
   await page.getByRole('link', { name: 'People' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'People' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Coming in a later version' })).toHaveCount(0);

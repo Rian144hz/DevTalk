@@ -43,7 +43,6 @@ export function Rail(props: {
                 {item.route === 'messages' && (props.unread ?? 0) > 0 && (
                   <span className="count num">{props.unread}<span className="visually-hidden"> unread</span></span>
                 )}
-                {item.route === 'rooms' && <span className="later">Later</span>}
               </a>
             </li>
           ))}

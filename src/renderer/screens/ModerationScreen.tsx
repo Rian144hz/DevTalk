@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import type { ModerationDecision, ModerationReport, ReportContext } from '../../core/social/types';
 import type { ModerationHistoryEntry } from '../../shared/ipc-contract';
 import type { ReportedMessage } from '../../core/social/chat';
+import { ROOM_THEME_LABELS, type RoomReportContext } from '../../core/social/rooms';
 import { messageTime } from '../lib/chat';
 import { latestOnly } from '../lib/latest';
 import { Avatar, Button, EmptyState, Notice, REPORT_REASON_LABELS, Segmented, Skeleton, TextArea, TextField } from '../design-system';
@@ -21,12 +22,55 @@ const LENGTHS: { value: Length; label: string }[] = [
   { value: 'permanent', label: 'Permanent' },
 ];
 
+const when = (iso: string) => `${formatLongDate(iso)}, ${messageTime(iso)}`;
+const sameDay = (a: string, b: string) => new Date(a).toDateString() === new Date(b).toDateString();
+
+/** The room a report came from: its title, theme, host and opening time, then who was in it and when. */
+function RoomContext({ room }: { room: RoomReportContext | null | undefined }) {
+  const headingId = useId();
+  return (
+    <section className="decision" aria-labelledby={headingId}>
+      <h3 id={headingId}>The room</h3>
+      {room === undefined ? (
+        <Skeleton width="50%" />
+      ) : room === null ? (
+        <p className="muted">No copy of the room was kept. The reporter or the reported person was not in it.</p>
+      ) : (
+        <>
+          <dl className="profile-facts">
+            <dt>Title</dt>
+            <dd dir="auto">{room.title}</dd>
+            <dt>Theme</dt>
+            <dd>{ROOM_THEME_LABELS[room.theme]}</dd>
+            <dt>Host</dt>
+            <dd>{room.hostName ?? <span className="muted">No host</span>}</dd>
+            <dt>Opened</dt>
+            <dd>{when(room.createdAt)}</dd>
+          </dl>
+          <ul className="room-context" aria-label="Who was in the room">
+            {room.people.map((p, i) => (
+              <li key={i}>
+                <span className="room-context-who">{p.name ?? 'Deleted account'}</span>
+                <span className="muted">
+                  {when(p.joinedAt)} to {p.leftAt ? (sameDay(p.joinedAt, p.leftAt) ? messageTime(p.leftAt) : when(p.leftAt)) : 'still there'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  );
+}
+
 export function ModerationScreen() {
   const [reports, setReports] = useState<ModerationReport[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selected, setSelected] = useState<ModerationReport | null>(null);
   const [history, setHistory] = useState<ModerationHistoryEntry[] | null>(null);
   const [context, setContext] = useState<ReportedMessage[] | null>(null);
+  /** A room report's room; undefined while it loads, null when there is no copy to show. */
+  const [room, setRoom] = useState<RoomReportContext | null | undefined>(undefined);
   // A slow answer for a report clicked earlier never shows under the one selected now.
   const [latestContext] = useState(latestOnly);
   const [latestHistory] = useState(latestOnly);
@@ -75,9 +119,15 @@ export function ModerationScreen() {
     if (r.reported) void loadHistory(r.reported.id);
     else setHistory([]);
     setContext(null);
+    setRoom(undefined);
     if (r.contextType === 'message') {
       void latestContext(api().moderation.reportContext(r.id), (res) => {
         if (res.ok) setContext(res.data);
+        else setActionError(res.error.message);
+      });
+    } else if (r.contextType === 'room') {
+      void latestContext(api().moderation.roomContext(r.id), (res) => {
+        if (res.ok) setRoom(res.data);
         else setActionError(res.error.message);
       });
     }
@@ -191,6 +241,8 @@ export function ModerationScreen() {
                 )}
               </div>
             )}
+
+            {selected.contextType === 'room' && <RoomContext room={room} />}
 
             {target && (
               <div className="decision">
