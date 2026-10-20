@@ -28,7 +28,7 @@ test('fixed lists are exactly the spec values', () => {
   expect(REPORT_REASONS).toEqual(['harassment', 'hate', 'sexual', 'spam', 'impersonation', 'minor', 'other']);
   expect(REPORT_CONTEXTS).toEqual(['profile', 'message', 'room']);
   expect(LEGAL_DOCUMENTS).toEqual(['terms', 'privacy', 'conduct']);
-  expect(LEGAL_VERSION).toBe('2026-10-15.3');
+  expect(LEGAL_VERSION).toBe('2026-10-19');
 });
 
 test('normalizeStackTags trims, lowercases, collapses spaces, drops empties and duplicates', () => {

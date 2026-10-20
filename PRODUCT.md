@@ -26,7 +26,8 @@ The loop closes on the learner's own output: corrections are shown as a code-sty
 
 - Challenge categories: daily stand-up update, code review (polite disagreement, requesting changes, justifying a choice), explaining a bug's cause, technical interview.
 - Review uses Again / Hard / Good / Easy ratings.
-- Later phases: 1:1 chat with peer corrections, scheduled voice rooms (up to 6 people, timed 60–90 s turns), solo timed speaking with local transcription, a global shortcut to send any selected text for feedback.
+- Private 1:1 chat (phase 2B.2): a conversation opens by an accepted request; members correct each other's messages as diffs and thank good corrections (Diff master at 25 Thanks); "Check with the coach" marks your own draft before you send it, without saving it.
+- Later phases: scheduled voice rooms (up to 6 people, timed 60–90 s turns), solo timed speaking with local transcription, a global shortcut to send any selected text for feedback.
 - The user's practice text never leaves the machine except to the chosen LLM provider.
 
 ## Capabilities and Constraints

@@ -1,10 +1,10 @@
 # Terms of use
 
-Version 2026-10-15.3. This is a plain-language draft. It has not been reviewed by a lawyer.
+Version 2026-10-19. This is a plain-language draft. It has not been reviewed by a lawyer.
 
 ## What DevTalk is
 
-DevTalk is a free desktop app that helps developers practise English. The practice coach works on your computer without an account. The community part (profiles, and later partners, chat and voice rooms) needs an account.
+DevTalk is a free desktop app that helps developers practise English. The practice coach works on your computer without an account. The community part (profiles, the member list, private chat, and later voice rooms) needs an account.
 
 ## Who can use the community
 
@@ -21,13 +21,16 @@ DevTalk is a free desktop app that helps developers practise English. The practi
 
 - Your profile (name, photo, banner, level, languages, time zone, stack, available times, bio and badges) is visible to other signed-in members. Your practice graph and progress badges are too, unless you hide them in People › Edit profile.
 - Whom you follow, who follows you and how many likes your profile has are visible to other signed-in members. Following someone tells them once a week at most.
+- **Private messages** are read only by you and the other person. A conversation starts with a request: your first message, which the other person can accept or decline. You can send at most 10 requests, 500 messages and 200 corrections a day.
+- You can suggest a correction to the other person's messages and they can thank you for it. You can delete your own messages; their text and corrections go with them.
+- If someone in a conversation reports a message, the moderators see that message and the 10 before it.
 - Your photo and banner must follow the code of conduct like everything else you share; an offensive banner can be reported with the profile.
 - Share only what you are comfortable with. Do not put phone numbers, addresses or other private details in your profile.
 - You must follow the [Code of conduct](#/legal/conduct).
 
 ## Moderation
 
-Members can block and report each other. Moderators read reports and can warn or suspend an account, for a few days or for good. A suspended account cannot edit its profile or send reports, and other members cannot see it.
+Members can block and report each other, and report a single message. Blocking closes your conversation for both of you. Moderators read reports and can warn or suspend an account, for a few days or for good. A suspended account cannot edit its profile or send reports, and other members cannot see it.
 
 ## No guarantees
 

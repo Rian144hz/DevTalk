@@ -1,6 +1,6 @@
 # Code of conduct
 
-Version 2026-10-15.3. This is a plain-language draft. It has not been reviewed by a lawyer.
+Version 2026-10-19. This is a plain-language draft. It has not been reviewed by a lawyer.
 
 DevTalk is a place to practise English with other developers. Everyone here is learning, and making mistakes must feel safe.
 
@@ -8,6 +8,8 @@ DevTalk is a place to practise English with other developers. Everyone here is l
 
 - Be kind and patient. Most people here write and speak in a second language.
 - When you correct someone, show the better version and explain it briefly. Corrections are edits, not grades.
+- Correct only when it helps the other person practise, and say Thanks when someone corrects you.
+- A message request is a question. If someone declines it or does not answer, do not keep asking.
 - Keep to the topic of practice: work, code and the situations developers meet.
 - Respect people's time: arrive on time for rooms and leave politely.
 
@@ -25,7 +27,7 @@ DevTalk is a place to practise English with other developers. Everyone here is l
 ## If something goes wrong
 
 - **Block** a person to stop seeing each other.
-- **Report** what happened. Reports go to the moderators, and the person is not told who reported them.
+- **Report** what happened: a profile or a single message. Reports go to the moderators, and the person is not told who reported them. A message report shows the moderators that message and the 10 before it.
 
 ## What moderators can do
 

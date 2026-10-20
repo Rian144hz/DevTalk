@@ -81,6 +81,7 @@ The community (accounts, profiles, blocks, reports, moderation) runs on a free S
 5. **Moderators.** Sign in once in the app, then run in SQL Editor: `insert into moderators (user_id) select id from auth.users where email = 'you@example.com';`
 6. **Profile extras (badges, practice graph, banners).** A project set up before 2026-10-15 pastes only `supabase/migrations/0004_profile_extras.sql` in a new query and clicks Run (new projects get it inside `setup.sql`). Then deploy the `delete-account` function again from `single-file.ts`, so deleting an account also removes the banner. The Creator badge is given once in SQL Editor: `insert into badge_grants (user_id, badge, granted_by) select id, 'creator', id from auth.users where email = 'you@example.com';`
 7. **People (member list, follows, likes).** A project set up before 2026-10-16 pastes only `supabase/migrations/0005_review_fixes.sql` (if not yet), then `supabase/migrations/0006_people.sql` and `supabase/migrations/0007_people_review.sql`, each alone, in a new query. Use the matching app build only after they are in.
+8. **Private chat.** A project that already ran 0001–0007 pastes only `supabase/migrations/0008_chat.sql` in a new query and clicks Run. It also adds the chat tables to Realtime (Database › Publications › `supabase_realtime` should list `conversations`, `messages` and `corrections`). Then check with a second account: send a request, accept it, and see messages arrive live.
 
 Check it end to end (a zenity dialog asks for your e-mail and the code):
 
