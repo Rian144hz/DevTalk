@@ -2,7 +2,7 @@
 
 A desktop app for developers who read English well but want to **produce** it: you answer short, realistic work situations (a stand-up update, a code review comment, explaining a bug, an interview question) in 3 to 5 sentences, and an AI coach marks your answer like an editor — edits inline, notes in the margin, a natural B2 rewrite and 2–3 expressions worth keeping. Those expressions come back in a spaced-repetition review (FSRS) and as required expressions in later challenges.
 
-Phase 1 is the solo coach: local, no account. Practice partners and voice rooms come later.
+Phase 1 is the solo coach: local, no account. The community (profiles, people, private chat and voice rooms) is optional and needs an account.
 
 ## Requirements
 
@@ -82,6 +82,7 @@ The community (accounts, profiles, blocks, reports, moderation) runs on a free S
 6. **Profile extras (badges, practice graph, banners).** A project set up before 2026-10-15 pastes only `supabase/migrations/0004_profile_extras.sql` in a new query and clicks Run (new projects get it inside `setup.sql`). Then deploy the `delete-account` function again from `single-file.ts`, so deleting an account also removes the banner. The Creator badge is given once in SQL Editor: `insert into badge_grants (user_id, badge, granted_by) select id, 'creator', id from auth.users where email = 'you@example.com';`
 7. **People (member list, follows, likes).** A project set up before 2026-10-16 pastes only `supabase/migrations/0005_review_fixes.sql` (if not yet), then `supabase/migrations/0006_people.sql` and `supabase/migrations/0007_people_review.sql`, each alone, in a new query. Use the matching app build only after they are in.
 8. **Private chat.** A project that already ran 0001–0007 pastes only `supabase/migrations/0008_chat.sql` in a new query and clicks Run. It also adds the chat tables to Realtime (Database › Publications › `supabase_realtime` should list `conversations`, `messages` and `corrections`). Then check with a second account: send a request, accept it, and see messages arrive live.
+9. **Voice rooms.** A project that already ran 0001–0008 pastes only `supabase/migrations/0009_rooms.sql` alone in a new query and clicks Run. It also adds the room tables to Realtime (Database › Publications › `supabase_realtime` should list `rooms`, `room_sessions` and `room_signals`). The terms, privacy policy and code of conduct have a new version (2026-10-20), so every member accepts them again. Then check with two accounts on two computers, ideally on different networks: open a room on one, join it from the other, and talk. Voice goes directly between the computers with no relay server, so a call can fail on some networks.
 
 Check it end to end (a zenity dialog asks for your e-mail and the code):
 

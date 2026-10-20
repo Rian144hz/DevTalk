@@ -1,6 +1,6 @@
 # Code of conduct
 
-Version 2026-10-19. This is a plain-language draft. It has not been reviewed by a lawyer.
+Version 2026-10-20. This is a plain-language draft. It has not been reviewed by a lawyer.
 
 DevTalk is a place to practise English with other developers. Everyone here is learning, and making mistakes must feel safe.
 
@@ -11,7 +11,10 @@ DevTalk is a place to practise English with other developers. Everyone here is l
 - Correct only when it helps the other person practise, and say Thanks when someone corrects you.
 - A message request is a question. If someone declines it or does not answer, do not keep asking.
 - Keep to the topic of practice: work, code and the situations developers meet.
-- Respect people's time: arrive on time for rooms and leave politely.
+- Respect people's time: leave a room politely.
+- In a voice room, let everyone speak. Give people time to find their words and do not talk over them.
+- The room timer is only a guide. Use it to share the time, not to cut someone off.
+- If you are a host or a room moderator, mute or remove someone only when they break these rules or disturb the room.
 
 ## Do not
 
@@ -26,12 +29,13 @@ DevTalk is a place to practise English with other developers. Everyone here is l
 
 ## If something goes wrong
 
-- **Block** a person to stop seeing each other.
-- **Report** what happened: a profile or a single message. Reports go to the moderators, and the person is not told who reported them. A message report shows the moderators that message and the 10 before it.
+- **Block** a person to stop seeing each other. If you block someone in your room, you leave the room.
+- **Mute for me** silences one person in a room for you only.
+- **Report** what happened: a profile, a single message or a person in a voice room. Reports go to the moderators, and the person is not told who reported them. A message report shows the moderators that message and the 10 before it. A room report shows them the room's title, theme, host, who was there and when.
 
 ## What moderators can do
 
-Moderators read reports and can send a warning, suspend an account for 1, 7 or 30 days, or suspend it for good. They act on what was reported and on the account's history.
+Moderators read reports and can send a warning, suspend an account for 1, 7 or 30 days, or suspend it for good. They act on what was reported and on the account's history. In a room, the host and the room moderators can also mute you (you can unmute yourself) or remove you from that room; a removed person cannot come back to it.
 
 ## Contact
 

@@ -12,7 +12,7 @@ export type ReportContext = (typeof REPORT_CONTEXTS)[number];
 /** Documents accepted at sign-up; `age_18` is stored alongside them as an attestation. */
 export const LEGAL_DOCUMENTS = ['terms', 'privacy', 'conduct'] as const;
 export type LegalDocument = (typeof LEGAL_DOCUMENTS)[number];
-export const LEGAL_VERSION = '2026-10-19';
+export const LEGAL_VERSION = '2026-10-20';
 
 /** Default pictures for members without a photo (files in src/renderer/assets/mascots). */
 export const MASCOTS = ['duck-1', 'duck-2', 'duck-3', 'bear-1', 'bear-2', 'bear-3', 'axolotl-1', 'axolotl-2', 'axolotl-3'] as const;
