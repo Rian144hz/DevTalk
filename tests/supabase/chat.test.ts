@@ -465,7 +465,7 @@ describe('account deletion', () => {
   });
 });
 
-test('0008 adds the chat tables to the Realtime publication when the project has one', async () => {
+test('0008 and 0009 add the chat and room tables to the Realtime publication when the project has one', async () => {
   const db = await PGlite.create();
   await db.exec(readFileSync(join(__dirname, 'stubs.sql'), 'utf8'));
   await db.exec('create publication supabase_realtime');
@@ -475,6 +475,6 @@ test('0008 adds the chat tables to the Realtime publication when the project has
       `select tablename from pg_publication_tables where pubname = 'supabase_realtime' order by tablename`,
     )
   ).rows.map((r) => r.tablename);
-  expect(tables).toEqual(['conversations', 'corrections', 'messages']);
+  expect(tables.sort()).toEqual(['conversations', 'corrections', 'messages', 'room_sessions', 'room_signals', 'rooms']);
   await db.close();
 }, 30_000);
