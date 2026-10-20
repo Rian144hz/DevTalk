@@ -329,4 +329,3 @@
 .report-context-who > span:first-child { font-weight: 600; }
 .report-context-flag { font-weight: 600; }
 .report-context .chat-bubble { align-self: flex-start; max-width: 68ch; }
-.chat-diff del + ins { margin-left: 0.5ch; }

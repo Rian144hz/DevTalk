@@ -7,13 +7,16 @@ import { Button } from '../design-system';
 export function DiffText({ before, after }: { before: string; after: string }) {
   return (
     <p className="chat-diff">
-      {wordDiff(before, after).map((p, i) => {
+      {wordDiff(before, after).map((p, i, parts) => {
         if (p.kind === 'same') return <span key={i}>{p.text}</span>;
         // The mark covers the words only; a trailing space stays plain so a removal does not look like a dash.
         const word = p.text.trimEnd();
         const space = p.text.slice(word.length);
+        // A replacement reads "have had", not "havehad": a space between the removal and the insertion.
+        const gap = p.kind === 'ins' && parts[i - 1]?.kind === 'del' && !/\s$/.test(parts[i - 1]!.text) ? ' ' : '';
         return (
           <span key={i}>
+            {gap}
             {p.kind === 'del'
               ? <del><span className="visually-hidden">removed: </span>{word}</del>
               : <ins><span className="visually-hidden">added: </span>{word}</ins>}

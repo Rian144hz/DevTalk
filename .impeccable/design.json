@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-15T18:00:00+00:00",
+  "generatedAt": "2026-10-20T12:00:00+00:00",
   "title": "Design System: DevTalk",
   "extensions": {
     "colorMeta": {
@@ -838,6 +838,10 @@
       "mono-small": {
         "displayName": "Mono Small",
         "purpose": "Chips, kbd keys, nav counts, model id."
+      },
+      "chat": {
+        "displayName": "Chat",
+        "purpose": "Message bubbles, peer-correction and coach-check diffs, the chat composer and correction textareas."
       }
     },
     "shadows": [
@@ -854,7 +858,7 @@
       {
         "name": "inset-ring",
         "value": "inset 0 0 0 1px var(--rule-strong)",
-        "purpose": "Selection outline on the checked segment, the selected palette row and the selected moderation report; not elevation."
+        "purpose": "Selection outline on the checked segment, the selected palette row, the selected moderation report, the current conversation row and the reported message in a moderation copy; not elevation."
       },
       {
         "name": "separation-ring",
@@ -903,12 +907,17 @@
       {
         "name": "compact",
         "value": "1040px",
-        "purpose": "Page side padding 32px, galley margin column 200px, history grid drops track. Profile fact sheet term column 140px."
+        "purpose": "Page side padding 32px, galley margin column 200px, history grid drops track. Profile fact sheet term column 140px. Messages: conversation list 240px, gap 20px, bubbles up to 90%, pane padding 16px sides."
       },
       {
         "name": "graph-narrow",
         "value": "1100px",
         "purpose": "Practice graph cells drop from 10px to 9px and gaps from 3px to 2px so the year fits without scrolling. The member filters wrap from four columns to two."
+      },
+      {
+        "name": "short-window",
+        "value": "720px (height)",
+        "purpose": "Messages tightens its bottom padding to 20px and its head spacing to 16px."
       }
     ],
     "layout": {
@@ -929,7 +938,12 @@
       "mascotOption": "48px, 8px gap",
       "peopleTabs": "24px gap over a 1px rule, 24px below",
       "memberFilters": "2fr 1fr 1fr 1.2fr, 16px gap; two columns below 1100px; fields 42px tall",
-      "memberPage": 30
+      "memberPage": 30,
+      "messagesPage": "full window height (100vh)",
+      "conversationList": "300px (240px below 1040px), gap 32px (20px below 1040px), capped at 1100px",
+      "chatThreadMin": "140px; the thread scrolls, the composer area scrolls when the coach check is open",
+      "chatBubbleMax": "min(75%, 68ch) (90% below 1040px)",
+      "chatTextMax": 2000
     }
   },
   "components": [
@@ -1099,6 +1113,30 @@
       "description": "Under a profile's name: Follow (primary, the profile's one pencil action) or Following (secondary); a like control shaped like a secondary control with a heart filled in the text tone when liked and a tabular count; follower and following counts as secondary-ink links. Nothing is ranked.",
       "html": "<div class=\"ds-social\"><button class=\"ds-follow\" aria-label=\"Follow Ana Souza\">Follow</button><button class=\"ds-like\" aria-pressed=\"true\" aria-label=\"Unlike Ana Souza's profile, 12 likes\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M8 13.5S2.5 10.2 2.5 6.2A2.9 2.9 0 0 1 8 4.6a2.9 2.9 0 0 1 5.5 1.6c0 4-5.5 7.3-5.5 7.3z\"/></svg><span>12</span></button><a href=\"#\">34 followers</a><a href=\"#\">21 following</a></div>",
       "css": ".ds-social{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-social button{display:inline-flex;align-items:center;font:inherit;font-weight:500;border-radius:var(--r-control,6px);cursor:pointer;transition:transform 120ms cubic-bezier(0.23,1,0.32,1),background-color 180ms ease}.ds-social button:active{transform:scale(0.97)}.ds-social button:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}.ds-follow{padding:9px 16px;border:1px solid transparent;background:var(--pencil,#7fb2e5);color:var(--pencil-ink,#0d1622)}.ds-like{gap:6px;padding:9px 12px;border:1px solid var(--rule-strong,#3a3f4b);background:transparent;color:var(--ink,#e8e6e1);font-variant-numeric:tabular-nums}.ds-like:hover{background:var(--sheet-hover,#262a33)}.ds-like svg{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.ds-like[aria-pressed=true] svg{fill:currentColor}.ds-social a{color:var(--ink-2,#b4b9c5);font-size:var(--text-md,0.875rem);font-variant-numeric:tabular-nums}.ds-social a:hover{color:var(--ink,#e8e6e1)}"
+    },
+    {
+      "name": "Conversation List",
+      "kind": "custom",
+      "refersTo": "conversation-row",
+      "description": "Requests then Conversations as ruled rows in the member list's grammar: 40px avatar or mascot, name (600) over a one-line 13px secondary-ink preview ('Message deleted' in tertiary ink, 'Waiting for <name>' for a sent request), time 12px tertiary in tabular figures over a mono unread count in ink. Hover takes the sheet; the open conversation takes sheet-hover and the inset ring.",
+      "html": "<ul class=\"ds-convs\"><li><a href=\"#\" aria-current=\"page\"><span class=\"ds-c-av\">B</span><span class=\"ds-c-main\"><b>Bia</b><small>How was the meeting? Did you show the new endpoints?</small></span><span class=\"ds-c-side\"><time>17 Oct</time><span class=\"ds-c-count\">2</span></span></a></li><li><a href=\"#\"><span class=\"ds-c-av\">R</span><span class=\"ds-c-main\"><b>Rui</b><small class=\"is-absent\">Message deleted</small></span><span class=\"ds-c-side\"><time>Yesterday</time></span></a></li></ul>",
+      "css": ".ds-convs{list-style:none;padding:0;margin:0;width:300px;border-top:1px solid var(--rule,#2b2f39);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-convs li{border-bottom:1px solid var(--rule,#2b2f39)}.ds-convs a{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 8px;border-radius:var(--r-control,6px);color:var(--ink,#e8e6e1);text-decoration:none}.ds-convs a:hover{background:var(--sheet,#20232b)}.ds-convs a[aria-current=page]{background:var(--sheet-hover,#262a33);box-shadow:inset 0 0 0 1px var(--rule-strong,#3a3f4b)}.ds-convs a:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}.ds-c-main{display:flex;flex-direction:column;min-width:0}.ds-c-main b{font-weight:600}.ds-c-main small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-c-main small.is-absent{color:var(--ink-3,#8c93a3)}.ds-c-av{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font-weight:600}.ds-c-side{display:flex;flex-direction:column;align-items:flex-end;gap:2px;align-self:start;padding-top:2px}.ds-c-side time{font-size:var(--text-xs,0.75rem);color:var(--ink-3,#8c93a3);font-variant-numeric:tabular-nums}.ds-c-count{font:600 var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ink,#e8e6e1)}"
+    },
+    {
+      "name": "Message Thread",
+      "kind": "custom",
+      "refersTo": "chat-bubble",
+      "description": "On the ground inside the sheet pane: a 12px tertiary day label between rules; mono 14px/1.6 pre-wrap bubbles, theirs left on the sheet with the rule, yours right on sheet-hover with the strong rule, at most 75%; time under each; a deleted message is a dashed outline with tertiary sans 'Message deleted'; a peer correction is a sheet note with a word diff in the galley's rose and sage marks and a quiet Thanks; message actions are quiet 12px buttons on the time row.",
+      "html": "<div class=\"ds-thread\"><p class=\"ds-day\">17 Oct</p><div class=\"ds-msg is-mine\"><p class=\"ds-bubble\">Yesterday I have a long meeting about our API.</p><span class=\"ds-time\">21:21</span><div class=\"ds-corr\"><span class=\"ds-who\">Bia suggested</span><p class=\"ds-diff\">Yesterday I <del>have</del> <ins>had</ins> a long meeting about our API.</p><button class=\"ds-q\">Thanks</button></div></div><div class=\"ds-msg\"><p class=\"ds-bubble\">How was the meeting?</p><span class=\"ds-meta\"><span class=\"ds-time\">21:31</span><button class=\"ds-q\">Suggest a correction</button><button class=\"ds-q\">Report</button></span></div><div class=\"ds-msg\"><p class=\"ds-bubble is-deleted\">Message deleted</p></div></div>",
+      "css": ".ds-thread{display:flex;flex-direction:column;gap:12px;padding:16px 20px;background:var(--bg,#16181d);border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1)}.ds-day{display:flex;align-items:center;gap:12px;margin:0;font-size:var(--text-xs,0.75rem);font-weight:500;color:var(--ink-3,#8c93a3)}.ds-day::before,.ds-day::after{content:\"\";flex:1;border-top:1px solid var(--rule,#2b2f39)}.ds-msg{display:flex;flex-direction:column;align-items:flex-start;max-width:75%}.ds-msg.is-mine{align-self:flex-end;align-items:flex-end}.ds-bubble{margin:0;padding:8px 12px;border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);background:var(--sheet,#20232b);font:var(--text-md,0.875rem)/1.6 var(--font-mono,'JetBrains Mono',ui-monospace,monospace);white-space:pre-wrap;overflow-wrap:anywhere}.ds-msg.is-mine .ds-bubble{background:var(--sheet-hover,#262a33);border-color:var(--rule-strong,#3a3f4b)}.ds-bubble.is-deleted{font-family:var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink-3,#8c93a3);border-style:dashed;background:transparent}.ds-meta{display:flex;align-items:center;gap:8px}.ds-time{font-size:var(--text-xs,0.75rem);color:var(--ink-3,#8c93a3);font-variant-numeric:tabular-nums}.ds-q{font:500 var(--text-xs,0.75rem) var(--font-ui,'Public Sans',system-ui,sans-serif);padding:2px 8px;border:0;border-radius:var(--r-control,6px);background:transparent;color:var(--ink-2,#b4b9c5);cursor:pointer}.ds-q:hover{background:var(--sheet,#20232b);color:var(--ink,#e8e6e1)}.ds-corr{margin-top:8px;padding:12px;border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);background:var(--sheet,#20232b);display:flex;flex-direction:column;align-items:flex-start;gap:8px;width:100%}.ds-who{font-size:var(--text-xs,0.75rem);color:var(--ink-2,#b4b9c5)}.ds-diff{margin:0;font:var(--text-md,0.875rem)/1.6 var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-diff del{color:var(--del,#d99aa8);text-decoration:line-through;text-decoration-thickness:1.5px;background:var(--del-wash,rgb(217 154 168 / 0.12));border-radius:2px}.ds-diff ins{color:var(--ins,#8cc5a2);text-decoration:none;background:var(--ins-wash,rgb(140 197 162 / 0.12));border-radius:2px}"
+    },
+    {
+      "name": "Composer and Coach Check",
+      "kind": "custom",
+      "refersTo": "coach-check",
+      "description": "The mono chat textarea over a row: 'n / 2000' in 12px tertiary mono (amber past the limit), Check with the coach (secondary), Send (primary, the one primary). The check panel sits on the ground with the strong rule: 'The coach on your draft', the draft diff, notes led by the edit in pencil mono, 'A more natural way:', Use this version (secondary) and Keep mine (quiet).",
+      "html": "<div class=\"ds-compose\"><section class=\"ds-check\"><span class=\"ds-who\">The coach on your draft</span><p class=\"ds-diff\">Yesterday I <del>have</del> fixed the bug.</p><ul><li><span class=\"ds-edit\">have fixed → fixed</span> With \"yesterday\" use the simple past.</li></ul><div class=\"ds-row\"><button class=\"ds-sec\">Use this version</button><button class=\"ds-q\">Keep mine</button></div></section><textarea class=\"ds-chat-input\" rows=\"2\">Yesterday I have fixed the bug.</textarea><div class=\"ds-row\"><span class=\"ds-counter\">31 / 2000</span><button class=\"ds-sec\">Check with the coach</button><button class=\"ds-pri\">Send</button></div></div>",
+      "css": ".ds-compose{display:flex;flex-direction:column;gap:8px;padding:12px 20px 16px;background:var(--sheet,#20232b);border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1)}.ds-check{padding:12px;border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-sheet,10px);background:var(--bg,#16181d);display:flex;flex-direction:column;gap:8px}.ds-check ul{list-style:none;padding:0;margin:0;font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-edit{font-family:var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--pencil,#7fb2e5)}.ds-who{font-size:var(--text-xs,0.75rem);color:var(--ink-2,#b4b9c5)}.ds-diff{margin:0;font:var(--text-md,0.875rem)/1.6 var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-diff del{color:var(--del,#d99aa8);text-decoration:line-through;background:var(--del-wash,rgb(217 154 168 / 0.12));border-radius:2px}.ds-chat-input{min-height:64px;resize:none;padding:8px 12px;border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-control,6px);background:var(--bg,#16181d);color:var(--ink,#e8e6e1);font:var(--text-md,0.875rem)/1.6 var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-chat-input:focus{outline:none;border-color:var(--focus,#9cc6f0)}.ds-row{display:flex;align-items:center;justify-content:flex-end;gap:12px}.ds-counter{margin-right:auto;font:var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ink-3,#8c93a3)}.ds-sec,.ds-pri,.ds-q{font:500 var(--text-base,0.9375rem) var(--font-ui,'Public Sans',system-ui,sans-serif);padding:9px 16px;border-radius:var(--r-control,6px);cursor:pointer}.ds-sec{background:transparent;border:1px solid var(--rule-strong,#3a3f4b);color:var(--ink,#e8e6e1)}.ds-sec:hover{background:var(--sheet-hover,#262a33)}.ds-pri{background:var(--pencil,#7fb2e5);border:1px solid transparent;color:var(--pencil-ink,#0d1622)}.ds-q{background:transparent;border:0;color:var(--ink-2,#b4b9c5)}"
     }
   ],
   "narrative": {
@@ -1156,7 +1194,10 @@
       "**Do** show an animated banner's first frame, still, under reduced motion or when \"Play animated banners\" is off.",
       "**Do** make Follow the member profile's one primary action; once followed it becomes a secondary \"Following\" button.",
       "**Do** mark the current People tab with a 2px ink underline on the rule, and keep Members marked on a member's profile and lists.",
-      "**Do** set follower, following and like counts in tabular figures as plain text beside their controls."
+      "**Do** set follower, following and like counts in tabular figures as plain text beside their controls.",
+      "**Do** set chat messages, drafts and corrections in the chat mono, as plain text with their line breaks kept.",
+      "**Do** show a peer correction or a coach check as a word diff in the galley's rose and sage marks, the marks covering words only.",
+      "**Do** keep message actions quiet and under the message, reachable by keyboard and touch, and return focus to the message after an inline panel closes."
     ],
     "donts": [
       "**Don't** build a dashboard of stat cards or metric tiles; progress is facts, ruled lists and tallies.",
@@ -1169,7 +1210,11 @@
       "**Don't** colour destructive actions amber or red; amber stays for problems with the app.",
       "**Don't** colour avatars or stack logos; logos take the text tone. A mascot is the only picture shown when there is no photo, and only language badges carry brand colour.",
       "**Don't** rank or sort people by followers or likes, or give a count its own tile.",
-      "**Don't** colour the like heart; liked is the heart filled in the text tone."
+      "**Don't** colour the like heart; liked is the heart filled in the text tone.",
+      "**Don't** render chat text as HTML or markdown, or link-ify it; it is always plain text.",
+      "**Don't** mark a correction with anything but the diff marks: no rose or sage outside them, no \"wrong\" or \"correct\", no score.",
+      "**Don't** colour unread: the count is plain mono ink, in the rail and the conversation list, and unread rows are not bolded or tinted.",
+      "**Don't** tell a sender their request was declined; a decline is silent."
     ]
   }
 }

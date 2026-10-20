@@ -95,6 +95,11 @@ typography:
     fontSize: "0.75rem"
     fontWeight: 400
     lineHeight: 1.6
+  chat:
+    fontFamily: "JetBrains Mono Variable, JetBrains Mono, ui-monospace, monospace"
+    fontSize: "0.875rem"
+    fontWeight: 400
+    lineHeight: 1.6
 rounded:
   cell: "2px"
   chip: "4px"
@@ -269,6 +274,42 @@ components:
     textColor: "{colors.ink}"
     rounded: "{rounded.sheet}"
     padding: "16px 20px"
+  conversation-row:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    padding: "12px 8px"
+  conversation-row-current:
+    backgroundColor: "{colors.galley-sheet-hover}"
+  chat-pane:
+    backgroundColor: "{colors.galley-sheet}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.sheet}"
+  chat-bubble:
+    backgroundColor: "{colors.galley-sheet}"
+    textColor: "{colors.ink}"
+    typography: "{typography.chat}"
+    rounded: "{rounded.sheet}"
+    padding: "8px 12px"
+  chat-bubble-mine:
+    backgroundColor: "{colors.galley-sheet-hover}"
+  chat-correction:
+    backgroundColor: "{colors.galley-sheet}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.sheet}"
+    padding: "12px"
+  chat-input:
+    backgroundColor: "{colors.graphite-ground}"
+    textColor: "{colors.ink}"
+    typography: "{typography.chat}"
+    rounded: "{rounded.control}"
+    padding: "8px 12px"
+    height: "64px"
+  coach-check:
+    backgroundColor: "{colors.graphite-ground}"
+    textColor: "{colors.ink-secondary}"
+    rounded: "{rounded.sheet}"
+    padding: "12px"
 ---
 
 # Design System: DevTalk
@@ -358,13 +399,15 @@ The practice graph is 53 Monday-first week columns of 10px cells with 3px gaps; 
 
 People opens with its tabs across the 760px column, 24px apart over a 1px rule, with 24px below. The member filters are a four-column grid (search 2fr, English level and Area 1fr each, Technology 1.2fr) with 16px gaps and 20px below; below 1100px they wrap to two equal columns. Member lists, follower lists and their loading skeletons share the 760px column.
 
+Messages is the one full-height page: the page fills the window (100vh) and its body is a 300px conversation list beside the open conversation with a 32px gap, capped at 1100px; below 1040px the list drops to 240px and the gap to 20px. Notices and empty states above it keep the 760px column. The list scrolls on its own. Inside the conversation pane the thread takes the remaining height, scrolls, and never shrinks below 140px; the composer area under it scrolls instead when the coach check is open. Below 1040px the pane's inner padding drops from 20px to 16px sides, and on windows under 720px tall the page's bottom padding and head spacing tighten (20px, 16px).
+
 ## Elevation & Depth
 
 The system is flat and tonal. Depth comes from three steps of surface (rail darker than ground, ground darker than sheet) and from 1px rules. Inputs sit on the ground colour so they read as recessed into a sheet. Shadow is used for exactly one thing: layers that float above the page.
 
 ### Shadow Vocabulary
 - **Float** (`box-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.35)`; light theme uses `rgb(20 24 32 / 0.22)` and `/ 0.12`): the command palette, the report dialog and other floating menus, over a 35% black backdrop.
-- **Inset ring** (`box-shadow: inset 0 0 0 1px` strong rule): a selection outline, not elevation, on the checked segment, the selected palette row and the selected moderation report.
+- **Inset ring** (`box-shadow: inset 0 0 0 1px` strong rule): a selection outline, not elevation, on the checked segment, the selected palette row, the selected moderation report, the current conversation row and the reported message in a moderation copy.
 - **Separation ring** (`box-shadow: 0 0 0 2px` ground, `0 0 0 4px` ink): a selection outline, not elevation, on the checked mascot in the picker. The profile avatar's 5px ring over the banner is ground-coloured padding, not a shadow.
 
 ### Named Rules
@@ -372,7 +415,7 @@ The system is flat and tonal. Depth comes from three steps of surface (rail dark
 
 ## Shapes
 
-Three radii, sized to the object: 4px for small inline things (chips, keys, segmented options), 6px for controls (buttons, inputs, nav rows, focus outlines), 10px for sheets (galleys, cards, notices, palette). Badges are full pills. Diff marks get a 2px corner on their wash, and practice-graph cells and legend squares share that 2px cell radius. Member badges are full pills; the banner takes the sheet radius; avatars and mascots are circles. Borders are always 1px; dashed borders mean "absent or open": the empty state and the "chunk" type badge. The numbered proof caret is a 16px circle outlined in pencil.
+Three radii, sized to the object: 4px for small inline things (chips, keys, segmented options), 6px for controls (buttons, inputs, nav rows, focus outlines), 10px for sheets (galleys, cards, notices, palette). Badges are full pills. Diff marks get a 2px corner on their wash, and practice-graph cells and legend squares share that 2px cell radius. Member badges are full pills; the banner takes the sheet radius; avatars and mascots are circles. Borders are always 1px; dashed borders mean "absent or open": the empty state, the "chunk" type badge and a deleted message. The numbered proof caret is a 16px circle outlined in pencil.
 
 ## Components
 
@@ -407,6 +450,7 @@ Calm and compact; the press is the only movement.
 - **Rail:** darker rail tone, 1px right rule, brand row with a pencil-blue mark, a "Search or jump to..." button with `Ctrl K`, then nav rows.
 - **Rows:** 14px secondary ink with a 1.6-stroke line icon, 7px by 12px padding, 6px radius. Hover and current page both take the sheet fill with ink text; current adds weight 600. Counts sit right-aligned in mono; unreleased items carry a tertiary "Later".
 - **Command palette:** a 560px sheet at 14vh with the float shadow, a 17px borderless search input over a rule, rows with 6px radius; the selected row gets sheet-hover and an inset ring. It opens and closes without animation.
+- **Messages row:** after People, with the chat line icon (a speech bubble) and the unread count, requests included, in the same right-aligned mono count as Review's due count; the palette's "Go to Messages" is `Ctrl 5`.
 - **Moderation row:** shown only to moderators, last in the rail, with the shield line icon.
 
 ### Galley (signature)
@@ -451,6 +495,7 @@ Blocking, deleting an account and moderation decisions confirm inline, never in 
 
 ### Moderation queue
 Open reports as a ruled list: avatar, name in weight 600, reason and place in 13px secondary ink, date in tertiary ink. Hover takes the sheet fill; the selected row takes sheet-hover and an inset ring, like the palette selection. Each decision (dismiss, warn, suspend) is a section under a 1px top rule.
+A message report adds "The conversation" as one more such section: the copied messages as a list (12px gaps), each with the sender in weight 600 and the date and time in 13px secondary ink, then the message in the chat bubble (theirs style, left, up to 68ch). The reported message takes the sheet fill and the inset ring with the control radius and a "Reported" flag in weight 600; nothing turns red. When no copy was kept, a muted line says so.
 
 ### Join steps
 Join runs one step at a time in one column, like onboarding. The step count lives in the lede ("Step 2 of 4. Check your e-mail for a code."), never as a label above the heading. Consents are ruled rows with the document link right-aligned.
@@ -476,6 +521,24 @@ A new follower is an info notice (sheet fill, strong rule, 10px radius, 16px by 
 ### Member profile
 Another member's profile reuses the profile sheet (banner, head, badges, fact sheet, graph) with Follow and like under the name. Report (quiet) and Block (secondary, confirmed inline) sit in a footer under a 1px top rule, 24px above and 16px inside it. A profile that is gone, suspended or blocking you is an empty state, "This profile is not available.", with a secondary "Back to Members".
 
+### Conversation list
+Messages opens with Requests, then Conversations (the second heading shows only when there are requests), each a 15px weight 600 heading over ruled rows in the member list's grammar: a 40px avatar or mascot, the name in weight 600 over a one-line preview in 13px secondary ink, cut with an ellipsis; on the right the time (12px tertiary ink, tabular figures) over the unread count in 12px mono weight 600, ink. A deleted last message reads "Message deleted" in tertiary ink; a request you sent reads "Waiting for <name>". Rows are 12px by 8px with the control radius; hover takes the sheet; the open conversation (`aria-current="page"`) takes sheet-hover and the inset ring, like the palette selection.
+
+### Conversation pane and message bubbles
+The open conversation is a sheet with a 1px rule and the sheet radius: a head row (32px avatar, the name at 15px weight 600 linking to the profile) over a rule, the thread on the ground colour, and the composer under a rule. Days are separated by a 12px weight 500 tertiary label centred between two 1px rules. Messages are bubbles in JetBrains Mono 14px at 1.6, `pre-wrap`, with an 8px by 12px padding and the sheet radius: theirs on the left on the sheet with the rule, yours on the right on sheet-hover with the strong rule. A bubble is at most 75% of the thread (and 68ch); below 1040px, 90%. The time sits under each bubble in 12px tertiary ink, tabular figures. A deleted message keeps its place as a dashed, transparent outline with "Message deleted" in tertiary Public Sans. Older messages load with a secondary "Load earlier" at the top.
+
+### Message actions
+Quiet buttons at 12px with 2px by 8px padding on the time row under a message: Suggest a correction and Report on theirs, Delete on yours (mirrored to the right on yours). They fade in over 180ms on hover and keyboard focus, are always shown on touch screens (`hover: none`), and always shown on the newest incoming message. Each names its message in its accessible name ("Report Bia's message at 21:31"). Delete confirms inline in the neutral panel with the strong rule ("Delete this message? Its corrections go too. This cannot be undone.", Delete secondary, Cancel quiet). When the panel or the correction editor closes, focus returns to the message.
+
+### Peer correction
+A correction is a sheet note under the message (1px rule, sheet radius, 12px padding): "<name> suggested" or "Your correction" in 12px secondary ink, then the message as a word diff in the chat mono with the galley's marks: struck rose deletions and sage insertions on their 2px-corner washes. Marks cover the words only; a trailing space stays plain, and each mark carries a hidden "removed:" or "added:" for screen readers. The sender of the message gets a quiet 12px Thanks; after it, "Thanked" in 12px secondary ink. Suggesting opens the same note with the strong rule: a mono textarea prefilled with their text, the live diff, Suggest (secondary) and Cancel (quiet); Escape cancels.
+
+### Composer and coach check
+The composer is the mono chat textarea (min 64px, max 200px, no resize) over a row with the counter "n / 2000" in 12px tertiary mono on the left, turning amber past the limit, and on the right Check with the coach (secondary) and Send (primary, the pane's one primary). Enter sends; Shift+Enter starts a line. The check opens above the textarea as a panel on the ground with the strong rule and the sheet radius: "The coach on your draft" in 12px secondary ink, the draft as a word diff, then notes in 13px secondary ink, each led by the edit ("have fixed → fixed") in pencil mono, then "A more natural way:" in ink weight 600 before the suggested wording. Use this version (secondary) and Keep mine (quiet) close it; with nothing to change it says "The coach found nothing to change." and offers Close.
+
+### Request card and first message
+An incoming request replaces the composer with a card under a rule: "<name> wants to practise with you." in ink weight 600, then "Accept to reply. If you decline, <name> is not told." in secondary ink; Accept (primary), Decline (secondary). Declining is silent: nothing tells the sender. While your request waits, the composer is replaced by "Waiting for <name>. You can write more when they accept." in secondary ink. Send message on a profile opens `#/messages/to/<id>`: the pane with the member's head, "Message <name>" at 17px, a lede that the first message is a request, a four-row mono textarea, the counter and Send request (primary), capped at 640px.
+
 ## Do's and Don'ts
 
 ### Do:
@@ -491,6 +554,9 @@ Another member's profile reuses the profile sheet (banner, head, badges, fact sh
 - **Do** make Follow the member profile's one primary action; once followed it becomes a secondary "Following" button.
 - **Do** mark the current People tab with a 2px ink underline on the rule, and keep Members marked on a member's profile and lists.
 - **Do** set follower, following and like counts in tabular figures as plain text beside their controls.
+- **Do** set chat messages, drafts and corrections in the chat mono, as plain text with their line breaks kept.
+- **Do** show a peer correction or a coach check as a word diff in the galley's rose and sage marks, the marks covering words only.
+- **Do** keep message actions quiet and under the message, reachable by keyboard and touch, and return focus to the message after an inline panel closes.
 
 ### Don't:
 - **Don't** build a dashboard of stat cards or metric tiles; progress is facts, ruled lists and tallies.
@@ -504,3 +570,7 @@ Another member's profile reuses the profile sheet (banner, head, badges, fact sh
 - **Don't** colour avatars or stack logos; logos take the text tone. A mascot is the only picture shown when there is no photo, and only language badges carry brand colour.
 - **Don't** rank or sort people by followers or likes, or give a count its own tile.
 - **Don't** colour the like heart; liked is the heart filled in the text tone.
+- **Don't** render chat text as HTML or markdown, or link-ify it; it is always plain text.
+- **Don't** mark a correction with anything but the diff marks: no rose or sage outside them, no "wrong" or "correct", no score.
+- **Don't** colour unread: the count is plain mono ink, in the rail and the conversation list, and unread rows are not bolded or tinted.
+- **Don't** tell a sender their request was declined; a decline is silent.
