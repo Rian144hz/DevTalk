@@ -1,5 +1,6 @@
 import type { ChatMessage, ConversationSummary } from '../../src/core/social/chat';
-import { conversationTime, groupByDay, mergeMessages, unreadTotal } from '../../src/renderer/lib/chat';
+import { conversationTime, groupByDay, mergeLatest, mergeMessages, unreadTotal } from '../../src/renderer/lib/chat';
+import { latestOnly } from '../../src/renderer/lib/latest';
 
 const msg = (id: number, createdAt = '2026-10-15T12:00:00', over: Partial<ChatMessage> = {}): ChatMessage => ({
   id, conversationId: 'c1', senderId: 'u1', body: `m${id}`, createdAt, deleted: false, corrections: [], ...over,
@@ -39,4 +40,24 @@ test('unreadTotal adds every conversation, requests included', () => {
   const c = (unread: number) => ({ unread }) as ConversationSummary;
   expect(unreadTotal([c(1), c(0), c(3)])).toBe(4);
   expect(unreadTotal([])).toBe(0);
+});
+
+test('mergeLatest merges a page that touches what is shown, and starts over after a gap', () => {
+  const shown = [msg(1), msg(2), msg(3)];
+  expect(mergeLatest(shown, [msg(3), msg(4)], 50)).toEqual({ messages: [msg(1), msg(2), msg(3), msg(4)], gap: false });
+  const page = Array.from({ length: 50 }, (_, i) => msg(100 + i));
+  expect(mergeLatest(shown, page, 50)).toEqual({ messages: page, gap: true });
+  expect(mergeLatest([], page, 50)).toEqual({ messages: page, gap: false });
+});
+
+test('latestOnly drops an answer that arrives after a newer request', async () => {
+  const latest = latestOnly();
+  const seen: string[] = [];
+  let releaseA!: (v: string) => void;
+  const a = latest(new Promise<string>((r) => (releaseA = r)), (v) => seen.push(v));
+  const b = latest(Promise.resolve('b'), (v) => seen.push(v));
+  await b;
+  releaseA('a');
+  await a;
+  expect(seen).toEqual(['b']);
 });

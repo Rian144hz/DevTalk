@@ -3,7 +3,7 @@ import { CHAT_PAGE, CHAT_TEXT_MAX, chatText, type ChatCheck, type ChatMessage, t
 import { applyCorrections } from '../../core/social/diff';
 import { Avatar, Button, Notice, ReportDialog } from '../design-system';
 import { AppErrorException, api, unwrap } from '../lib/api';
-import { groupByDay, mergeMessages, messageTime } from '../lib/chat';
+import { groupByDay, mergeLatest, mergeMessages, messageTime } from '../lib/chat';
 import { CorrectionEditor, DiffText } from './CorrectionEditor';
 
 const message = (e: unknown) => (e instanceof AppErrorException ? e.message : 'Something went wrong. Try again.');
@@ -234,6 +234,7 @@ export function ConversationView({ summary, myId, avatar, onChanged }: {
   const scroller = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
   const loaded = useRef(false);
+  const shown = useRef<ChatMessage[]>([]);
   // The parent passes a new function each render; keep the latest without reloading on every render.
   const changed = useRef(onChanged);
   changed.current = onChanged;
@@ -242,11 +243,10 @@ export function ConversationView({ summary, myId, avatar, onChanged }: {
   const refresh = useCallback(async () => {
     try {
       const latest = unwrap(await api().chat.messages(id, null));
-      if (!loaded.current) {
-        loaded.current = true;
-        setHasEarlier(latest.length === CHAT_PAGE);
-      }
-      setMessages((current) => mergeMessages(current ?? [], latest));
+      const { messages: next, gap } = mergeLatest(shown.current, latest, CHAT_PAGE);
+      if (!loaded.current || gap) setHasEarlier(latest.length === CHAT_PAGE);
+      loaded.current = true;
+      setMessages(next);
       setError(null);
       await api().chat.read(id);
       changed.current();
@@ -340,6 +340,7 @@ export function ConversationView({ summary, myId, avatar, onChanged }: {
     };
   }, [id]);
 
+  shown.current = messages ?? [];
   const groups = useMemo(() => groupByDay(messages ?? [], new Date()), [messages]);
   const incoming = summary.status === 'pending' && !summary.requestedByMe;
   const waiting = summary.status === 'pending' && summary.requestedByMe;

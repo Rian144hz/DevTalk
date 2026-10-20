@@ -3,6 +3,7 @@ import type { ModerationDecision, ModerationReport, ReportContext } from '../../
 import type { ModerationHistoryEntry } from '../../shared/ipc-contract';
 import type { ReportedMessage } from '../../core/social/chat';
 import { messageTime } from '../lib/chat';
+import { latestOnly } from '../lib/latest';
 import { Avatar, Button, EmptyState, Notice, REPORT_REASON_LABELS, Segmented, Skeleton, TextArea, TextField } from '../design-system';
 import { AppErrorException, api, unwrap } from '../lib/api';
 import { formatLongDate } from '../lib/format';
@@ -26,6 +27,9 @@ export function ModerationScreen() {
   const [selected, setSelected] = useState<ModerationReport | null>(null);
   const [history, setHistory] = useState<ModerationHistoryEntry[] | null>(null);
   const [context, setContext] = useState<ReportedMessage[] | null>(null);
+  // A slow answer for a report clicked earlier never shows under the one selected now.
+  const [latestContext] = useState(latestOnly);
+  const [latestHistory] = useState(latestOnly);
   const [avatars, setAvatars] = useState<Record<string, string | null>>({});
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -50,14 +54,16 @@ export function ModerationScreen() {
     void loadReports();
   }, [loadReports]);
 
-  const loadHistory = useCallback(async (userId: string) => {
-    setHistory(null);
-    try {
-      setHistory(unwrap(await api().moderation.history(userId)));
-    } catch (e) {
-      setActionError(message(e));
-    }
-  }, []);
+  const loadHistory = useCallback(
+    async (userId: string) => {
+      setHistory(null);
+      await latestHistory(api().moderation.history(userId), (res) => {
+        if (res.ok) setHistory(res.data);
+        else setActionError(res.error.message);
+      });
+    },
+    [latestHistory],
+  );
 
   function select(r: ModerationReport) {
     setSelected(r);
@@ -70,7 +76,7 @@ export function ModerationScreen() {
     else setHistory([]);
     setContext(null);
     if (r.contextType === 'message') {
-      void api().moderation.reportContext(r.id).then((res) => {
+      void latestContext(api().moderation.reportContext(r.id), (res) => {
         if (res.ok) setContext(res.data);
         else setActionError(res.error.message);
       });

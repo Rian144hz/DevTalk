@@ -131,7 +131,7 @@ interface ChangePayload {
 
 /** The part of a Realtime channel the chat uses (tests pass their own). */
 export interface ChatChannel {
-  on(type: 'postgres_changes', filter: { event: '*'; schema: 'public'; table: string }, cb: (payload: ChangePayload) => void): ChatChannel;
+  on(type: 'postgres_changes', filter: { event: 'INSERT' | 'UPDATE'; schema: 'public'; table: string }, cb: (payload: ChangePayload) => void): ChatChannel;
   subscribe(cb: (status: string) => void): unknown;
   unsubscribe(): unknown;
 }
@@ -239,6 +239,8 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
 
   /** The conversation a Realtime row belongs to; null when the event carries no way to tell (a deleted correction). */
   async function eventOf(p: ChangePayload): Promise<ChatEvent | null> {
+    // Realtime sends DELETE events without RLS (only the old id): never to the window.
+    if (p.eventType === 'DELETE') return null;
     const row = Object.keys(p.new ?? {}).length > 0 ? p.new : p.old ?? {};
     if (p.table === 'conversations') return typeof row['id'] === 'string' ? { kind: 'conversation', conversationId: row['id'] } : null;
     if (p.table === 'messages') {
@@ -791,7 +793,10 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
           () => undefined,
         );
       };
-      for (const table of CHAT_TABLES) channel.on('postgres_changes', { event: '*', schema: 'public', table }, handle);
+      // INSERT and UPDATE only: Realtime checks RLS for them, but sends every DELETE to every subscriber.
+      for (const table of CHAT_TABLES) {
+        for (const event of ['INSERT', 'UPDATE'] as const) channel.on('postgres_changes', { event, schema: 'public', table }, handle);
+      }
       channel.subscribe((status) => {
         if (open) onStatus(status === 'SUBSCRIBED');
       });

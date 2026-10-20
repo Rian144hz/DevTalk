@@ -1172,6 +1172,23 @@ $$;
 create trigger corrections_limit before insert on public.corrections
   for each row execute function public.limit_corrections();
 
+-- A deleted message takes no corrections, even one racing the delete (the row lock waits for delete_message).
+create or replace function public.refuse_deleted_correction() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  deleted timestamptz;
+begin
+  -- Locking the row (whatever its state) waits for a delete in progress, then reads its result.
+  select m.deleted_at into deleted from public.messages m where m.id = new.message_id for share;
+  if deleted is not null then
+    raise exception 'message deleted' using errcode = '42501';
+  end if;
+  return new;
+end
+$$;
+create trigger corrections_not_deleted before insert on public.corrections
+  for each row execute function public.refuse_deleted_correction();
+
 -- A correction adds 1 to the author's practice day, in the time zone of their profile.
 create or replace function public.count_correction() returns trigger
 language plpgsql security definer set search_path = public as $$
@@ -1187,7 +1204,8 @@ $$;
 create trigger corrections_practice after insert on public.corrections
   for each row execute function public.count_correction();
 
--- A message report from someone in the conversation copies the message and the 10 before it.
+-- A message report from someone in the conversation, about the other person in it, copies the message and the
+-- 10 before it.
 create or replace function public.snapshot_reported_message() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare
@@ -1198,7 +1216,8 @@ begin
   end if;
   select * into target from public.messages m where m.id = new.context_id::bigint;
   if not found or not exists (
-    select 1 from public.conversations c where c.id = target.conversation_id and new.reporter in (c.a, c.b)
+    select 1 from public.conversations c
+    where c.id = target.conversation_id and new.reporter in (c.a, c.b) and new.reported in (c.a, c.b)
   ) then
     return null;
   end if;
@@ -1213,7 +1232,7 @@ create trigger reports_snapshot_message after insert on public.reports
   for each row execute function public.snapshot_reported_message();
 
 revoke execute on function public.limit_messages(), public.touch_conversation(), public.limit_corrections(),
-  public.count_correction(), public.snapshot_reported_message() from public, anon, authenticated;
+  public.refuse_deleted_correction(), public.count_correction(), public.snapshot_reported_message() from public, anon, authenticated;
 
 -- Ask someone for a conversation with a first message. Asking again within 30 days of a decline looks the
 -- same as success and changes nothing; asking someone who already asked you accepts their request.
@@ -1285,11 +1304,13 @@ $$;
 create or replace function public.delete_message(message bigint) returns void
 language plpgsql volatile security definer set search_path = public as $$
 begin
-  if not exists (select 1 from public.messages m where m.id = message and m.sender = auth.uid()) then
+  -- Lock the message first, so a correction being added at the same time waits and then sees it deleted.
+  perform 1 from public.messages m where m.id = message and m.sender = auth.uid() for update;
+  if not found then
     raise exception 'not allowed' using errcode = '42501';
   end if;
-  delete from public.corrections k where k.message_id = message;
   update public.messages m set body = '', deleted_at = now() where m.id = message and m.deleted_at is null;
+  delete from public.corrections k where k.message_id = message;
 end
 $$;
 

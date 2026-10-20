@@ -53,7 +53,7 @@ We do not sell your data and we do not use it for advertising.
 ## How long we keep it
 
 - Your community data is kept while your account exists.
-- Messages stay until you delete them. Deleting one of your messages removes its text and its corrections; the other person sees "Message deleted".
+- Messages stay until you delete them. Deleting one of your messages removes its text and its corrections; the other person sees "Message deleted". If the message was already part of a report, the copy kept for the moderators stays.
 - When you delete your account, your profile, photo, banner, practice counts, milestones, badges, follows, followers, likes, acceptances, blocks, notices and **all your conversations** (the messages and corrections in them, from both sides) are deleted.
 - Reports that other people sent about you are kept for moderation, without your account attached, and so is the copy of a reported conversation (it keeps the text, but not who wrote it once that account is deleted). Reports you sent are kept without your name.
 

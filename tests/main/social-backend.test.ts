@@ -665,6 +665,12 @@ describe('fake backend: chat', () => {
     expect(context).toHaveLength(11);
     expect(context.at(-1)).toMatchObject({ body: 'bia 11', senderName: 'Bia', reported: true });
     expect(context.filter((m) => m.reported)).toHaveLength(1);
+    // A report that names someone outside the conversation keeps no copy.
+    await as('Rian');
+    await b.report({ reported: ids['Caio']!, contextType: 'message', contextId: String(target.id), reason: 'spam', details: '' });
+    await as('Dani');
+    const other = (await b.listOpenReports()).find((r) => r.reported?.id === ids['Caio'])!;
+    expect(await b.reportContext(other.id)).toEqual([]);
   });
 
   test('live events reach only people who can read the conversation, and stop after sign-out', async () => {

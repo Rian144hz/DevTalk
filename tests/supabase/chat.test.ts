@@ -255,7 +255,7 @@ describe('messages', () => {
     expect(row).toEqual({ body: '', deleted: true });
     expect(await count('select count(*)::int as n from corrections where message_id = $1', [m])).toBe(0);
     await t.db.query('select public.delete_message($1)', [m]);
-    await expect(correct(b, m, 'I have a bug')).rejects.toThrow(/row-level security/);
+    await expect(correct(b, m, 'I have a bug')).rejects.toThrow(/row-level security|message deleted/);
   });
 });
 
@@ -398,6 +398,30 @@ describe('reports', () => {
     const outsider = await named('Caio');
     const other = await reportOf(outsider);
     expect(await rows(mod, 'select * from public.report_context($1)', [other])).toEqual([]);
+  });
+});
+
+describe('after review', () => {
+  test('a message report names someone in that conversation, or no copy is made', async () => {
+    const { a, b, c } = await pair();
+    const x = await named('Xavier');
+    const m = await send(b, c, 'private words');
+    await t.as(a);
+    const r = await t.db.query<{ id: number }>(
+      `insert into reports (reporter, reported, context_type, context_id, reason) values ($1, $2, 'message', $3, 'spam') returning id`,
+      [a, x, String(m)],
+    );
+    expect(await count('select count(*)::int as n from report_messages where report_id = $1', [Number(r.rows[0]!.id)])).toBe(0);
+  });
+
+  test('no correction can be added to a deleted message, even past the policies', async () => {
+    const { a, b, c } = await pair();
+    const m = await send(a, c, 'secret typo');
+    await t.as(a);
+    await t.db.query('select public.delete_message($1)', [m]);
+    await expect(
+      owner(`insert into corrections (message_id, author, corrected) values ($1, $2, 'secret typo fixed')`, [m, b]),
+    ).rejects.toThrow(/deleted/);
   });
 });
 

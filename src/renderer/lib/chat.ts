@@ -12,6 +12,16 @@ export function mergeMessages(current: ChatMessage[], incoming: ChatMessage[]): 
   return [...byId.values()].sort((a, b) => a.id - b.id);
 }
 
+/**
+ * The newest page merged into what is shown. A full page that starts after the newest message shown means
+ * messages are missing in between (many arrived while offline): show that page alone, with "Load earlier".
+ */
+export function mergeLatest(current: ChatMessage[], latest: ChatMessage[], pageSize: number): { messages: ChatMessage[]; gap: boolean } {
+  const newest = current.at(-1);
+  if (newest && latest.length === pageSize && latest[0]!.id > newest.id) return { messages: latest, gap: true };
+  return { messages: mergeMessages(current, latest), gap: false };
+}
+
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 /** Whole local days between `iso` and `now` (0 = today). */
 const daysAgo = (iso: string, now: Date) => Math.round((startOfDay(now) - startOfDay(new Date(iso))) / DAY_MS);

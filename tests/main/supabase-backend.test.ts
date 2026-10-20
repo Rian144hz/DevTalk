@@ -440,13 +440,14 @@ describe('people (Supabase)', () => {
 describe('chat (Supabase)', () => {
   type Handler = (payload: { table: string; eventType: string; new: Record<string, unknown>; old: Record<string, unknown> }) => void;
   function fakeChannels() {
-    const opened: { name: string; tables: string[]; handlers: Handler[]; status?: (s: string) => void; closed: boolean }[] = [];
+    const opened: { name: string; tables: string[]; events: string[]; handlers: Handler[]; status?: (s: string) => void; closed: boolean }[] = [];
     const open = (name: string) => {
-      const ch = { name, tables: [] as string[], handlers: [] as Handler[], status: undefined as ((s: string) => void) | undefined, closed: false };
+      const ch = { name, tables: [] as string[], events: [] as string[], handlers: [] as Handler[], status: undefined as ((s: string) => void) | undefined, closed: false };
       opened.push(ch);
       const api = {
-        on(_type: 'postgres_changes', filter: { table: string }, cb: Handler) {
+        on(_type: 'postgres_changes', filter: { event: string; table: string }, cb: Handler) {
           ch.tables.push(filter.table);
+          ch.events.push(filter.event);
           ch.handlers.push(cb);
           return api;
         },
@@ -567,12 +568,17 @@ describe('chat (Supabase)', () => {
     const status: boolean[] = [];
     b.subscribe((e) => events.push(e), (on) => status.push(on));
     const ch = channels.opened[0]!;
-    expect([...ch.tables].sort()).toEqual(['conversations', 'corrections', 'messages']);
+    // Realtime does not apply RLS to DELETE events: the app never asks for them.
+    expect(ch.tables.map((t, i) => `${t}:${ch.events[i]}`).sort()).toEqual([
+      'conversations:INSERT', 'conversations:UPDATE', 'corrections:INSERT', 'corrections:UPDATE', 'messages:INSERT', 'messages:UPDATE',
+    ]);
     ch.status!('SUBSCRIBED');
     ch.status!('CHANNEL_ERROR');
     expect(status).toEqual([true, false]);
     const fire = (table: string, eventType: string, row: Record<string, unknown>, old: Record<string, unknown> = {}) =>
       ch.handlers[ch.tables.indexOf(table)]!({ table, eventType, new: row, old });
+    // Even if a DELETE arrived, its old id says nothing the member may read: no event.
+    fire('conversations', 'DELETE', {}, { id: 'cX' });
     fire('messages', 'INSERT', { id: 1, conversation_id: 'c1' });
     fire('conversations', 'UPDATE', { id: 'c3', status: 'accepted' });
     fire('corrections', 'INSERT', { id: 4, message_id: 9 });

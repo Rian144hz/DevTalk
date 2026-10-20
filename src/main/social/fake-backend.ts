@@ -537,12 +537,13 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       if (recent.length >= 20) throw new SocialError('rate_limited', 'report limit reached');
       const id = nextId();
       state.reports.push({ ...input, id, reporter: userId, status: 'open', createdAt: iso() });
-      // Mirrors snapshot_reported_message(): the message and the 10 before it, when the reporter is in the conversation.
+      // Mirrors snapshot_reported_message(): the message and the 10 before it, when the reporter and the reported
+      // member are the two people in the conversation.
       const target = input.contextType === 'message' && /^[0-9]{1,18}$/.test(input.contextId ?? '')
         ? state.messages.find((m) => m.id === Number(input.contextId))
         : undefined;
       const c = target && convOf(target.conversationId);
-      if (target && c && (c.a === userId || c.b === userId)) {
+      if (target && c && (c.a === userId || c.b === userId) && (c.a === input.reported || c.b === input.reported)) {
         for (const m of state.messages.filter((x) => x.conversationId === c.id && x.id <= target.id).slice(-11)) {
           state.reportMessages.push({ reportId: id, messageId: m.id, sender: m.sender, body: m.body, createdAt: m.createdAt });
         }
