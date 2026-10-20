@@ -1,6 +1,7 @@
 import type { DayActivity, PracticeGraphData } from '../../core/progress/practice';
 import type { ChatEvent, ChatMessage, ConversationSummary, ReportedMessage } from '../../core/social/chat';
 import type { ManualBadge } from '../../core/social/badges';
+import type { LiveRoom, RoomDraft, RoomLiveEvent, RoomReportContext, RoomSignalKind, RoomState, RoomTimer } from '../../core/social/rooms';
 import type { Badge, MemberFilters, MemberRow, MemberSummary, NoticeActor, NoticeKind, SocialStats, ModerationDecision, ModerationReport, ProfileDraft, ReportInput, SocialProfile } from '../../core/social/types';
 import { SocialError } from './errors';
 
@@ -100,6 +101,33 @@ export interface SocialBackend {
   reportContext(reportId: number): Promise<ReportedMessage[]>;
   /** Live changes for the signed-in member; returns the unsubscribe. */
   subscribe(onEvent: (e: ChatEvent) => void, onStatus: (online: boolean) => void): () => void;
+  /** Rooms with someone live in them that the caller may join, newest first. */
+  liveRooms(): Promise<LiveRoom[]>;
+  /** Opens a room and enters it as its host (leaving any other room); returns the room id. */
+  createRoom(draft: RoomDraft): Promise<string>;
+  /** Enters a room (leaving any other). Does nothing when the caller is already live in it. */
+  joinRoom(roomId: string): Promise<void>;
+  leaveRoom(roomId: string): Promise<void>;
+  /** "I am still here", every 30 seconds. False when the caller is no longer live in the room. */
+  roomHeartbeat(roomId: string): Promise<boolean>;
+  /** The room as the caller has the right to see it; null for a room the caller was never in. */
+  roomState(roomId: string): Promise<RoomState | null>;
+  /** One connection signal to a person live in the same room. */
+  sendRoomSignal(roomId: string, to: string, signal: RoomSignalKind, payload: string): Promise<void>;
+  makeRoomModerator(roomId: string, userId: string): Promise<void>;
+  removeRoomModerator(roomId: string, userId: string): Promise<void>;
+  passHost(roomId: string, userId: string): Promise<void>;
+  /** Asks a person to mute; they can unmute whenever they are ready. */
+  muteMember(roomId: string, userId: string): Promise<void>;
+  removeFromRoom(roomId: string, userId: string): Promise<void>;
+  endRoom(roomId: string): Promise<void>;
+  /** Starts the shared speaking timer (60 or 90 seconds); null stops it. */
+  setRoomTimer(roomId: string, seconds: RoomTimer | null): Promise<void>;
+  nextCard(roomId: string): Promise<void>;
+  /** Moderators: the room a room report names (null for anyone else, or when the report has no room to show). */
+  roomReportContext(reportId: number): Promise<RoomReportContext | null>;
+  /** Live changes of one room and the signals addressed to the caller; returns the unsubscribe. */
+  subscribeRoom(roomId: string, onEvent: (e: RoomLiveEvent) => void): () => void;
 }
 
 /** Used when the build has no Supabase settings: every call says so. */
@@ -163,5 +191,22 @@ export function createUnconfiguredBackend(): SocialBackend {
     markRead: fail,
     reportContext: fail,
     subscribe: () => () => {},
+    liveRooms: fail,
+    createRoom: fail,
+    joinRoom: fail,
+    leaveRoom: fail,
+    roomHeartbeat: fail,
+    roomState: fail,
+    sendRoomSignal: fail,
+    makeRoomModerator: fail,
+    removeRoomModerator: fail,
+    passHost: fail,
+    muteMember: fail,
+    removeFromRoom: fail,
+    endRoom: fail,
+    setRoomTimer: fail,
+    nextCard: fail,
+    roomReportContext: fail,
+    subscribeRoom: () => () => {},
   };
 }

@@ -11,6 +11,8 @@ import { LEGAL_DOCUMENTS, LEGAL_VERSION } from '../../core/social/types';
 import type { DayActivity } from '../../core/progress/practice';
 import { CHAT_PAGE, chatText } from '../../core/social/chat';
 import type { ChatEvent, ChatMessage, ConversationStatus, ConversationSummary, ReportedMessage } from '../../core/social/chat';
+import { roomTitle } from '../../core/social/rooms';
+import type { LiveRoom, RoomReportContext, RoomRole, RoomSignalKind, RoomState, RoomTheme } from '../../core/social/rooms';
 import type { ManualBadge } from '../../core/social/badges';
 import type { Badge, BadgeGroup, MascotId, MemberRow, NoticeActor, NoticeKind } from '../../core/social/types';
 import type { AvailabilitySlot, ModerationReport, ProfileDraft, SocialProfile } from '../../core/social/types';
@@ -129,9 +131,9 @@ interface ChangePayload {
   old: Record<string, unknown>;
 }
 
-/** The part of a Realtime channel the chat uses (tests pass their own). */
+/** The part of a Realtime channel the chat and the rooms use (tests pass their own). */
 export interface ChatChannel {
-  on(type: 'postgres_changes', filter: { event: 'INSERT' | 'UPDATE'; schema: 'public'; table: string }, cb: (payload: ChangePayload) => void): ChatChannel;
+  on(type: 'postgres_changes', filter: { event: 'INSERT' | 'UPDATE'; schema: 'public'; table: string; filter?: string }, cb: (payload: ChangePayload) => void): ChatChannel;
   subscribe(cb: (status: string) => void): unknown;
   unsubscribe(): unknown;
 }
@@ -169,6 +171,52 @@ function toChatMessage(r: MessageRowDb): ChatMessage {
     corrections: (r.corrections ?? [])
       .map((k) => ({ id: k.id, messageId: k.message_id, authorId: k.author, corrected: k.corrected, createdAt: k.created_at, thanked: k.thanked_at !== null }))
       .sort((a, b) => a.id - b.id),
+  };
+}
+
+const SIGNAL_KINDS: readonly string[] = ['offer', 'answer', 'candidate', 'bye'];
+
+interface LiveRoomRowDb {
+  id: string;
+  title: string;
+  theme: string;
+  level: string | null;
+  host_name: string | null;
+  people: { id: string; name: string; hasAvatar: boolean; mascot: string | null }[] | null;
+}
+
+function toLiveRoom(r: LiveRoomRowDb): LiveRoom {
+  return {
+    id: r.id,
+    title: r.title,
+    theme: r.theme as RoomTheme,
+    level: (r.level as Level | null) ?? null,
+    // A room with people in it always has a host; the empty text is only a guard.
+    hostName: r.host_name ?? '',
+    people: (r.people ?? []).map((p) => ({ id: p.id, displayName: p.name, hasAvatar: p.hasAvatar, mascot: (p.mascot as MascotId | null) ?? null })),
+  };
+}
+
+/** room_state() already answers in the shape of RoomState; this copies it field by field so nothing else slips through. */
+function toRoomState(r: RoomState): RoomState {
+  return {
+    id: r.id,
+    title: r.title,
+    theme: r.theme,
+    level: r.level ?? null,
+    hostId: r.hostId ?? null,
+    endedAt: r.endedAt ?? null,
+    timer: r.timer ? { startedAt: r.timer.startedAt, seconds: r.timer.seconds } : null,
+    card: r.card,
+    me: { live: r.me.live, removed: r.me.removed, role: r.me.role as RoomRole, muteRequestedAt: r.me.muteRequestedAt ?? null },
+    people: (r.people ?? []).map((p) => ({
+      id: p.id,
+      displayName: p.displayName,
+      hasAvatar: p.hasAvatar,
+      mascot: (p.mascot as MascotId | null) ?? null,
+      level: p.level,
+      role: p.role,
+    })),
   };
 }
 
@@ -526,6 +574,7 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
       const progress = check(await client.rpc('my_progress_export'));
       const social = check(await client.rpc('my_social_export'));
       const chat = check(await client.rpc('my_chat_export'));
+      const rooms = check(await client.rpc('my_rooms_export'));
       const badges = await this.badges(userId);
       return {
         exportedAt: new Date().toISOString(),
@@ -543,6 +592,7 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
         progress,
         social,
         chat,
+        rooms,
       };
     },
 
@@ -807,6 +857,152 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
         void Promise.resolve(channel.unsubscribe()).catch(() => undefined);
       };
       liveStops.add(stop);
+      return stop;
+    },
+
+    async liveRooms(): Promise<LiveRoom[]> {
+      await me();
+      const rows = check(await client.rpc('live_rooms')) as LiveRoomRowDb[] | null;
+      return (rows ?? []).map(toLiveRoom);
+    },
+
+    async createRoom(draft) {
+      const title = roomTitle(draft.title);
+      if (title === null) throw new SocialError('unknown', 'room title is not valid');
+      await me();
+      return check(await client.rpc('create_room', { title, theme: draft.theme, level: draft.level })) as string;
+    },
+
+    async joinRoom(roomId) {
+      await me();
+      check(await client.rpc('join_room', { room: roomId }));
+    },
+
+    async leaveRoom(roomId) {
+      await me();
+      check(await client.rpc('leave_room', { room: roomId }));
+    },
+
+    async roomHeartbeat(roomId) {
+      await me();
+      return check(await client.rpc('room_heartbeat', { room: roomId })) === true;
+    },
+
+    async roomState(roomId) {
+      await me();
+      const state = check(await client.rpc('room_state', { room: roomId })) as RoomState | null;
+      return state ? toRoomState(state) : null;
+    },
+
+    async sendRoomSignal(roomId, to, signal, payload) {
+      const { userId } = await me();
+      // No .select(): only the recipient may read a signal, so asking for the row back would fail.
+      check(await client.from('room_signals').insert({ room_id: roomId, sender: userId, recipient: to, kind: signal, payload }));
+    },
+
+    async makeRoomModerator(roomId, userId) {
+      await me();
+      check(await client.rpc('make_room_moderator', { room: roomId, member: userId }));
+    },
+
+    async removeRoomModerator(roomId, userId) {
+      await me();
+      check(await client.rpc('remove_room_moderator', { room: roomId, member: userId }));
+    },
+
+    async passHost(roomId, userId) {
+      await me();
+      check(await client.rpc('pass_host', { room: roomId, member: userId }));
+    },
+
+    async muteMember(roomId, userId) {
+      await me();
+      check(await client.rpc('mute_member', { room: roomId, member: userId }));
+    },
+
+    async removeFromRoom(roomId, userId) {
+      await me();
+      check(await client.rpc('remove_from_room', { room: roomId, member: userId }));
+    },
+
+    async endRoom(roomId) {
+      await me();
+      check(await client.rpc('end_room', { room: roomId }));
+    },
+
+    async setRoomTimer(roomId, seconds) {
+      await me();
+      if (seconds === null) check(await client.rpc('stop_timer', { room: roomId }));
+      else check(await client.rpc('start_timer', { room: roomId, seconds }));
+    },
+
+    async nextCard(roomId) {
+      await me();
+      check(await client.rpc('next_card', { room: roomId }));
+    },
+
+    async roomReportContext(reportId): Promise<RoomReportContext | null> {
+      await me();
+      const context = check(await client.rpc('room_report_context', { report: reportId })) as RoomReportContext | null;
+      if (!context) return null;
+      return {
+        title: context.title,
+        theme: context.theme,
+        hostName: context.hostName ?? null,
+        createdAt: context.createdAt,
+        people: (context.people ?? []).map((p) => ({ name: p.name ?? null, joinedAt: p.joinedAt, leftAt: p.leftAt ?? null })),
+      };
+    },
+
+    subscribeRoom(roomId, onEvent) {
+      let open = true;
+      let channel: ChatChannel | null = null;
+      const stop = () => {
+        if (!open) return;
+        open = false;
+        liveStops.delete(stop);
+        if (channel) void Promise.resolve(channel.unsubscribe()).catch(() => undefined);
+      };
+      liveStops.add(stop);
+      // The signals filter names the caller, so the channel opens once the stored session has been read.
+      void (async () => {
+        try {
+          const mine = await session();
+          if (!open) return;
+          if (!mine) {
+            stop();
+            return;
+          }
+          const ch = openChannel(`room-${++channelCount}`);
+          const handle = (p: ChangePayload) => {
+            if (!open || p.eventType === 'DELETE') return;
+            const row = p.new ?? {};
+            if (p.table === 'room_signals') {
+              const { room_id: room, sender, recipient, kind, payload } = row;
+              if (room !== roomId || (typeof recipient === 'string' && recipient !== mine.userId)) return;
+              if (typeof sender !== 'string' || typeof payload !== 'string' || typeof kind !== 'string' || !SIGNAL_KINDS.includes(kind)) return;
+              onEvent({ kind: 'signal', from: sender, signal: kind as RoomSignalKind, payload });
+              return;
+            }
+            const rowRoom = p.table === 'rooms' ? row['id'] : row['room_id'];
+            if (typeof rowRoom === 'string' && rowRoom !== roomId) return;
+            onEvent({ kind: 'changed' });
+          };
+          // INSERT and UPDATE only: Realtime checks RLS for them, but sends every DELETE to every subscriber.
+          for (const event of ['INSERT', 'UPDATE'] as const) {
+            ch.on('postgres_changes', { event, schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` }, handle);
+            ch.on('postgres_changes', { event, schema: 'public', table: 'room_sessions', filter: `room_id=eq.${roomId}` }, handle);
+          }
+          ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'room_signals', filter: `recipient=eq.${mine.userId}` }, handle);
+          channel = ch;
+          ch.subscribe((status) => {
+            if (open) onEvent({ kind: status === 'SUBSCRIBED' ? 'online' : 'offline' });
+          });
+        } catch {
+          // The stored session could not be read (offline): the window shows "Reconnecting…" and subscribes again later.
+          if (open) onEvent({ kind: 'offline' });
+        }
+      })();
       return stop;
     },
 

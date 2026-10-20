@@ -1,3 +1,4 @@
+import type { RoomLiveEvent } from '../../src/core/social/rooms';
 import { SocialError } from '../../src/main/social/errors';
 import { mapSupabaseError } from '../../src/main/social/errors';
 import { createSupabaseBackend } from '../../src/main/social/supabase-backend';
@@ -11,6 +12,7 @@ interface Recorded {
   type: string | null;
   body: unknown;
   auth: string | null;
+  prefer: string | null;
 }
 
 type Reply = Response | (() => Response) | Error;
@@ -29,6 +31,7 @@ function fakeFetch(routes: Record<string, Reply>) {
       type: req.headers.get('Content-Type'),
       body: text ? (() => { try { return JSON.parse(text); } catch { return text; } })() : null,
       auth: req.headers.get('Authorization'),
+      prefer: req.headers.get('Prefer'),
     });
     const key = Object.keys(routes).find((k) => k === `${req.method} ${u.pathname}`);
     const reply = key ? routes[key]! : new Response('{}', { status: 404 });
@@ -215,6 +218,7 @@ test('the export includes the moderation actions about the person', async () => 
     'POST /rest/v1/rpc/my_progress_export': json(200, { practiceDays: [], milestones: [] }),
     'POST /rest/v1/rpc/my_chat_export': json(200, { conversations: [], messagesSent: [], correctionsGiven: [] }),
     'POST /rest/v1/rpc/my_social_export': json(200, { following: [], followers: [], likesGiven: [] }),
+    'POST /rest/v1/rpc/my_rooms_export': json(200, { roomsCreated: [], sessions: [] }),
     'POST /rest/v1/rpc/profile_badges': json(200, []),
   });
   await b.verifyCode('rian@example.com', '123456');
@@ -224,6 +228,10 @@ test('the export includes the moderation actions about the person', async () => 
 
 test('the export includes practice days and milestones with their times, badges, uses_linux and the banner', async () => {
   const progress = { practiceDays: [{ day: '2026-10-14', answers: 2, reviews: 5, updatedAt: '2026-10-14T21:00:00Z' }], milestones: [] };
+  const rooms = {
+    roomsCreated: [{ id: 'r1', title: 'Stand-up practice', theme: 'standup', createdAt: '2026-10-20T10:00:00Z', endedAt: null }],
+    sessions: [{ roomId: 'r1', joinedAt: '2026-10-20T10:00:00Z', leftAt: null, role: 'member', removed: false }],
+  };
   const { b, calls } = backend({
     'POST /auth/v1/verify': json(200, sessionBody()),
     'GET /rest/v1/profiles': json(200, {
@@ -239,6 +247,7 @@ test('the export includes practice days and milestones with their times, badges,
     'POST /rest/v1/rpc/my_progress_export': json(200, progress),
     'POST /rest/v1/rpc/my_chat_export': json(200, { conversations: [], messagesSent: [{ id: 3, body: 'hi' }], correctionsGiven: [] }),
     'POST /rest/v1/rpc/my_social_export': json(200, { following: [{ id: 'u2', at: '2026-10-15T10:00:00Z' }], followers: [], likesGiven: [] }),
+    'POST /rest/v1/rpc/my_rooms_export': json(200, rooms),
     'POST /rest/v1/rpc/profile_badges': json(200, [{ id: 'mentor', grp: 'community', label: 'Mentor', detail: null }]),
     'POST /storage/v1/object/sign/banners/user-1/banner.gif': json(200, { signedURL: '/object/sign/banners/user-1/banner.gif?token=t' }),
   });
@@ -247,6 +256,7 @@ test('the export includes practice days and milestones with their times, badges,
   expect(data).toMatchObject({ progress, usesLinux: true, badges: [{ id: 'mentor', group: 'community', label: 'Mentor', detail: null }] });
   expect(data['social']).toEqual({ following: [{ id: 'u2', at: '2026-10-15T10:00:00Z' }], followers: [], likesGiven: [] });
   expect(data['chat']).toEqual({ conversations: [], messagesSent: [{ id: 3, body: 'hi' }], correctionsGiven: [] });
+  expect(data['rooms']).toEqual(rooms);
   expect(String(data['bannerUrl'])).toContain('banners/user-1/banner.gif');
   expect(calls.find((c) => c.path === '/rest/v1/rpc/profile_badges')!.body).toEqual({ target: 'user-1' });
 });
@@ -267,6 +277,16 @@ describe('mapSupabaseError', () => {
   });
   test('the report limit is rate_limited', () => {
     expect(mapSupabaseError({ code: 'P0001', message: 'report limit reached' }, 400).kind).toBe('rate_limited');
+  });
+  test('the room and signal limits are rate_limited', () => {
+    for (const message of ['room limit reached', 'signal limit reached']) {
+      expect(mapSupabaseError({ code: 'P0001', message }, 400).kind).toBe('rate_limited');
+    }
+  });
+  test('other room errors keep their message for the window to explain', () => {
+    expect(mapSupabaseError({ code: 'P0001', message: 'room is full' }, 400)).toMatchObject({ kind: 'unknown', message: 'room is full' });
+    expect(mapSupabaseError({ code: '22023', message: 'timer is not valid' }, 400)).toMatchObject({ kind: 'unknown', message: 'timer is not valid' });
+    expect(mapSupabaseError({ code: '42501', message: 'not allowed' }, 403)).toMatchObject({ kind: 'forbidden', message: 'not allowed' });
   });
   test('a postgrest fetch failure (status 0) is offline', () => {
     expect(mapSupabaseError({ code: '', message: 'TypeError: fetch failed' }, 0).kind).toBe('offline');
@@ -437,42 +457,45 @@ describe('people (Supabase)', () => {
   });
 });
 
-describe('chat (Supabase)', () => {
-  type Handler = (payload: { table: string; eventType: string; new: Record<string, unknown>; old: Record<string, unknown> }) => void;
-  function fakeChannels() {
-    const opened: { name: string; tables: string[]; events: string[]; handlers: Handler[]; status?: (s: string) => void; closed: boolean }[] = [];
-    const open = (name: string) => {
-      const ch = { name, tables: [] as string[], events: [] as string[], handlers: [] as Handler[], status: undefined as ((s: string) => void) | undefined, closed: false };
-      opened.push(ch);
-      const api = {
-        on(_type: 'postgres_changes', filter: { event: string; table: string }, cb: Handler) {
-          ch.tables.push(filter.table);
-          ch.events.push(filter.event);
-          ch.handlers.push(cb);
-          return api;
-        },
-        subscribe(cb: (s: string) => void) {
-          ch.status = cb;
-          return api;
-        },
-        unsubscribe() {
-          ch.closed = true;
-          return Promise.resolve('ok');
-        },
-      };
-      return api;
+/** A Realtime channel the tests drive by hand: records what the backend registered and lets the test fire events. */
+type Handler = (payload: { table: string; eventType: string; new: Record<string, unknown>; old: Record<string, unknown> }) => void;
+function fakeChannels() {
+  const opened: { name: string; tables: string[]; events: string[]; filters: (string | undefined)[]; handlers: Handler[]; status?: (s: string) => void; closed: boolean }[] = [];
+  const open = (name: string) => {
+    const ch = { name, tables: [] as string[], events: [] as string[], filters: [] as (string | undefined)[], handlers: [] as Handler[], status: undefined as ((s: string) => void) | undefined, closed: false };
+    opened.push(ch);
+    const api = {
+      on(_type: 'postgres_changes', filter: { event: string; table: string; filter?: string }, cb: Handler) {
+        ch.tables.push(filter.table);
+        ch.events.push(filter.event);
+        ch.filters.push(filter.filter);
+        ch.handlers.push(cb);
+        return api;
+      },
+      subscribe(cb: (s: string) => void) {
+        ch.status = cb;
+        return api;
+      },
+      unsubscribe() {
+        ch.closed = true;
+        return Promise.resolve('ok');
+      },
     };
-    return { opened, open };
-  }
-  function chatBackend(routes: Record<string, Reply>) {
-    const f = fakeFetch({ 'POST /auth/v1/verify': json(200, sessionBody()), ...routes });
-    const channels = fakeChannels();
-    const b = createSupabaseBackend({
-      url: URL_BASE, key: 'sb_publishable_test', storage: memoryStorage(), fetch: f.fetch, autoRefreshToken: false, openChannel: channels.open,
-    });
-    return { b, calls: f.calls, channels };
-  }
-  const flush = () => new Promise((r) => setTimeout(r, 0));
+    return api;
+  };
+  return { opened, open };
+}
+function chatBackend(routes: Record<string, Reply>) {
+  const f = fakeFetch({ 'POST /auth/v1/verify': json(200, sessionBody()), ...routes });
+  const channels = fakeChannels();
+  const b = createSupabaseBackend({
+    url: URL_BASE, key: 'sb_publishable_test', storage: memoryStorage(), fetch: f.fetch, autoRefreshToken: false, openChannel: channels.open,
+  });
+  return { b, calls: f.calls, channels };
+}
+const flush = () => new Promise((r) => setTimeout(r, 0));
+
+describe('chat (Supabase)', () => {
 
   test('conversations map my_conversations', async () => {
     const { b, calls } = chatBackend({
@@ -596,5 +619,270 @@ describe('chat (Supabase)', () => {
     await flush();
     expect(events).toHaveLength(3);
     expect(status).toEqual([true, false]);
+  });
+});
+
+describe('rooms (Supabase)', () => {
+  const room = '5b0f6f6e-0000-4000-8000-000000000001';
+  const ok = () => new Response(null, { status: 204 });
+  const body = (calls: Recorded[], path: string) => calls.find((c) => c.path === path)!.body;
+
+  test('liveRooms maps live_rooms: the host name, the people with their names, the level', async () => {
+    const { b, calls } = chatBackend({
+      'POST /rest/v1/rpc/live_rooms': json(200, [
+        {
+          id: room, title: 'Stand-up practice', theme: 'standup', level: 'B1', host_name: 'Bia', created_at: '2026-10-20T10:00:00Z',
+          people: [
+            { id: 'u2', name: 'Bia', hasAvatar: true, mascot: null },
+            { id: 'u3', name: 'Caio', hasAvatar: false, mascot: 'bear-2' },
+          ],
+        },
+        { id: 'r2', title: 'Free chat', theme: 'free', level: null, host_name: null, created_at: '2026-10-20T09:00:00Z', people: null },
+      ]),
+    });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.liveRooms()).toEqual([
+      {
+        id: room, title: 'Stand-up practice', theme: 'standup', level: 'B1', hostName: 'Bia',
+        people: [
+          { id: 'u2', displayName: 'Bia', hasAvatar: true, mascot: null },
+          { id: 'u3', displayName: 'Caio', hasAvatar: false, mascot: 'bear-2' },
+        ],
+      },
+      { id: 'r2', title: 'Free chat', theme: 'free', level: null, hostName: '', people: [] },
+    ]);
+    expect(calls.some((c) => c.path === '/rest/v1/rpc/live_rooms')).toBe(true);
+  });
+
+  test('createRoom sends the trimmed title, the theme and the level; a bad title is refused before any request', async () => {
+    const { b, calls } = chatBackend({ 'POST /rest/v1/rpc/create_room': json(200, room) });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.createRoom({ title: '  Code review night \n', theme: 'code_review', level: 'B2' })).toBe(room);
+    expect(await b.createRoom({ title: 'Free chat', theme: 'free', level: null })).toBe(room);
+    const sent = calls.filter((c) => c.path === '/rest/v1/rpc/create_room').map((c) => c.body);
+    expect(sent).toEqual([
+      { title: 'Code review night', theme: 'code_review', level: 'B2' },
+      { title: 'Free chat', theme: 'free', level: null },
+    ]);
+    const before = calls.length;
+    for (const title of ['', '  ab ', 'x'.repeat(61)]) {
+      expect(await errorOf(b.createRoom({ title, theme: 'free', level: null }))).toMatchObject({ kind: 'unknown', message: 'room title is not valid' });
+    }
+    expect(calls.length).toBe(before);
+  });
+
+  test('joining, leaving, the roles, muting, removing, ending, the timer and the card call the right functions', async () => {
+    const names = [
+      'join_room', 'leave_room', 'make_room_moderator', 'remove_room_moderator', 'pass_host', 'mute_member', 'remove_from_room',
+      'end_room', 'start_timer', 'stop_timer', 'next_card',
+    ];
+    const { b, calls } = chatBackend(Object.fromEntries(names.map((n) => [`POST /rest/v1/rpc/${n}`, ok])));
+    await b.verifyCode('rian@example.com', '123456');
+    await b.joinRoom(room);
+    await b.leaveRoom(room);
+    await b.makeRoomModerator(room, 'u2');
+    await b.removeRoomModerator(room, 'u2');
+    await b.passHost(room, 'u3');
+    await b.muteMember(room, 'u4');
+    await b.removeFromRoom(room, 'u5');
+    await b.endRoom(room);
+    await b.setRoomTimer(room, 60);
+    await b.setRoomTimer(room, 90);
+    await b.setRoomTimer(room, null);
+    await b.nextCard(room);
+    const sent = calls.filter((c) => c.path.startsWith('/rest/v1/rpc/')).map((c) => [c.path.replace('/rest/v1/rpc/', ''), c.body]);
+    expect(sent).toEqual([
+      ['join_room', { room }],
+      ['leave_room', { room }],
+      ['make_room_moderator', { room, member: 'u2' }],
+      ['remove_room_moderator', { room, member: 'u2' }],
+      ['pass_host', { room, member: 'u3' }],
+      ['mute_member', { room, member: 'u4' }],
+      ['remove_from_room', { room, member: 'u5' }],
+      ['end_room', { room }],
+      ['start_timer', { room, seconds: 60 }],
+      ['start_timer', { room, seconds: 90 }],
+      ['stop_timer', { room }],
+      ['next_card', { room }],
+    ]);
+  });
+
+  test('roomHeartbeat gives back what the server says', async () => {
+    const answers = [true, false];
+    const { b, calls } = chatBackend({ 'POST /rest/v1/rpc/room_heartbeat': () => json(200, answers.shift()) });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.roomHeartbeat(room)).toBe(true);
+    expect(await b.roomHeartbeat(room)).toBe(false);
+    expect(body(calls, '/rest/v1/rpc/room_heartbeat')).toEqual({ room });
+  });
+
+  test('roomState maps room_state; a room you were never in is null', async () => {
+    const state = {
+      id: room, title: 'Stand-up practice', theme: 'standup', level: 'B1', hostId: 'u2', endedAt: null,
+      timer: { startedAt: '2026-10-20T10:05:00+00:00', seconds: 60 }, card: 3,
+      me: { live: true, removed: false, role: 'moderator', muteRequestedAt: '2026-10-20T10:06:00+00:00' },
+      people: [
+        { id: 'u2', displayName: 'Bia', hasAvatar: true, mascot: null, level: 'B1', role: 'host' },
+        { id: 'user-1', displayName: 'Rian', hasAvatar: false, mascot: 'duck-1', level: 'B1', role: 'moderator' },
+      ],
+    };
+    const { b, calls } = chatBackend({ 'POST /rest/v1/rpc/room_state': json(200, state) });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.roomState(room)).toEqual(state);
+    expect(body(calls, '/rest/v1/rpc/room_state')).toEqual({ room });
+    const ended = { ...state, hostId: null, endedAt: '2026-10-20T11:00:00+00:00', timer: null, me: { ...state.me, live: false, muteRequestedAt: null }, people: [] };
+    const other = chatBackend({ 'POST /rest/v1/rpc/room_state': json(200, ended) });
+    await other.b.verifyCode('rian@example.com', '123456');
+    expect(await other.b.roomState(room)).toEqual(ended);
+    const none = chatBackend({ 'POST /rest/v1/rpc/room_state': json(200, null) });
+    await none.b.verifyCode('rian@example.com', '123456');
+    expect(await none.b.roomState('r9')).toBeNull();
+  });
+
+  test('a signal is inserted into room_signals without asking for the row back', async () => {
+    const { b, calls } = chatBackend({ 'POST /rest/v1/room_signals': json(201, null) });
+    await b.verifyCode('rian@example.com', '123456');
+    await b.sendRoomSignal(room, 'u2', 'offer', '{"sdp":"v=0"}');
+    const post = calls.find((c) => c.path === '/rest/v1/room_signals')!;
+    expect(post.body).toEqual({ room_id: room, sender: 'user-1', recipient: 'u2', kind: 'offer', payload: '{"sdp":"v=0"}' });
+    // Only the recipient may read a signal, so asking for the row back would fail.
+    expect(post.query).not.toMatch(/select=/);
+    expect(post.prefer ?? '').not.toMatch(/return=representation/);
+  });
+
+  test('room errors: a refused signal is forbidden, the limits are rate_limited, a full room keeps its message', async () => {
+    const refused = chatBackend({ 'POST /rest/v1/room_signals': json(403, { code: '42501', message: 'new row violates row-level security policy for table "room_signals"' }) });
+    await refused.b.verifyCode('rian@example.com', '123456');
+    expect(await errorOf(refused.b.sendRoomSignal(room, 'u2', 'answer', '{}'))).toMatchObject({ kind: 'forbidden' });
+    const limited = chatBackend({ 'POST /rest/v1/room_signals': json(400, { code: 'P0001', message: 'signal limit reached' }) });
+    await limited.b.verifyCode('rian@example.com', '123456');
+    expect(await errorOf(limited.b.sendRoomSignal(room, 'u2', 'candidate', '{}'))).toMatchObject({ kind: 'rate_limited' });
+    const tooMany = chatBackend({ 'POST /rest/v1/rpc/create_room': json(400, { code: 'P0001', message: 'room limit reached' }) });
+    await tooMany.b.verifyCode('rian@example.com', '123456');
+    expect(await errorOf(tooMany.b.createRoom({ title: 'Another room', theme: 'free', level: null }))).toMatchObject({ kind: 'rate_limited' });
+    const full = chatBackend({ 'POST /rest/v1/rpc/join_room': json(400, { code: 'P0001', message: 'room is full', hint: 'Try another room.' }) });
+    await full.b.verifyCode('rian@example.com', '123456');
+    expect(await errorOf(full.b.joinRoom(room))).toMatchObject({ kind: 'unknown', message: 'room is full' });
+    const denied = chatBackend({ 'POST /rest/v1/rpc/mute_member': json(403, { code: '42501', message: 'not allowed' }) });
+    await denied.b.verifyCode('rian@example.com', '123456');
+    expect(await errorOf(denied.b.muteMember(room, 'u2'))).toMatchObject({ kind: 'forbidden', message: 'not allowed' });
+  });
+
+  test('roomReportContext maps the room a report names, and is null when the server gives nothing', async () => {
+    const { b, calls } = chatBackend({
+      'POST /rest/v1/rpc/room_report_context': json(200, {
+        title: 'Stand-up practice', theme: 'standup', hostName: 'Bia', createdAt: '2026-10-20T10:00:00+00:00',
+        people: [
+          { name: 'Bia', joinedAt: '2026-10-20T10:00:00+00:00', leftAt: null },
+          { name: null, joinedAt: '2026-10-20T10:01:00+00:00', leftAt: '2026-10-20T10:20:00+00:00' },
+        ],
+      }),
+    });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.roomReportContext(8)).toEqual({
+      title: 'Stand-up practice', theme: 'standup', hostName: 'Bia', createdAt: '2026-10-20T10:00:00+00:00',
+      people: [
+        { name: 'Bia', joinedAt: '2026-10-20T10:00:00+00:00', leftAt: null },
+        { name: null, joinedAt: '2026-10-20T10:01:00+00:00', leftAt: '2026-10-20T10:20:00+00:00' },
+      ],
+    });
+    expect(body(calls, '/rest/v1/rpc/room_report_context')).toEqual({ report: 8 });
+    const none = chatBackend({ 'POST /rest/v1/rpc/room_report_context': json(200, null) });
+    await none.b.verifyCode('rian@example.com', '123456');
+    expect(await none.b.roomReportContext(9)).toBeNull();
+  });
+
+  test('subscribeRoom opens one channel for this room: INSERT and UPDATE of the room and its sessions, signals sent to me', async () => {
+    const { b, channels } = chatBackend({});
+    await b.verifyCode('rian@example.com', '123456');
+    const events: RoomLiveEvent[] = [];
+    b.subscribeRoom(room, (e) => events.push(e));
+    await flush();
+    expect(channels.opened).toHaveLength(1);
+    const ch = channels.opened[0]!;
+    // Realtime does not apply RLS to DELETE events: the app never asks for them.
+    const registered = ch.tables.map((t, i) => `${t}:${ch.events[i]}:${ch.filters[i]}`).sort();
+    expect(registered).toEqual([
+      `room_sessions:INSERT:room_id=eq.${room}`,
+      `room_sessions:UPDATE:room_id=eq.${room}`,
+      'room_signals:INSERT:recipient=eq.user-1',
+      `rooms:INSERT:id=eq.${room}`,
+      `rooms:UPDATE:id=eq.${room}`,
+    ]);
+    expect(ch.events.every((e) => e === 'INSERT' || e === 'UPDATE')).toBe(true);
+    expect(events).toEqual([]);
+  });
+
+  test('room changes become changed events, signals for this room become signal events, other rooms\' signals are ignored', async () => {
+    const { b, channels } = chatBackend({});
+    await b.verifyCode('rian@example.com', '123456');
+    const events: RoomLiveEvent[] = [];
+    b.subscribeRoom(room, (e) => events.push(e));
+    await flush();
+    const ch = channels.opened[0]!;
+    const fire = (table: string, eventType: string, row: Record<string, unknown>, old: Record<string, unknown> = {}) =>
+      ch.handlers[ch.tables.indexOf(table)]!({ table, eventType, new: row, old });
+    fire('rooms', 'UPDATE', { id: room, card: 4 });
+    fire('room_sessions', 'INSERT', { id: 7, room_id: room, user_id: 'u2' });
+    fire('room_sessions', 'UPDATE', { id: 7, room_id: room, left_at: '2026-10-20T10:00:00Z' });
+    // A DELETE says nothing the member may read: no event, even if one arrives.
+    fire('rooms', 'DELETE', {}, { id: room });
+    fire('room_sessions', 'DELETE', {}, { id: 7 });
+    fire('room_signals', 'INSERT', { id: 1, room_id: room, sender: 'u2', recipient: 'user-1', kind: 'offer', payload: '{"sdp":"v=0"}' });
+    fire('room_signals', 'INSERT', { id: 2, room_id: 'another-room', sender: 'u3', recipient: 'user-1', kind: 'offer', payload: '{}' });
+    fire('room_signals', 'INSERT', { id: 3, room_id: room, sender: 'u3', recipient: 'user-1', kind: 'shout', payload: '{}' });
+    fire('room_signals', 'DELETE', {}, { id: 1 });
+    expect(events).toEqual([
+      { kind: 'changed' },
+      { kind: 'changed' },
+      { kind: 'changed' },
+      { kind: 'signal', from: 'u2', signal: 'offer', payload: '{"sdp":"v=0"}' },
+    ]);
+  });
+
+  test('the channel status becomes online and offline, and sign-out closes the channel for good', async () => {
+    const { b, channels } = chatBackend({});
+    await b.verifyCode('rian@example.com', '123456');
+    const events: RoomLiveEvent[] = [];
+    b.subscribeRoom(room, (e) => events.push(e));
+    await flush();
+    const ch = channels.opened[0]!;
+    ch.status!('SUBSCRIBED');
+    ch.status!('CHANNEL_ERROR');
+    ch.status!('SUBSCRIBED');
+    expect(events).toEqual([{ kind: 'online' }, { kind: 'offline' }, { kind: 'online' }]);
+    await b.signOut();
+    expect(ch.closed).toBe(true);
+    ch.handlers[0]!({ table: 'rooms', eventType: 'UPDATE', new: { id: room }, old: {} });
+    ch.handlers[ch.tables.indexOf('room_signals')]!({ table: 'room_signals', eventType: 'INSERT', new: { room_id: room, sender: 'u2', kind: 'bye', payload: '{}' }, old: {} });
+    ch.status!('SUBSCRIBED');
+    expect(events).toHaveLength(3);
+  });
+
+  test('the unsubscribe closes the channel once, also when it is called before the channel was opened', async () => {
+    const { b, channels } = chatBackend({});
+    await b.verifyCode('rian@example.com', '123456');
+    const early = b.subscribeRoom(room, () => undefined);
+    early();
+    await flush();
+    expect(channels.opened).toHaveLength(0);
+    const events: RoomLiveEvent[] = [];
+    const off = b.subscribeRoom(room, (e) => events.push(e));
+    await flush();
+    off();
+    off();
+    expect(channels.opened).toHaveLength(1);
+    expect(channels.opened[0]!.closed).toBe(true);
+    channels.opened[0]!.handlers[0]!({ table: 'rooms', eventType: 'UPDATE', new: { id: room }, old: {} });
+    expect(events).toEqual([]);
+  });
+
+  test('signed out, there is nothing to subscribe to', async () => {
+    const { b, channels } = chatBackend({});
+    const events: RoomLiveEvent[] = [];
+    b.subscribeRoom(room, (e) => events.push(e))();
+    await flush();
+    expect(channels.opened).toHaveLength(0);
+    expect(events).toEqual([]);
   });
 });

@@ -1,8 +1,10 @@
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import type { RoomDraft, RoomLiveEvent, RoomTimer } from '../../src/core/social/rooms';
 import type { ProfileDraft } from '../../src/core/social/types';
 import type { SocialErrorKind } from '../../src/main/social/errors';
+import { createUnconfiguredBackend, type SocialBackend } from '../../src/main/social/backend';
 import { SocialError } from '../../src/main/social/errors';
 import { findShippedSecrets, readSocialConfig } from '../../src/main/social/config';
 import { createFakeSocialBackend } from '../../src/main/social/fake-backend';
@@ -282,9 +284,10 @@ describe('fake social backend', () => {
     const data = await b.exportOwnData();
     expect(data).toMatchObject({ account: { email: 'rian@example.com' }, profile: { displayName: 'Rian' } });
     expect(Object.keys(data).sort()).toEqual([
-      'account', 'avatarUrl', 'badges', 'bannerUrl', 'blocks', 'chat', 'consents', 'exportedAt', 'moderationActions', 'notices', 'profile', 'progress', 'reportsMade', 'social', 'usesLinux',
+      'account', 'avatarUrl', 'badges', 'bannerUrl', 'blocks', 'chat', 'consents', 'exportedAt', 'moderationActions', 'notices', 'profile', 'progress', 'reportsMade', 'rooms', 'social', 'usesLinux',
     ]);
     expect(data['progress']).toEqual({ practiceDays: [], milestones: [] });
+    expect(data['rooms']).toEqual({ roomsCreated: [], sessions: [] });
     await b.deleteAccount();
     expect(await b.session()).toBeNull();
     await b.sendCode('rian@example.com');
@@ -719,5 +722,685 @@ describe('fake backend: chat', () => {
     await as('Bia');
     expect(await b.conversations()).toEqual([]);
     expect(await b.messages(c, null)).toEqual([]);
+  });
+});
+
+describe('fake backend: rooms', () => {
+  const T0 = Date.parse('2026-10-20T12:00:00.000Z');
+  const SECOND = 1000;
+  const MINUTE = 60_000;
+  const draft: RoomDraft = { title: 'Code review night', theme: 'code_review', level: 'B2' };
+
+  /** Signed in as Rian among the seeded people, with a clock the test moves. `as` runs a call as another member. */
+  async function rooms() {
+    let t = T0;
+    const b = createFakeSocialBackend({ seed: 'people', now: () => t });
+    const ids = Object.fromEntries((await b.peopleForTest()).map((p) => [p.displayName, p.id])) as Record<string, string>;
+    const as = async <T,>(name: string, act: (x: SocialBackend) => Promise<T>) => (await b.actAsForTest(ids[name]!, act)) as T;
+    const advance = (ms: number) => {
+      t += ms;
+    };
+    const joinAll = async (room: string, names: string[]) => {
+      for (const name of names) await as(name, (x) => x.joinRoom(room));
+    };
+    const stateOf = async (name: string, room: string) => as(name, (x) => x.roomState(room));
+    /** Listens to one room as `name` (events go to `log`). */
+    const listen = async (name: string, room: string) => {
+      const log: RoomLiveEvent[] = [];
+      await as(name, async (x) => {
+        x.subscribeRoom(room, (e) => log.push(e));
+      });
+      return {
+        log,
+        changes: () => log.filter((e) => e.kind === 'changed').length,
+        signals: () => log.filter((e) => e.kind === 'signal'),
+      };
+    };
+    return { b, ids, as, advance, joinAll, stateOf, listen };
+  }
+  const errorOf = async (p: Promise<unknown>) => p.then(() => null, (e: unknown) => e as SocialError);
+  const titles = (list: { title: string }[]) => list.map((r) => r.title);
+  const personOf = (name: string, id: string, level = 'B1', role = 'member') => ({ id, displayName: name, hasAvatar: false, mascot: null, level, role });
+
+  test('the people seed has Bia\'s stand-up room with Caio inside, and seeded people stay live', async () => {
+    const { b, ids, advance } = await rooms();
+    const bia = { id: ids['Bia'], displayName: 'Bia', hasAvatar: false, mascot: null };
+    const caio = { id: ids['Caio'], displayName: 'Caio', hasAvatar: false, mascot: null };
+    const expected = [{ id: expect.any(String), title: 'Stand-up practice', theme: 'standup', level: 'B1', hostName: 'Bia', people: [bia, caio] }];
+    expect(await b.liveRooms()).toEqual(expected);
+    advance(3 * 60 * MINUTE);
+    expect(await b.liveRooms()).toEqual(expected);
+    // Rian was never there: the room is not his to read.
+    expect(await b.roomState((await b.liveRooms())[0]!.id)).toBeNull();
+  });
+
+  test('joining Bia\'s room puts you last in the list of people', async () => {
+    const { b, ids } = await rooms();
+    const room = (await b.liveRooms())[0]!.id;
+    await b.joinRoom(room);
+    expect(await b.roomState(room)).toEqual({
+      id: room, title: 'Stand-up practice', theme: 'standup', level: 'B1', hostId: ids['Bia'], endedAt: null, timer: null, card: 0,
+      me: { live: true, removed: false, role: 'member', muteRequestedAt: null },
+      people: [personOf('Bia', ids['Bia']!, 'B1', 'host'), personOf('Caio', ids['Caio']!, 'B2'), personOf('Rian', ids['Rian']!)],
+    });
+    expect((await b.liveRooms())[0]!.people.map((p) => p.displayName)).toEqual(['Bia', 'Caio', 'Rian']);
+    // Joining the room you are live in again changes nothing.
+    await b.joinRoom(room);
+    expect((await b.liveRooms())[0]!.people).toHaveLength(3);
+    expect((await b.exportOwnData())['rooms']).toMatchObject({ sessions: [expect.objectContaining({ roomId: room })] });
+  });
+
+  test('creating a room makes you its host and live; other members see it, newest first', async () => {
+    const { b, ids, as } = await rooms();
+    const room = await b.createRoom({ title: '  Code review night ', theme: 'code_review', level: 'B2' });
+    expect(await b.roomState(room)).toEqual({
+      id: room, title: 'Code review night', theme: 'code_review', level: 'B2', hostId: ids['Rian'], endedAt: null, timer: null, card: 0,
+      me: { live: true, removed: false, role: 'host', muteRequestedAt: null },
+      people: [personOf('Rian', ids['Rian']!, 'B1', 'host')],
+    });
+    const list = await as('Ana', (x) => x.liveRooms());
+    expect(titles(list)).toEqual(['Code review night', 'Stand-up practice']);
+    expect(list[0]).toMatchObject({ id: room, level: 'B2', theme: 'code_review', hostName: 'Rian', people: [{ id: ids['Rian'], displayName: 'Rian' }] });
+  });
+
+  test('a title is 3 to 60 characters after trimming; the theme and the level must be known', async () => {
+    const { b } = await rooms();
+    const bad = (over: Partial<RoomDraft>) => errorOf(b.createRoom({ title: 'Good title', theme: 'free', level: null, ...over }));
+    for (const title of ['', '  ab  ', 'x'.repeat(61), '   \n ']) {
+      expect(await bad({ title })).toMatchObject({ kind: 'unknown', message: 'room title is not valid' });
+    }
+    expect(await bad({ theme: 'party' as never })).toMatchObject({ kind: 'unknown', message: 'room theme is not valid' });
+    expect(await bad({ level: 'D9' as never })).toMatchObject({ kind: 'unknown', message: 'room level is not valid' });
+    expect(titles(await b.liveRooms())).toEqual(['Stand-up practice']);
+    for (const title of ['abc', 'x'.repeat(60), '😀😀😀', '  a b  ']) await b.createRoom({ title, theme: 'free', level: null });
+    expect(titles(await b.liveRooms())).toEqual(['a b', 'Stand-up practice']);
+  });
+
+  test('only a member in good standing with a profile opens or joins a room', async () => {
+    const { b, ids } = await rooms();
+    const seeded = (await b.liveRooms())[0]!.id;
+    b.suspendForTest(ids['Rian']!, '2099-01-01T00:00:00.000Z');
+    expect(await kindOf(b.createRoom(draft))).toBe('forbidden');
+    expect(await kindOf(b.joinRoom(seeded))).toBe('forbidden');
+    expect(await b.liveRooms()).toEqual([]);
+    b.suspendForTest(ids['Rian']!, '2000-01-01T00:00:00.000Z');
+    await b.signOut();
+    await b.verifyCode('noprofile@example.com', '123456');
+    await b.acceptDocuments();
+    expect(await kindOf(b.createRoom(draft))).toBe('forbidden');
+    expect(await kindOf(b.joinRoom(seeded))).toBe('forbidden');
+  });
+
+  test('the 11th room in a day fails with room limit reached; a day later you can open one again', async () => {
+    const { b, advance } = await rooms();
+    for (let i = 1; i <= 10; i++) await b.createRoom({ ...draft, title: `Room number ${i}` });
+    expect(await errorOf(b.createRoom(draft))).toMatchObject({ kind: 'rate_limited', message: 'room limit reached' });
+    advance(24 * 60 * MINUTE + SECOND);
+    await b.createRoom(draft);
+  });
+
+  test('the 7th person gets room is full; a silent seat frees after 90 seconds and a leaving person frees theirs', async () => {
+    const { b, as, advance, joinAll, stateOf } = await rooms();
+    const room = await b.createRoom(draft);
+    await joinAll(room, ['Ana', 'Dani', 'Hugo', 'Iris', 'João']);
+    expect((await b.roomState(room))!.people).toHaveLength(6);
+    expect(await errorOf(as('Lia', (x) => x.joinRoom(room)))).toMatchObject({ kind: 'unknown', message: 'room is full' });
+    // Rian keeps saying he is here; the other five go quiet for 91 seconds.
+    advance(60 * SECOND);
+    expect(await b.roomHeartbeat(room)).toBe(true);
+    advance(31 * SECOND);
+    await as('Lia', (x) => x.joinRoom(room));
+    expect((await b.roomState(room))!.people.map((p) => p.displayName)).toEqual(['Rian', 'Lia']);
+    expect((await stateOf('Ana', room))!.me.live).toBe(false);
+    await joinAll(room, ['Max', 'Ana', 'Dani', 'Hugo']);
+    expect(await errorOf(as('Iris', (x) => x.joinRoom(room)))).toMatchObject({ message: 'room is full' });
+    await as('Lia', (x) => x.leaveRoom(room));
+    await as('Iris', (x) => x.joinRoom(room));
+    expect((await b.roomState(room))!.people).toHaveLength(6);
+  });
+
+  test('one room at a time: joining another room leaves the first, which passes on or ends', async () => {
+    const { b, as, stateOf } = await rooms();
+    const first = await b.createRoom(draft);
+    await as('Ana', (x) => x.joinRoom(first));
+    const second = await b.createRoom({ ...draft, title: 'A second room' });
+    expect((await stateOf('Ana', first))!.hostId).toBe((await stateOf('Ana', first))!.people[0]!.id);
+    expect((await stateOf('Ana', first))!.people.map((p) => p.displayName)).toEqual(['Ana']);
+    expect((await b.roomState(first))!.me).toMatchObject({ live: false, role: 'member' });
+    await as('Ana', (x) => x.joinRoom(second));
+    expect(await stateOf('Ana', first)).toMatchObject({ endedAt: expect.any(String), me: { live: false } });
+    expect(titles(await b.liveRooms())).toEqual(['A second room', 'Stand-up practice']);
+    expect((await b.roomState(second))!.people.map((p) => p.displayName)).toEqual(['Rian', 'Ana']);
+    // Joining a room that has ended, or one that does not exist, is not allowed.
+    expect(await kindOf(as('Dani', (x) => x.joinRoom(first)))).toBe('forbidden');
+    expect(await kindOf(as('Dani', (x) => x.joinRoom('00000000-0000-4000-8000-999999999999')))).toBe('forbidden');
+  });
+
+  test('a dropped host is replaced when someone\'s heartbeat settles the room, and a room nobody is in leaves the list', async () => {
+    const { b, ids, as, advance, stateOf } = await rooms();
+    const room = await b.createRoom(draft);
+    await as('Ana', (x) => x.joinRoom(room));
+    advance(60 * SECOND);
+    expect(await as('Ana', (x) => x.roomHeartbeat(room))).toBe(true);
+    advance(40 * SECOND);
+    // Rian has been silent for 100 seconds: the list already shows only Ana.
+    expect((await as('Dani', (x) => x.liveRooms())).find((r) => r.id === room)!.people.map((p) => p.displayName)).toEqual(['Ana']);
+    expect(await as('Ana', (x) => x.roomHeartbeat(room))).toBe(true);
+    expect((await stateOf('Ana', room))!.hostId).toBe(ids['Ana']);
+    expect(await b.roomState(room)).toMatchObject({ hostId: ids['Ana'], me: { live: false }, people: [] });
+    // Then Ana goes quiet too, and the room is gone from the list.
+    advance(100 * SECOND);
+    expect((await as('Dani', (x) => x.liveRooms())).map((r) => r.id)).not.toContain(room);
+    expect(await as('Ana', (x) => x.roomHeartbeat(room))).toBe(false);
+    expect((await stateOf('Ana', room))!.endedAt).not.toBeNull();
+  });
+
+  test('a heartbeat is true while you are live, and false when you never joined, left or went silent', async () => {
+    const { b, as, advance } = await rooms();
+    const room = await b.createRoom(draft);
+    expect(await as('Ana', (x) => x.roomHeartbeat(room))).toBe(false);
+    await as('Ana', (x) => x.joinRoom(room));
+    advance(80 * SECOND);
+    expect(await as('Ana', (x) => x.roomHeartbeat(room))).toBe(true);
+    expect(await b.roomHeartbeat(room)).toBe(true);
+    await as('Ana', (x) => x.leaveRoom(room));
+    expect(await as('Ana', (x) => x.roomHeartbeat(room))).toBe(false);
+    advance(91 * SECOND);
+    expect(await b.roomHeartbeat(room)).toBe(false);
+    expect(await b.roomHeartbeat('00000000-0000-4000-8000-999999999999')).toBe(false);
+  });
+
+  test('when the host leaves the room goes to the oldest room moderator, else to who came first; the last person ends it', async () => {
+    const { b, ids, as, advance, stateOf } = await rooms();
+    const room = await b.createRoom(draft);
+    for (const name of ['Ana', 'Dani', 'Hugo']) {
+      advance(SECOND);
+      await as(name, (x) => x.joinRoom(room));
+    }
+    await b.makeRoomModerator(room, ids['Hugo']!);
+    await b.leaveRoom(room);
+    expect((await stateOf('Ana', room))!.hostId).toBe(ids['Hugo']);
+    expect((await stateOf('Ana', room))!.people.map((p) => [p.displayName, p.role])).toEqual([['Ana', 'member'], ['Dani', 'member'], ['Hugo', 'host']]);
+    await as('Hugo', (x) => x.leaveRoom(room));
+    expect((await stateOf('Dani', room))!.hostId).toBe(ids['Ana']);
+    await as('Ana', (x) => x.leaveRoom(room));
+    expect((await stateOf('Dani', room))!.hostId).toBe(ids['Dani']);
+    await as('Dani', (x) => x.leaveRoom(room));
+    expect(await stateOf('Dani', room)).toMatchObject({ endedAt: expect.any(String), me: { live: false } });
+    expect(titles(await b.liveRooms())).toEqual(['Stand-up practice']);
+    // Leaving a room you are not in does nothing.
+    await b.leaveRoom(room);
+  });
+
+  test('only the host gives and takes Room moderator and passes the host role, and only to someone live in the room', async () => {
+    const { b, ids, as, joinAll, stateOf } = await rooms();
+    const room = await b.createRoom(draft);
+    await joinAll(room, ['Ana', 'Dani']);
+    expect(await kindOf(as('Ana', (x) => x.makeRoomModerator(room, ids['Dani']!)))).toBe('forbidden');
+    expect(await kindOf(as('Ana', (x) => x.passHost(room, ids['Ana']!)))).toBe('forbidden');
+    expect(await kindOf(b.makeRoomModerator(room, ids['Rian']!))).toBe('forbidden');
+    expect(await kindOf(b.makeRoomModerator(room, ids['Hugo']!))).toBe('forbidden');
+    expect(await kindOf(b.passHost(room, ids['Hugo']!))).toBe('forbidden');
+    await b.makeRoomModerator(room, ids['Ana']!);
+    expect((await b.roomState(room))!.people.map((p) => p.role)).toEqual(['host', 'moderator', 'member']);
+    expect(await kindOf(as('Ana', (x) => x.removeRoomModerator(room, ids['Ana']!)))).toBe('forbidden');
+    await b.removeRoomModerator(room, ids['Ana']!);
+    expect((await b.roomState(room))!.people.map((p) => p.role)).toEqual(['host', 'member', 'member']);
+    await b.passHost(room, ids['Ana']!);
+    expect((await stateOf('Dani', room))!.hostId).toBe(ids['Ana']);
+    expect((await b.roomState(room))!.me.role).toBe('member');
+    expect(await kindOf(b.makeRoomModerator(room, ids['Dani']!))).toBe('forbidden');
+    await as('Ana', (x) => x.makeRoomModerator(room, ids['Rian']!));
+    expect((await b.roomState(room))!.me.role).toBe('moderator');
+  });
+
+  test('the host and a room moderator ask people to mute; a member cannot, and nobody mutes the host', async () => {
+    const { b, ids, as, joinAll, stateOf } = await rooms();
+    const room = await b.createRoom(draft);
+    await joinAll(room, ['Ana', 'Dani']);
+    expect(await kindOf(as('Ana', (x) => x.muteMember(room, ids['Dani']!)))).toBe('forbidden');
+    await b.makeRoomModerator(room, ids['Ana']!);
+    await as('Ana', (x) => x.muteMember(room, ids['Dani']!));
+    expect((await stateOf('Dani', room))!.me.muteRequestedAt).toBe(new Date(T0).toISOString());
+    expect(await kindOf(as('Ana', (x) => x.muteMember(room, ids['Rian']!)))).toBe('forbidden');
+    expect(await kindOf(as('Dani', (x) => x.muteMember(room, ids['Rian']!)))).toBe('forbidden');
+    expect(await kindOf(as('Ana', (x) => x.muteMember(room, ids['Ana']!)))).toBe('forbidden');
+    await b.muteMember(room, ids['Ana']!);
+    expect((await stateOf('Ana', room))!.me.muteRequestedAt).not.toBeNull();
+    // Nobody who is not in the room is muted, and nobody outside mutes.
+    expect(await kindOf(b.muteMember(room, ids['Hugo']!))).toBe('forbidden');
+    expect(await kindOf(as('Hugo', (x) => x.muteMember(room, ids['Dani']!)))).toBe('forbidden');
+  });
+
+  test('the host removes anyone else, a room moderator removes a member only, and a removed person cannot return', async () => {
+    const { b, ids, as, joinAll, stateOf } = await rooms();
+    const room = await b.createRoom(draft);
+    await joinAll(room, ['Ana', 'Dani', 'Hugo', 'Iris']);
+    await b.makeRoomModerator(room, ids['Ana']!);
+    await b.makeRoomModerator(room, ids['Dani']!);
+    expect(await kindOf(as('Iris', (x) => x.removeFromRoom(room, ids['Hugo']!)))).toBe('forbidden');
+    expect(await kindOf(as('Ana', (x) => x.removeFromRoom(room, ids['Dani']!)))).toBe('forbidden');
+    expect(await kindOf(as('Ana', (x) => x.removeFromRoom(room, ids['Rian']!)))).toBe('forbidden');
+    expect(await kindOf(b.removeFromRoom(room, ids['Rian']!))).toBe('forbidden');
+    expect(await kindOf(b.removeFromRoom(room, ids['Lia']!))).toBe('forbidden');
+    await as('Ana', (x) => x.removeFromRoom(room, ids['Hugo']!));
+    expect(await stateOf('Hugo', room)).toMatchObject({ me: { live: false, removed: true }, people: [] });
+    expect(await kindOf(as('Hugo', (x) => x.joinRoom(room)))).toBe('forbidden');
+    expect(await as('Hugo', (x) => x.roomHeartbeat(room))).toBe(false);
+    await b.removeFromRoom(room, ids['Dani']!);
+    expect((await b.roomState(room))!.people.map((p) => p.displayName)).toEqual(['Rian', 'Ana', 'Iris']);
+    expect((await stateOf('Dani', room))!.me.removed).toBe(true);
+    expect(await kindOf(as('Dani', (x) => x.joinRoom(room)))).toBe('forbidden');
+    // Hugo can still join another room, just not this one.
+    const other = await b.createRoom({ ...draft, title: 'Another room' });
+    await as('Hugo', (x) => x.joinRoom(other));
+  });
+
+  test('only the host ends the room, and it ends for everyone', async () => {
+    const { b, ids, as, joinAll, stateOf } = await rooms();
+    const room = await b.createRoom(draft);
+    await joinAll(room, ['Ana', 'Dani']);
+    await b.setRoomTimer(room, 60);
+    expect(await kindOf(as('Ana', (x) => x.endRoom(room)))).toBe('forbidden');
+    expect((await b.roomState(room))!.endedAt).toBeNull();
+    await b.endRoom(room);
+    for (const name of ['Ana', 'Dani']) {
+      expect(await stateOf(name, room)).toMatchObject({ endedAt: new Date(T0).toISOString(), timer: null, me: { live: false }, people: [] });
+    }
+    expect(await b.roomState(room)).toMatchObject({ hostId: ids['Rian'], endedAt: expect.any(String) });
+    expect(titles(await b.liveRooms())).toEqual(['Stand-up practice']);
+    expect(await kindOf(as('Hugo', (x) => x.joinRoom(room)))).toBe('forbidden');
+    expect(await as('Ana', (x) => x.roomHeartbeat(room))).toBe(false);
+    expect(await kindOf(b.endRoom(room))).toBe('forbidden');
+    expect(await kindOf(b.setRoomTimer(room, 90))).toBe('forbidden');
+  });
+
+  test('the timer runs 60 or 90 seconds, anyone live starts and stops it, and the idea card moves on', async () => {
+    const { b, as, advance, joinAll, stateOf } = await rooms();
+    const room = await b.createRoom(draft);
+    await joinAll(room, ['Ana']);
+    await as('Ana', (x) => x.setRoomTimer(room, 60));
+    expect((await b.roomState(room))!.timer).toEqual({ startedAt: new Date(T0).toISOString(), seconds: 60 });
+    advance(20 * SECOND);
+    await b.setRoomTimer(room, 90);
+    expect((await stateOf('Ana', room))!.timer).toEqual({ startedAt: new Date(T0 + 20 * SECOND).toISOString(), seconds: 90 });
+    expect(await errorOf(b.setRoomTimer(room, 45 as RoomTimer))).toMatchObject({ kind: 'unknown', message: 'timer is not valid' });
+    expect((await b.roomState(room))!.timer!.seconds).toBe(90);
+    await as('Ana', (x) => x.setRoomTimer(room, null));
+    expect((await b.roomState(room))!.timer).toBeNull();
+    await b.setRoomTimer(room, null);
+    await b.nextCard(room);
+    await as('Ana', (x) => x.nextCard(room));
+    expect((await stateOf('Ana', room))!.card).toBe(2);
+    // Outsiders can do neither.
+    expect(await kindOf(as('Dani', (x) => x.setRoomTimer(room, 60)))).toBe('forbidden');
+    expect(await kindOf(as('Dani', (x) => x.setRoomTimer(room, null)))).toBe('forbidden');
+    expect(await kindOf(as('Dani', (x) => x.nextCard(room)))).toBe('forbidden');
+    expect((await b.roomState(room))!.card).toBe(2);
+  });
+
+  test('people blocked with someone inside neither see nor join the room', async () => {
+    const { b, ids, as } = await rooms();
+    // The seed has Gil blocking Rian.
+    const gils = await as('Gil', (x) => x.createRoom({ ...draft, title: 'Gil\'s room' }));
+    expect(titles(await b.liveRooms())).toEqual(['Stand-up practice']);
+    expect(await kindOf(b.joinRoom(gils))).toBe('forbidden');
+    expect(titles(await as('Gil', (x) => x.liveRooms()))).toEqual(["Gil's room", 'Stand-up practice']);
+    // Blocking after the fact hides a room too, in both directions.
+    const danis = await as('Dani', (x) => x.createRoom({ ...draft, title: 'Dani\'s room' }));
+    expect(titles(await b.liveRooms())).toContain("Dani's room");
+    await b.block(ids['Dani']!);
+    expect(titles(await b.liveRooms())).not.toContain("Dani's room");
+    expect(await kindOf(b.joinRoom(danis))).toBe('forbidden');
+    // Dani's room has only Dani inside, and Rian blocked Dani: Dani sees their own room, Rian does not.
+    expect(titles(await as('Dani', (x) => x.liveRooms()))).toContain("Dani's room");
+    await b.unblock(ids['Dani']!);
+    await b.joinRoom(danis);
+  });
+
+  test('a block made inside a room takes the blocker out, never the blocked person', async () => {
+    const { b, ids, as, stateOf } = await rooms();
+    const room = await b.createRoom(draft);
+    await as('Dani', (x) => x.joinRoom(room));
+    await as('Ana', (x) => x.joinRoom(room));
+    await b.block(ids['Dani']!);
+    expect(await b.roomState(room)).toMatchObject({ me: { live: false }, people: [] });
+    expect((await stateOf('Dani', room))!.me.live).toBe(true);
+    expect((await stateOf('Dani', room))!.people.map((p) => p.displayName)).toEqual(['Dani', 'Ana']);
+    // Dani and Ana are still inside; the host role went to who was there first.
+    expect((await stateOf('Dani', room))!.hostId).toBe(ids['Dani']);
+    // Blocking someone who is not in your room changes nothing in it.
+    await as('Dani', (x) => x.block(ids['Hugo']!));
+    expect((await stateOf('Dani', room))!.me.live).toBe(true);
+    // Rian cannot come back while Dani is inside.
+    expect(await kindOf(b.joinRoom(room))).toBe('forbidden');
+  });
+
+  test('signals reach only their recipient, between people live in the same room', async () => {
+    const { b, ids, as, joinAll, listen } = await rooms();
+    const room = await b.createRoom(draft);
+    await joinAll(room, ['Ana', 'Dani']);
+    const rian = await listen('Rian', room);
+    const ana = await listen('Ana', room);
+    const dani = await listen('Dani', room);
+    await b.sendRoomSignal(room, ids['Ana']!, 'offer', '{"sdp":"v=0"}');
+    await as('Ana', (x) => x.sendRoomSignal(room, ids['Rian']!, 'answer', '{"sdp":"v=1"}'));
+    await as('Dani', (x) => x.sendRoomSignal(room, ids['Ana']!, 'candidate', '{"c":1}'));
+    await as('Dani', (x) => x.sendRoomSignal(room, ids['Rian']!, 'bye', ''));
+    expect(ana.signals()).toEqual([
+      { kind: 'signal', from: ids['Rian'], signal: 'offer', payload: '{"sdp":"v=0"}' },
+      { kind: 'signal', from: ids['Dani'], signal: 'candidate', payload: '{"c":1}' },
+    ]);
+    expect(rian.signals()).toEqual([
+      { kind: 'signal', from: ids['Ana'], signal: 'answer', payload: '{"sdp":"v=1"}' },
+      { kind: 'signal', from: ids['Dani'], signal: 'bye', payload: '' },
+    ]);
+    expect(dani.signals()).toEqual([]);
+    // Not to yourself, not to someone outside, not from someone outside, not in a room that is not shared.
+    expect(await kindOf(b.sendRoomSignal(room, ids['Rian']!, 'offer', '{}'))).toBe('forbidden');
+    expect(await kindOf(b.sendRoomSignal(room, ids['Hugo']!, 'offer', '{}'))).toBe('forbidden');
+    expect(await kindOf(as('Hugo', (x) => x.sendRoomSignal(room, ids['Ana']!, 'offer', '{}')))).toBe('forbidden');
+    const standup = (await b.liveRooms()).find((r) => r.title === 'Stand-up practice')!.id;
+    expect(await kindOf(b.sendRoomSignal(standup, ids['Bia']!, 'offer', '{}'))).toBe('forbidden');
+    // After someone leaves, nothing is delivered to or from them.
+    await as('Ana', (x) => x.leaveRoom(room));
+    expect(await kindOf(b.sendRoomSignal(room, ids['Ana']!, 'offer', '{}'))).toBe('forbidden');
+    expect(await kindOf(as('Ana', (x) => x.sendRoomSignal(room, ids['Rian']!, 'bye', '')))).toBe('forbidden');
+    expect(ana.signals()).toHaveLength(2);
+  });
+
+  test('a signal holds at most 16 384 bytes (not characters) and a person sends at most 600 a minute', async () => {
+    const { b, ids, advance, joinAll } = await rooms();
+    const room = await b.createRoom(draft);
+    await joinAll(room, ['Ana']);
+    await b.sendRoomSignal(room, ids['Ana']!, 'offer', 'x'.repeat(16_384));
+    expect(await errorOf(b.sendRoomSignal(room, ids['Ana']!, 'offer', 'x'.repeat(16_385)))).toMatchObject({ kind: 'unknown' });
+    expect(await errorOf(b.sendRoomSignal(room, ids['Ana']!, 'offer', 'é'.repeat(8193)))).toMatchObject({ kind: 'unknown' });
+    await b.sendRoomSignal(room, ids['Ana']!, 'offer', 'é'.repeat(8192));
+    // 2 signals have gone out so far.
+    for (let i = 0; i < 598; i++) await b.sendRoomSignal(room, ids['Ana']!, 'candidate', '{}');
+    expect(await errorOf(b.sendRoomSignal(room, ids['Ana']!, 'candidate', '{}'))).toMatchObject({ kind: 'rate_limited', message: 'signal limit reached' });
+    advance(61 * SECOND);
+    await b.sendRoomSignal(room, ids['Ana']!, 'candidate', '{}');
+  });
+
+  test('room events go to people live in that room and to the person just muted, removed or sent out; heartbeats are silent', async () => {
+    const { b, ids, as, joinAll, listen } = await rooms();
+    const standupRoom = (await b.liveRooms())[0]!.id;
+    const room = await b.createRoom(draft);
+    const rian = await listen('Rian', room);
+    const ana = await listen('Ana', room);
+    const dani = await listen('Dani', room);
+    const caio = await listen('Caio', standupRoom);
+    const hugo = await listen('Hugo', room);
+    expect(rian.log).toEqual([{ kind: 'online' }]);
+    await joinAll(room, ['Ana', 'Dani']);
+    // Ana's own join reaches her, the host and Dani only once each time someone comes in.
+    expect([rian.changes(), ana.changes(), dani.changes()]).toEqual([2, 2, 1]);
+    const base = [rian.changes(), ana.changes(), dani.changes()];
+    await as('Ana', (x) => x.roomHeartbeat(room));
+    await b.roomHeartbeat(room);
+    expect([rian.changes(), ana.changes(), dani.changes()]).toEqual(base);
+    await b.setRoomTimer(room, 60);
+    await as('Dani', (x) => x.nextCard(room));
+    expect([rian.changes(), ana.changes(), dani.changes()]).toEqual([base[0]! + 2, base[1]! + 2, base[2]! + 2]);
+    // Muting reaches the muted person; removing reaches the person removed, once, and then they hear no more.
+    await b.muteMember(room, ids['Dani']!);
+    expect(dani.changes()).toBe(base[2]! + 3);
+    await b.removeFromRoom(room, ids['Dani']!);
+    expect(dani.changes()).toBe(base[2]! + 4);
+    await b.nextCard(room);
+    expect(dani.changes()).toBe(base[2]! + 4);
+    expect(rian.changes()).toBe(base[0]! + 5);
+    await b.endRoom(room);
+    expect([rian.changes(), ana.changes()]).toEqual([base[0]! + 6, base[1]! + 6]);
+    // People in other rooms and people who never joined hear nothing of it.
+    expect(caio.log).toEqual([{ kind: 'online' }]);
+    expect(hugo.log).toEqual([{ kind: 'online' }]);
+  });
+
+  test('leaving, handing the host over and a silent person being settled are events too; the unsubscribe stops them', async () => {
+    const { b, ids, as, advance, joinAll, listen } = await rooms();
+    const room = await b.createRoom(draft);
+    await joinAll(room, ['Ana', 'Dani']);
+    const rian = await listen('Rian', room);
+    const ana = await listen('Ana', room);
+    const counts = () => [rian.changes(), ana.changes()];
+    await as('Dani', (x) => x.leaveRoom(room));
+    expect(counts()).toEqual([1, 1]);
+    await b.passHost(room, ids['Ana']!);
+    expect(counts()).toEqual([2, 2]);
+    // Rian goes silent. The first heartbeat of Ana changes nothing; once he has been quiet for 90 seconds, her
+    // next one closes his seat, and he hears about it too.
+    advance(60 * SECOND);
+    await as('Ana', (x) => x.roomHeartbeat(room));
+    expect(counts()).toEqual([2, 2]);
+    advance(31 * SECOND);
+    await as('Ana', (x) => x.roomHeartbeat(room));
+    expect(counts()).toEqual([3, 3]);
+    await as('Ana', (x) => x.roomHeartbeat(room));
+    expect(counts()).toEqual([3, 3]);
+    // The unsubscribe works.
+    const stop = await (async () => {
+      let off: () => void = () => undefined;
+      await as('Ana', async (x) => {
+        off = x.subscribeRoom(room, () => undefined);
+      });
+      return off;
+    })();
+    stop();
+    const log: RoomLiveEvent[] = [];
+    let off: () => void = () => undefined;
+    await as('Ana', async (x) => {
+      off = x.subscribeRoom(room, (e) => log.push(e));
+    });
+    off();
+    await as('Ana', (x) => x.nextCard(room));
+    expect(log).toEqual([{ kind: 'online' }]);
+  });
+
+  test('nothing is delivered after sign-out, or to someone who subscribed while signed out', async () => {
+    const { b, ids, as } = await rooms();
+    const room = (await b.liveRooms())[0]!.id;
+    await b.joinRoom(room);
+    const log: RoomLiveEvent[] = [];
+    const off = b.subscribeRoom(room, (e) => log.push(e));
+    await as('Bia', (x) => x.nextCard(room));
+    expect(log).toEqual([{ kind: 'online' }, { kind: 'changed' }]);
+    await b.signOut();
+    await as('Bia', (x) => x.nextCard(room));
+    await as('Bia', (x) => x.sendRoomSignal(room, ids['Rian']!, 'offer', '{}')).catch(() => undefined);
+    expect(log).toHaveLength(2);
+    const late: RoomLiveEvent[] = [];
+    const stop = b.subscribeRoom(room, (e) => late.push(e));
+    await as('Bia', (x) => x.nextCard(room));
+    stop();
+    off();
+    expect(late).toEqual([]);
+    expect(log).toHaveLength(2);
+  });
+
+  test('actAsForTest lets Bia mute and remove Rian, then Rian is Rian again, and the events still flow', async () => {
+    const { b, ids } = await rooms();
+    const room = (await b.liveRooms())[0]!.id;
+    await b.joinRoom(room);
+    const log: RoomLiveEvent[] = [];
+    b.subscribeRoom(room, (e) => log.push(e));
+    expect(await b.actAsForTest(ids['Bia']!, async (x) => x.muteMember(room, ids['Rian']!))).toBeUndefined();
+    expect((await b.session())!.userId).toBe(ids['Rian']);
+    expect((await b.roomState(room))!.me.muteRequestedAt).not.toBeNull();
+    expect(log).toEqual([{ kind: 'online' }, { kind: 'changed' }]);
+    await b.actAsForTest(ids['Bia']!, (x) => x.removeFromRoom(room, ids['Rian']!));
+    expect(await b.roomState(room)).toMatchObject({ me: { live: false, removed: true }, people: [] });
+    expect(log.at(-1)).toEqual({ kind: 'changed' });
+    expect(await b.actAsForTest(ids['Caio']!, async (x) => (await x.roomState(room))!.me.role)).toBe('member');
+    // A failing act still puts the session back, and passes the error on.
+    expect(await errorOf(b.actAsForTest(ids['Caio']!, (x) => x.endRoom(room)))).toMatchObject({ kind: 'forbidden' });
+    expect((await b.session())!.userId).toBe(ids['Rian']);
+    await expect(b.actAsForTest('00000000-0000-4000-8000-999999999999', async () => undefined)).rejects.toThrow();
+    expect((await b.session())!.userId).toBe(ids['Rian']);
+  });
+
+  test('actAsForTest does not leave the other person signed in when the state is saved to a file', async () => {
+    const file = join(dir, 'fake-rooms.json');
+    const first = createFakeSocialBackend({ seed: 'people', filePath: file });
+    const people = Object.fromEntries((await first.peopleForTest()).map((p) => [p.displayName, p.id])) as Record<string, string>;
+    const room = (await first.liveRooms())[0]!.id;
+    await first.actAsForTest(people['Bia']!, (x) => x.nextCard(room));
+    const again = createFakeSocialBackend({ filePath: file });
+    expect((await again.session())!.userId).toBe(people['Rian']);
+    expect((await again.liveRooms())[0]!).toMatchObject({ title: 'Stand-up practice' });
+  });
+
+  test('Room host: 5 rooms opened where someone else came; Active speaker: 10 sessions of 5 minutes shared with someone', async () => {
+    const { b, ids, as, advance } = await rooms();
+    const badgeIds = async () => (await b.badges(ids['Rian']!)).map((x) => x.id);
+    // Rooms nobody else entered do not count.
+    for (let i = 0; i < 3; i++) await b.createRoom({ ...draft, title: `Alone ${i + 1}` });
+    for (let i = 0; i < 4; i++) {
+      const room = await b.createRoom({ ...draft, title: `With Ana ${i + 1}` });
+      await as('Ana', (x) => x.joinRoom(room));
+    }
+    expect(await badgeIds()).not.toContain('room_host');
+    const room = await b.createRoom({ ...draft, title: 'With Ana 5' });
+    await as('Ana', (x) => x.joinRoom(room));
+    expect(await badgeIds()).toContain('room_host');
+    expect((await b.badges(ids['Rian']!)).find((x) => x.id === 'room_host')).toEqual({ id: 'room_host', group: 'community', label: 'Room host', detail: null });
+    // Sessions long enough to count: each one is 5.5 minutes with Ana, everyone saying they are here every 30 seconds.
+    advance(24 * 60 * MINUTE);
+    await b.leaveRoom(room);
+    const sit = async (title: string) => {
+      const next = await b.createRoom({ ...draft, title });
+      await as('Ana', (x) => x.joinRoom(next));
+      for (let i = 0; i < 11; i++) {
+        advance(30 * SECOND);
+        await b.roomHeartbeat(next);
+        await as('Ana', (x) => x.roomHeartbeat(next));
+      }
+    };
+    for (let i = 1; i <= 9; i++) await sit(`Long ${i}`);
+    await b.leaveRoom((await b.liveRooms()).find((r) => r.title === 'Long 9')!.id);
+    expect(await badgeIds()).not.toContain('active_speaker');
+    await sit('Long 10');
+    await b.leaveRoom((await b.liveRooms()).find((r) => r.title === 'Long 10')!.id);
+    expect(await badgeIds()).toContain('active_speaker');
+    expect((await b.badges(ids['Rian']!)).find((x) => x.id === 'active_speaker')).toMatchObject({ group: 'community', label: 'Active speaker' });
+  });
+
+  test('a session shorter than 5 minutes, or alone, does not count towards Active speaker', async () => {
+    const { b, ids, as, advance } = await rooms();
+    for (let i = 0; i < 10; i++) {
+      const room = await b.createRoom({ ...draft, title: `Short ${i}` });
+      await as('Ana', (x) => x.joinRoom(room));
+      for (let k = 0; k < 8; k++) {
+        advance(30 * SECOND);
+        await b.roomHeartbeat(room);
+        await as('Ana', (x) => x.roomHeartbeat(room));
+      }
+    }
+    expect((await b.badges(ids['Rian']!)).map((x) => x.id)).not.toContain('active_speaker');
+  });
+
+  test('the export lists the rooms you opened and your own sessions, not other people\'s', async () => {
+    const { b, ids, as, advance } = await rooms();
+    const room = await b.createRoom(draft);
+    await as('Ana', (x) => x.joinRoom(room));
+    advance(MINUTE);
+    await as('Ana', (x) => x.roomHeartbeat(room));
+    await b.roomHeartbeat(room);
+    await as('Ana', (x) => x.leaveRoom(room));
+    await b.leaveRoom(room);
+    const seeded = (await b.liveRooms())[0]!.id;
+    await b.joinRoom(seeded);
+    const minute = new Date(T0 + MINUTE).toISOString();
+    expect((await b.exportOwnData())['rooms']).toEqual({
+      roomsCreated: [{ id: room, title: 'Code review night', theme: 'code_review', createdAt: new Date(T0).toISOString(), endedAt: minute }],
+      sessions: [
+        { roomId: room, joinedAt: new Date(T0).toISOString(), leftAt: minute, role: 'member', removed: false },
+        { roomId: seeded, joinedAt: minute, leftAt: null, role: 'member', removed: false },
+      ],
+    });
+    const ana = (await as('Ana', (x) => x.exportOwnData()))['rooms'] as { roomsCreated: unknown[]; sessions: unknown[] };
+    expect(ana.roomsCreated).toEqual([]);
+    expect(ana.sessions).toEqual([expect.objectContaining({ roomId: room })]);
+    expect(ids['Ana']).toBeDefined();
+  });
+
+  test('a room report shows the room to moderators: title, theme, host, and who was there when', async () => {
+    const { b, ids, as, advance } = await rooms();
+    const room = await b.createRoom(draft);
+    await as('Ana', (x) => x.joinRoom(room));
+    advance(MINUTE);
+    await b.roomHeartbeat(room);
+    await as('Ana', (x) => x.leaveRoom(room));
+    await b.report({ reported: ids['Ana']!, contextType: 'room', contextId: room, reason: 'harassment', details: '' });
+    await b.report({ reported: ids['Hugo']!, contextType: 'room', contextId: room, reason: 'spam', details: '' });
+    await b.report({ reported: ids['Ana']!, contextType: 'message', contextId: '5', reason: 'spam', details: '' });
+    b.addModeratorForTest(ids['Dani']!);
+    const reports = await as('Dani', (x) => x.listOpenReports());
+    const ofAna = reports.find((r) => r.contextType === 'room' && r.reported?.id === ids['Ana'])!;
+    const ofHugo = reports.find((r) => r.reported?.id === ids['Hugo'])!;
+    const message = reports.find((r) => r.contextType === 'message')!;
+    expect(await as('Dani', (x) => x.roomReportContext(ofAna.id))).toEqual({
+      title: 'Code review night', theme: 'code_review', hostName: 'Rian', createdAt: new Date(T0).toISOString(),
+      people: [
+        { name: 'Rian', joinedAt: new Date(T0).toISOString(), leftAt: null },
+        { name: 'Ana', joinedAt: new Date(T0).toISOString(), leftAt: new Date(T0 + MINUTE).toISOString() },
+      ],
+    });
+    // A seat nobody has heard from for 90 seconds counts as left at its last sign of life.
+    advance(100 * SECOND);
+    expect((await as('Dani', (x) => x.roomReportContext(ofAna.id)))!.people[0]).toMatchObject({ name: 'Rian', leftAt: new Date(T0 + MINUTE).toISOString() });
+    // Not for members, not for a person who was never in the room, not for other kinds of report, not for unknown reports.
+    expect(await b.roomReportContext(ofAna.id)).toBeNull();
+    expect(await as('Dani', (x) => x.roomReportContext(ofHugo.id))).toBeNull();
+    expect(await as('Dani', (x) => x.roomReportContext(message.id))).toBeNull();
+    expect(await as('Dani', (x) => x.roomReportContext(999_999))).toBeNull();
+  });
+
+  test('deleting your account removes the rooms you opened; a room you only hosted goes on without you', async () => {
+    const mine = await rooms();
+    const opened = await mine.b.createRoom(draft);
+    await mine.as('Ana', (x) => x.joinRoom(opened));
+    await mine.b.passHost(opened, mine.ids['Ana']!);
+    await mine.b.deleteAccount();
+    expect(await mine.stateOf('Ana', opened)).toBeNull();
+    expect(titles(await mine.as('Ana', (x) => x.liveRooms()))).toEqual(['Stand-up practice']);
+
+    const hosted = await rooms();
+    const hers = await hosted.as('Ana', (x) => x.createRoom({ ...draft, title: 'Ana\'s room' }));
+    await hosted.b.joinRoom(hers);
+    await hosted.as('Ana', (x) => x.passHost(hers, hosted.ids['Rian']!));
+    expect((await hosted.stateOf('Ana', hers))!.hostId).toBe(hosted.ids['Rian']);
+    await hosted.b.deleteAccount();
+    expect(await hosted.stateOf('Ana', hers)).toMatchObject({
+      hostId: hosted.ids['Ana'], endedAt: null, people: [expect.objectContaining({ displayName: 'Ana', role: 'host' })],
+    });
+    // If nobody else was there, the room ends.
+    const alone = await rooms();
+    const aloneRoom = await alone.as('Ana', (x) => x.createRoom({ ...draft, title: 'Ana alone' }));
+    await alone.as('Ana', (x) => x.leaveRoom(aloneRoom));
+    expect(await alone.stateOf('Ana', aloneRoom)).toMatchObject({ endedAt: expect.any(String) });
+  });
+
+  test('the unconfigured backend refuses every room call and subscribes to nothing', async () => {
+    const b = createUnconfiguredBackend();
+    expect(await kindOf(b.liveRooms())).toBe('not_configured');
+    expect(await kindOf(b.createRoom(draft))).toBe('not_configured');
+    expect(await kindOf(b.joinRoom('r'))).toBe('not_configured');
+    expect(await kindOf(b.roomHeartbeat('r'))).toBe('not_configured');
+    expect(await kindOf(b.sendRoomSignal('r', 'u', 'offer', '{}'))).toBe('not_configured');
+    expect(await kindOf(b.setRoomTimer('r', null))).toBe('not_configured');
+    expect(await kindOf(b.roomReportContext(1))).toBe('not_configured');
+    const stop = b.subscribeRoom('r', () => {
+      throw new Error('no events');
+    });
+    stop();
+  });
+
+  test('injected failures reach the room calls', async () => {
+    const b = createFakeSocialBackend({ seed: 'people', fail: { liveRooms: 'offline', joinRoom: 'asleep' } });
+    expect(await kindOf(b.liveRooms())).toBe('offline');
+    expect(await kindOf(b.joinRoom('r'))).toBe('asleep');
   });
 });
