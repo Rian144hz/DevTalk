@@ -24,9 +24,9 @@ DevTalk is a free desktop app that helps developers practise English. The practi
 - **Private messages** are read only by you and the other person. A conversation starts with a request: your first message, which the other person can accept or decline. You can send at most 10 requests, 500 messages and 200 corrections a day.
 - You can suggest a correction to the other person's messages and they can thank you for it. You can delete your own messages; their text and corrections go with them.
 - If someone in a conversation reports a message, the moderators see that message and the 10 before it.
-- **Voice rooms.** Any member can open a room on the spot, with a title, a theme and a suggested level. Up to 6 people can be in a room, and each person can be in one room at a time. A room stays open until it is empty or the host ends it. You can open at most 10 rooms a day.
-- Your voice goes directly between the computers in the room. DevTalk does not record it, transcribe it or send it through its server. The other people in a room can see your IP address, because their computers connect directly to yours.
-- Any member can see a room's title, theme, suggested level, host and the names and pictures of the people in it. The server keeps who was in each room and when, for reports, badges and your data export.
+- **Voice rooms.** Any member can open a room now, with a title, a theme and a suggested level. Up to 6 people can be in a room, and each person can be in one room at a time. A room stays open until it is empty or the host ends it. You can open at most 10 rooms a day.
+- Your voice goes directly between the computers in the room. DevTalk does not record it, transcribe it or send it through the community server. The other people in a room can see your IP address, because their computers connect directly to yours.
+- Any member can see a room's title, theme, suggested level, host and the names and pictures of the people in it. The community server keeps who was in each room and when, for reports, badges and your data export.
 - Your photo and banner must follow the code of conduct like everything else you share; an offensive banner can be reported with the profile.
 - Share only what you are comfortable with. Do not put phone numbers, addresses or other private details in your profile.
 - You must follow the [Code of conduct](#/legal/conduct).

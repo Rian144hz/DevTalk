@@ -11,7 +11,7 @@ DevTalk is a place to practise English with other developers. Everyone here is l
 - Correct only when it helps the other person practise, and say Thanks when someone corrects you.
 - A message request is a question. If someone declines it or does not answer, do not keep asking.
 - Keep to the topic of practice: work, code and the situations developers meet.
-- Respect people's time: leave a room politely.
+- Be polite when you leave a room.
 - In a voice room, let everyone speak. Give people time to find their words and do not talk over them.
 - The room timer is only a guide. Use it to share the time, not to cut someone off.
 - If you are a host or a room moderator, mute or remove someone only when they break these rules or disturb the room.

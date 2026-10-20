@@ -7,7 +7,7 @@ Version 2026-10-20. This is a plain-language draft for Brazil's data protection 
 - Your practice (your answers, the coach's feedback, your expressions and reviews) stays **on your computer**. It is sent only to the coach (AI provider) you chose in Settings, when you ask for feedback.
 - The community keeps only what it needs: your e-mail, your profile, your private messages, which voice rooms you were in and when, and your safety actions (blocks and reports).
 - **Private messages** are stored on the community server so the two of you can read them. Only you and the other person read a conversation. Moderators see a message only when someone in the conversation reports it, together with the 10 messages before it.
-- **Voice rooms**: your voice goes directly between the computers in the room. It is **never recorded, never transcribed and never passes through the DevTalk server**. Because the connection is direct, the other people in the room can see your IP address. Moderators see a room only when someone reports it: its title, theme, host, who was there and when. They never hear it.
+- **Voice rooms**: your voice goes directly between the computers in the room. It is **never recorded, never transcribed and never passes through the community server**. Because the connection is direct, the other people in the room can see your IP address. Moderators see a room only when someone reports it: its title, theme, host, who was there and when. They never hear it.
 - For your practice graph and badges, the app sends **numbers only**: how many answers and reviews you did each day, and a few milestones. Never what you wrote.
 - You can see, export and delete your community data in the app at any time.
 
@@ -28,7 +28,7 @@ Version 2026-10-20. This is a plain-language draft for Brazil's data protection 
 - **Blocks** you make and **reports** you send.
 - **Moderation notices** sent to you, and moderation actions about your account.
 
-We do not collect your practice text, your voice, your contacts or your location. Your voice in a room is never recorded, never transcribed and never sent to the DevTalk server. The app asks your system only for the microphone; the camera and the screen are never used. Your computer measures how loud each voice in the room is, only to show who is speaking; nothing from it is saved or sent. "Check with the coach" in a chat sends only the draft you are writing to the AI provider you chose; nothing from it is saved, and the other person's messages are never sent. Before your photo or a still banner leaves your computer, the app re-encodes it, which removes hidden data such as GPS position. For an animated banner (GIF or WebP), the app removes comments and EXIF/XMP data before sending it, without changing the frames.
+We do not collect your practice text, your voice, your contacts or your location. Your voice in a room is never recorded, never transcribed and never sent to the community server. The app asks your system only for the microphone; the camera and the screen are never used. Your computer measures how loud each voice in the room is, only to show who is speaking; nothing from it is saved or sent. "Check with the coach" in a chat sends only the draft you are writing to the AI provider you chose; nothing from it is saved, and the other person's messages are never sent. Before your photo or a still banner leaves your computer, the app re-encodes it, which removes hidden data such as GPS position. For an animated banner (GIF or WebP), the app removes comments and EXIF/XMP data before sending it, without changing the frames.
 
 ## What other members see
 
@@ -60,7 +60,7 @@ We do not sell your data and we do not use it for advertising.
 
 - Your community data is kept while your account exists.
 - Messages stay until you delete them. Deleting one of your messages removes its text and its corrections; the other person sees "Message deleted". If the message was already part of a report, the copy kept for the moderators stays.
-- The rooms you opened and your sessions in rooms are kept while your account exists. Connection messages are deleted when the room ends and, in any case, about 5 minutes after they were sent.
+- The rooms you opened and your sessions in rooms are kept while your account exists. A room and its sessions are also deleted if the person who opened it deletes their account. Connection messages are deleted when the room ends, and normally about 5 minutes after they were sent (the clean-up runs whenever someone in a room checks in).
 - When you delete your account, your profile, photo, banner, practice counts, milestones, badges, follows, followers, likes, acceptances, blocks, notices, **all your conversations** (the messages and corrections in them, from both sides), the rooms you opened, your sessions in rooms and your connection messages are deleted.
 - Reports that other people sent about you are kept for moderation, without your account attached, and so is the copy of a reported conversation (it keeps the text, but not who wrote it once that account is deleted). Reports you sent are kept without your name. The room details in a report are read from the room itself, and no copy is made; they are gone when the room is deleted.
 
