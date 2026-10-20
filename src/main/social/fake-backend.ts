@@ -107,6 +107,8 @@ export interface FakeSocialBackend extends SocialBackend {
   /** The other person writes in an accepted conversation (live events follow). */
   sendAsForTest(userId: string, conversationId: string, body: string): void;
   addModeratorForTest(userId: string): void;
+  /** The sender of the corrected message thanks it (live events follow). */
+  thankAsForTest(userId: string, correctionId: number): void;
 }
 
 const emptyState = (): State => ({
@@ -1092,6 +1094,15 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       if (!c || (c.a !== userId && c.b !== userId) || c.status !== 'accepted') throw new Error('sendAsForTest: not an open conversation of this person');
       addMessage(c, userId, body);
       emit('message', c);
+      save();
+    },
+    thankAsForTest(userId, correctionId) {
+      const k = state.corrections.find((x) => x.id === correctionId);
+      const m = k && state.messages.find((x) => x.id === k.messageId);
+      const c = m && convOf(m.conversationId);
+      if (!k || !m || !c || m.sender !== userId) throw new Error('thankAsForTest: only the sender of the message can thank');
+      k.thankedAt ??= iso();
+      emit('correction', c);
       save();
     },
     addModeratorForTest(userId) {

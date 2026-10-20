@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ModerationDecision, ModerationReport, ReportContext } from '../../core/social/types';
 import type { ModerationHistoryEntry } from '../../shared/ipc-contract';
+import type { ReportedMessage } from '../../core/social/chat';
+import { messageTime } from '../lib/chat';
 import { Avatar, Button, EmptyState, Notice, REPORT_REASON_LABELS, Segmented, Skeleton, TextArea, TextField } from '../design-system';
 import { AppErrorException, api, unwrap } from '../lib/api';
 import { formatLongDate } from '../lib/format';
@@ -23,6 +25,7 @@ export function ModerationScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selected, setSelected] = useState<ModerationReport | null>(null);
   const [history, setHistory] = useState<ModerationHistoryEntry[] | null>(null);
+  const [context, setContext] = useState<ReportedMessage[] | null>(null);
   const [avatars, setAvatars] = useState<Record<string, string | null>>({});
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -65,6 +68,13 @@ export function ModerationScreen() {
     setLength('7');
     if (r.reported) void loadHistory(r.reported.id);
     else setHistory([]);
+    setContext(null);
+    if (r.contextType === 'message') {
+      void api().moderation.reportContext(r.id).then((res) => {
+        if (res.ok) setContext(res.data);
+        else setActionError(res.error.message);
+      });
+    }
   }
 
   async function decide(kind: string, decision: ModerationDecision) {
@@ -151,6 +161,30 @@ export function ModerationScreen() {
               <dt>Details</dt>
               <dd className="bio">{selected.details || <span className="muted">No details given.</span>}</dd>
             </dl>
+
+            {selected.contextType === 'message' && (
+              <div className="decision">
+                <h3>The conversation</h3>
+                {context === null ? (
+                  <Skeleton width="50%" />
+                ) : context.length === 0 ? (
+                  <p className="muted">No copy of the conversation was kept. The reporter was not in it, or it was deleted.</p>
+                ) : (
+                  <ol className="report-context" aria-label="Reported conversation">
+                    {context.map((m) => (
+                      <li key={m.messageId} className={m.reported ? 'is-reported' : undefined}>
+                        <p className="report-context-who">
+                          <span>{m.senderName ?? 'Deleted account'}</span>
+                          <span className="muted">{formatLongDate(m.createdAt)}, {messageTime(m.createdAt)}</span>
+                          {m.reported && <span className="report-context-flag">Reported</span>}
+                        </p>
+                        {m.body ? <p className="chat-bubble">{m.body}</p> : <p className="chat-bubble is-deleted">Message deleted</p>}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            )}
 
             {target && (
               <div className="decision">

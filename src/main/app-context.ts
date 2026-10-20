@@ -45,7 +45,10 @@ function fakeSocialBackend(userData: string): SocialBackend | null {
     const [name, kind] = item.split(':');
     fail[name as keyof SocialBackend] = (kind as SocialErrorKind | undefined) ?? 'offline';
   }
-  return createFakeSocialBackend({ seed: mode === 'moderation' || mode === 'people' ? mode : undefined, filePath: join(userData, 'fake-social.json'), fail });
+  const fake = createFakeSocialBackend({ seed: mode === 'moderation' || mode === 'people' ? mode : undefined, filePath: join(userData, 'fake-social.json'), fail });
+  // e2e: Playwright's app.evaluate lets "the other member" act (write, thank) from the main process. Never in packaged builds.
+  (globalThis as Record<string, unknown>)['__devtalkFakeSocial'] = fake;
+  return fake;
 }
 
 /** Every table of the local study database, as rows. */

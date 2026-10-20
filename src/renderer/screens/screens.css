@@ -288,3 +288,33 @@
 @media (max-width: 1040px) {
   .messages { grid-template-columns: 260px minmax(0, 1fr); gap: var(--s5); }
 }
+
+/* Chat: message actions, corrections as diffs, the coach check and inline confirmations */
+.chat-meta { display: flex; align-items: center; gap: var(--s2); min-height: 28px; }
+.chat-message.is-mine .chat-meta { flex-direction: row-reverse; }
+.chat-actions { display: flex; gap: var(--s1); opacity: 0; transition: opacity var(--dur-ui) var(--ease-out); }
+.chat-message:hover .chat-actions, .chat-message:focus-within .chat-actions { opacity: 1; }
+.chat-actions .btn { padding: 2px var(--s2); font-size: var(--text-xs); }
+.chat-correction, .chat-editor, .chat-confirm { margin-top: var(--s2); padding: var(--s3); border: 1px solid var(--rule); border-radius: var(--r-sheet); background: var(--sheet); display: flex; flex-direction: column; align-items: flex-start; gap: var(--s2); width: 100%; min-width: 0; }
+.chat-editor, .chat-confirm { border-color: var(--rule-strong); }
+.chat-correction-who { font-size: var(--text-xs); color: var(--ink-2); }
+.chat-thanked { font-size: var(--text-xs); color: var(--ink-2); }
+.chat-diff { margin: 0; font: var(--text-md)/1.6 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.chat-diff del { color: var(--del); text-decoration: line-through; text-decoration-thickness: 1.5px; background: var(--del-wash); border-radius: 2px; }
+.chat-diff ins { color: var(--ins); text-decoration: none; background: var(--ins-wash); border-radius: 2px; }
+.chat-confirm p { color: var(--ink-2); }
+.chat-check { padding: var(--s3); border: 1px solid var(--rule-strong); border-radius: var(--r-sheet); background: var(--bg); display: flex; flex-direction: column; gap: var(--s2); }
+.chat-check-notes { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--s1); font-size: var(--text-sm); color: var(--ink-2); }
+.chat-check-edit { font-family: var(--font-mono); color: var(--pencil); }
+.chat-check-none, .chat-check-rewrite { font-size: var(--text-sm); color: var(--ink-2); }
+.chat-check-rewrite span { color: var(--ink); font-weight: 600; }
+
+/* Moderation: the copied conversation of a message report */
+.report-context { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--s3); }
+.report-context li { display: flex; flex-direction: column; gap: var(--s1); padding: var(--s2); border-radius: var(--r-control); }
+.report-context li.is-reported { box-shadow: inset 0 0 0 1px var(--rule-strong); background: var(--sheet); }
+.report-context-who { display: flex; flex-wrap: wrap; gap: var(--s2); font-size: var(--text-sm); }
+.report-context-who > span:first-child { font-weight: 600; }
+.report-context-flag { font-weight: 600; }
+.report-context .chat-bubble { align-self: flex-start; max-width: 68ch; }
+.chat-diff del + ins { margin-left: 0.5ch; }
