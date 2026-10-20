@@ -1,10 +1,10 @@
 import { buildApi } from '../../src/preload/api';
-import { PROGRESS_EVENT } from '../../src/shared/ipc-contract';
+import { CHAT_EVENT, PROGRESS_EVENT } from '../../src/shared/ipc-contract';
 
 test('exposes exactly the spec groups', () => {
   const api = buildApi(async () => ({ ok: true, data: null }), () => () => {});
   expect(Object.keys(api).sort()).toEqual([
-    'challenges', 'feedback', 'keys', 'llm', 'llmCheck', 'moderation', 'profile', 'progress', 'review', 'safety', 'settings', 'social',
+    'challenges', 'chat', 'feedback', 'keys', 'llm', 'llmCheck', 'moderation', 'profile', 'progress', 'review', 'safety', 'settings', 'social',
   ]);
 });
 
@@ -132,4 +132,45 @@ test('social, safety and moderation methods map to their channels', async () => 
     ['social:followers', { userId: 'u6', page: 1 }],
     ['social:following', { userId: 'u6', page: 0 }],
   ]);
+});
+
+test('chat methods map to their channels and onEvent listens to the chat event', async () => {
+  const calls: [string, unknown][] = [];
+  let subscribed = '';
+  const unsubscribe = () => {};
+  const api = buildApi(async (channel, payload) => {
+    calls.push([channel, payload]);
+    return { ok: true, data: null };
+  }, (event) => {
+    subscribed = event;
+    return unsubscribe;
+  });
+  await api.chat.conversations();
+  await api.chat.messages('c1', null);
+  await api.chat.messages('c1', 40);
+  await api.chat.request('u2', 'Hi!');
+  await api.chat.respond('c1', true);
+  await api.chat.send('c1', 'Hello');
+  await api.chat.delete(5);
+  await api.chat.correct(6, 'I have');
+  await api.chat.thank(7);
+  await api.chat.read('c1');
+  await api.chat.check('I has');
+  await api.moderation.reportContext(9);
+  expect(calls).toEqual([
+    ['chat:conversations', {}],
+    ['chat:messages', { conversationId: 'c1', before: null }],
+    ['chat:messages', { conversationId: 'c1', before: 40 }],
+    ['chat:request', { userId: 'u2', body: 'Hi!' }],
+    ['chat:respond', { conversationId: 'c1', accept: true }],
+    ['chat:send', { conversationId: 'c1', body: 'Hello' }],
+    ['chat:delete', { messageId: 5 }],
+    ['chat:correct', { messageId: 6, corrected: 'I have' }],
+    ['chat:thank', { correctionId: 7 }],
+    ['chat:read', { conversationId: 'c1' }],
+    ['chat:check', { text: 'I has' }],
+    ['moderation:reportContext', { reportId: 9 }],
+  ]);
+  expect(api.chat.onEvent(() => {})).toBe(unsubscribe);
+  expect(subscribed).toBe(CHAT_EVENT);
 });

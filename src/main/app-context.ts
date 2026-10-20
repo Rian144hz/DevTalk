@@ -11,6 +11,7 @@ import { createUnconfiguredBackend, type SocialBackend } from './social/backend'
 import { readSocialConfig } from './social/config';
 import type { SocialErrorKind } from './social/errors';
 import { createFakeSocialBackend } from './social/fake-backend';
+import { createChatLive } from './social/chat-live';
 import { createPracticeSync, type PracticeSync } from './social/practice-sync';
 import { createSessionStore } from './social/session-store';
 import { createSupabaseBackend } from './social/supabase-backend';
@@ -18,6 +19,7 @@ import { createAnthropicProvider } from './llm/anthropic-provider';
 import { createGeminiProvider } from './llm/gemini-provider';
 import { checkOllama, createOllamaProvider } from './llm/ollama-provider';
 import { GEMINI_FALLBACK_MODEL, type ProviderId } from '../shared/providers';
+import { CHAT_EVENT } from '../shared/ipc-contract';
 import { createFixtureProvider } from './llm/fake-fixtures';
 import { createKeyVault, isKeyringUsable, type KeyVault, type SafeStorageLike } from './vault/key-vault';
 
@@ -153,8 +155,11 @@ export function createAppContext(
     statePath: join(userData, 'practice-sync.json'),
   });
 
+  const chatLive = createChatLive({ backend, emit: (e) => getWindow()?.webContents.send(CHAT_EVENT, e) });
+
   const socialHandlers = createSocialHandlers({
     backend,
+    onSessionChange: () => void chatLive.start(),
     exportLocal: () => exportLocalData(db),
     chooseSavePath: async (defaultName) => {
       const win = getWindow();
@@ -178,7 +183,13 @@ export function createAppContext(
 
   return {
     handlers: { ...handlers, ...socialHandlers },
-    startBackground: () => void practiceSync?.start(),
-    close: () => db.close(),
+    startBackground: () => {
+      void practiceSync?.start();
+      void chatLive.start();
+    },
+    close: () => {
+      chatLive.stop();
+      db.close();
+    },
   };
 }

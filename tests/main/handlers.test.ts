@@ -293,3 +293,37 @@ test('progress:graph counts today\'s answer under today\'s local day', async () 
   const { h } = setup();
   expect(await h['progress:graph']({ extra: 1 })).toMatchObject({ ok: false, error: { kind: 'validation' } });
 });
+
+describe('chat:check', () => {
+  const counts = (store: MemoryStudyStore) => ({
+    history: store.history({ before: null, limit: 50 }).length,
+    due: store.dueCards(t0, { excludeNew: false, limit: 50 }).length,
+  });
+
+  test('sends only the draft with the chat context and saves nothing', async () => {
+    const provider = new FakeProvider([feedbackReply]);
+    const activity: string[] = [];
+    const { h, store } = setup({ provider, activity });
+    const before = counts(store);
+    const r = await h['chat:check']({ text: '  I have fixed it yesterday.  ' });
+    expect(r).toEqual({
+      ok: true,
+      data: { rewrite: 'I fixed it.', corrections: [{ original: 'have fixed', corrected: 'fixed', explanation: 'x' }] },
+    });
+    expect(provider.calls).toHaveLength(1);
+    expect(provider.calls[0]!.user).toContain('Context: a chat message to another developer');
+    expect(provider.calls[0]!.user).toContain('I have fixed it yesterday.');
+    expect(counts(store)).toEqual(before);
+    expect(activity).toEqual([]);
+  });
+
+  test('blank or too long drafts are refused; a coach failure changes nothing', async () => {
+    const provider = new FakeProvider([async () => { throw new LLMError('unavailable', 'down'); }]);
+    const { h, store } = setup({ provider });
+    expect(await h['chat:check']({ text: '  ' })).toMatchObject({ ok: false, error: { kind: 'validation' } });
+    expect(await h['chat:check']({ text: 'x'.repeat(2001) })).toMatchObject({ ok: false, error: { kind: 'validation' } });
+    const before = counts(store);
+    expect(await h['chat:check']({ text: 'hello' })).toMatchObject({ ok: false, error: { kind: 'unavailable' } });
+    expect(counts(store)).toEqual(before);
+  });
+});

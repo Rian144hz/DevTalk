@@ -32,12 +32,17 @@ export class FeedbackEngine {
     private readonly deps: { provider: LLMProvider; store: StudyStore; clock: Clock; coachTemplate: string },
   ) {}
 
-  async review(input: FeedbackInput, signal: AbortSignal, onProgress?: (s: ProgressStage) => void): Promise<Feedback> {
-    const { provider, store, clock } = this.deps;
-    const required = input.context.kind === 'challenge' ? input.context.challenge.required.map((r) => r.expression) : [];
+  /** Asks the coach about a text and keeps nothing (the chat's "Check with the coach"). */
+  async check(
+    input: Omit<FeedbackInput, 'source'>,
+    signal: AbortSignal,
+  ): Promise<{ corrections: FeedbackPayload['corrections']; naturalRewrite: string }> {
+    const { value } = await this.ask(input, [], signal);
+    return { corrections: value.corrections, naturalRewrite: value.natural_rewrite };
+  }
 
-    const started = clock.now();
-    const { value, raw } = await generateStructured(provider, {
+  private ask(input: Omit<FeedbackInput, 'source'>, required: Expression[], signal: AbortSignal, onProgress?: (s: ProgressStage) => void) {
+    return generateStructured(this.deps.provider, {
       system: renderTemplate(this.deps.coachTemplate, coachSystemVars(input.learner)),
       user: buildFeedbackUserMessage({ text: input.text, context: input.context }),
       schema: FeedbackSchema,
@@ -46,6 +51,14 @@ export class FeedbackEngine {
       refine: (payload) => missingChecks(payload, required),
       onProgress,
     });
+  }
+
+  async review(input: FeedbackInput, signal: AbortSignal, onProgress?: (s: ProgressStage) => void): Promise<Feedback> {
+    const { provider, store, clock } = this.deps;
+    const required = input.context.kind === 'challenge' ? input.context.challenge.required.map((r) => r.expression) : [];
+
+    const started = clock.now();
+    const { value, raw } = await this.ask(input, required, signal, onProgress);
     const now = clock.now();
     const latencyMs = now.getTime() - started.getTime();
 

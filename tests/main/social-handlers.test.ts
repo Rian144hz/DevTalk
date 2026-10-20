@@ -1,5 +1,7 @@
 import type { ProfileDraft } from '../../src/core/social/types';
+import { toAppError } from '../../src/main/ipc/handle';
 import { createSocialHandlers } from '../../src/main/ipc/social-handlers';
+import { SocialError } from '../../src/main/social/errors';
 import type { SocialHandlerDeps } from '../../src/main/ipc/social-handlers';
 import { createUnconfiguredBackend } from '../../src/main/social/backend';
 import { createFakeSocialBackend } from '../../src/main/social/fake-backend';
@@ -380,5 +382,81 @@ describe('people', () => {
     backend.addNoticeForTest(me, 'Be kind.');
     const notices = await ok(h['social:notices']({}));
     expect(notices.find((n) => n.message === 'Be kind.')).toMatchObject({ kind: 'moderation', actor: null });
+  });
+});
+
+describe('chat channels', () => {
+  async function chat() {
+    const sessions: number[] = [];
+    const { h, backend } = setup({ seed: 'people' }, { onSessionChange: () => void sessions.push(1) });
+    const ids = Object.fromEntries((await backend.peopleForTest()).map((p) => [p.displayName, p.id])) as Record<string, string>;
+    const conversations = await ok(h['chat:conversations']({}));
+    const withBia = conversations.find((c) => c.other.displayName === 'Bia')!;
+    return { h, backend, ids, withBia, sessions };
+  }
+
+  test('conversations, messages, send, read and corrections go through the backend', async () => {
+    const { h, ids, withBia, backend } = await chat();
+    await ok(h['chat:send']({ conversationId: withBia.id, body: 'Thursday works for me.' }));
+    const msgs = await ok(h['chat:messages']({ conversationId: withBia.id, before: null }));
+    expect(msgs.at(-1)).toMatchObject({ body: 'Thursday works for me.', deleted: false });
+    await ok(h['chat:read']({ conversationId: withBia.id }));
+    expect((await ok(h['chat:conversations']({}))).find((c) => c.id === withBia.id)!.unread).toBe(0);
+    backend.sendAsForTest(ids['Bia']!, withBia.id, 'I has a question');
+    const theirs = (await ok(h['chat:messages']({ conversationId: withBia.id, before: null }))).at(-1)!;
+    await ok(h['chat:correct']({ messageId: theirs.id, corrected: 'I have a question' }));
+    await ok(h['chat:delete']({ messageId: msgs.at(-1)!.id }));
+    const after = await ok(h['chat:messages']({ conversationId: withBia.id, before: null }));
+    expect(after.find((m) => m.id === msgs.at(-1)!.id)).toMatchObject({ deleted: true, body: '' });
+    expect(after.at(-1)!.corrections).toEqual([expect.objectContaining({ corrected: 'I have a question' })]);
+    const id = await ok(h['chat:request']({ userId: ids['Caio']!, body: 'Hi Caio!' }));
+    expect(typeof id).toBe('string');
+    expect(await h['chat:respond']({ conversationId: id, accept: true })).toMatchObject({ ok: false, error: { kind: 'forbidden' } });
+  });
+
+  test('blank or 2 001-character text and bad ids are refused before the backend', async () => {
+    const { h, withBia } = await chat();
+    for (const body of ['', '   \n ', 'x'.repeat(2001)]) {
+      expect(await h['chat:send']({ conversationId: withBia.id, body })).toMatchObject({ ok: false, error: { kind: 'validation' } });
+      expect(await h['chat:request']({ userId: 'u2', body })).toMatchObject({ ok: false, error: { kind: 'validation' } });
+      expect(await h['chat:correct']({ messageId: 1, corrected: body })).toMatchObject({ ok: false, error: { kind: 'validation' } });
+    }
+    expect(await h['chat:send']({ conversationId: withBia.id, body: `${'x'.repeat(2000)}  ` })).toMatchObject({ ok: true });
+    expect(await h['chat:messages']({ conversationId: withBia.id, before: -1 })).toMatchObject({ ok: false, error: { kind: 'validation' } });
+    expect(await h['chat:delete']({ messageId: 1.5 })).toMatchObject({ ok: false, error: { kind: 'validation' } });
+    expect(await h['chat:respond']({ conversationId: withBia.id, accept: 'yes' })).toMatchObject({ ok: false, error: { kind: 'validation' } });
+  });
+
+  test('the chat limits get their own message', () => {
+    expect(toAppError(new SocialError('rate_limited', 'request limit reached'))).toEqual({
+      kind: 'rate_limited', message: 'You reached the limit of 10 message requests a day. Try again tomorrow.',
+    });
+    expect(toAppError(new SocialError('rate_limited', 'message limit reached')).message).toBe(
+      'You reached the limit of 500 messages a day. Try again tomorrow.',
+    );
+    expect(toAppError(new SocialError('rate_limited', 'correction limit reached')).message).toBe(
+      'You reached the limit of 200 corrections a day. Try again tomorrow.',
+    );
+  });
+
+  test('report context is for moderators only', async () => {
+    const { h, backend, ids, withBia } = await chat();
+    const theirs = (await ok(h['chat:messages']({ conversationId: withBia.id, before: null }))).at(-1)!;
+    await ok(h['safety:report']({ reported: ids['Bia']!, contextType: 'message', contextId: String(theirs.id), reason: 'spam', details: '' }));
+    expect(await h['moderation:reportContext']({ reportId: 1 })).toEqual({ ok: false, error: { kind: 'forbidden', message: 'Only moderators can see this.' } });
+    backend.addModeratorForTest(ids['Dani']!);
+    await ok(h['social:verifyCode']({ email: 'dani@example.com', code: '123456' }));
+    const report = (await ok(h['moderation:reports']({}))).find((r) => r.contextType === 'message')!;
+    expect((await ok(h['moderation:reportContext']({ reportId: report.id }))).at(-1)).toMatchObject({ messageId: theirs.id, reported: true });
+  });
+
+  test('signing in, accepting the documents, signing out and deleting tell the live chat', async () => {
+    const { h, sessions } = await chat();
+    await ok(h['social:signOut']({}));
+    await ok(h['social:sendCode']({ email: 'new@example.com' }));
+    await ok(h['social:verifyCode']({ email: 'new@example.com', code: '123456' }));
+    await ok(h['social:acceptDocuments']({}));
+    await ok(h['social:deleteAccount']({ confirmEmail: 'new@example.com', deleteLocal: false }));
+    expect(sessions).toHaveLength(4);
   });
 });

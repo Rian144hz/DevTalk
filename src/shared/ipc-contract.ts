@@ -7,6 +7,7 @@ import type { HistoryItem, ProfileInput, StoredFeedback, StoredProfile, Theme } 
 import type { PracticeGraphData } from '../core/progress/practice';
 import type { ProgressSummary } from '../core/progress/summary';
 import type { ManualBadge } from '../core/social/badges';
+import type { ChatCheck, ChatLiveEvent, ChatMessage, ConversationSummary, ReportedMessage } from '../core/social/chat';
 import type {
   Badge, MemberFilters, MemberRow, MemberSummary, ModerationDecision, ModerationReport, NoticeActor, NoticeKind, ProfileDraft, ReportInput, SocialProfile, SocialStats,
 } from '../core/social/types';
@@ -138,6 +139,18 @@ export interface Channels {
   'moderation:searchMembers': { in: { query: string }; out: MemberSummary[] };
   'moderation:grantBadge': { in: BadgeChange; out: null };
   'moderation:revokeBadge': { in: BadgeChange; out: null };
+  'moderation:reportContext': { in: { reportId: number }; out: ReportedMessage[] };
+  'chat:conversations': { in: Record<string, never>; out: ConversationSummary[] };
+  'chat:messages': { in: { conversationId: string; before: number | null }; out: ChatMessage[] };
+  'chat:request': { in: { userId: string; body: string }; out: string };
+  'chat:respond': { in: { conversationId: string; accept: boolean }; out: null };
+  'chat:send': { in: { conversationId: string; body: string }; out: null };
+  'chat:delete': { in: { messageId: number }; out: null };
+  'chat:correct': { in: { messageId: number; corrected: string }; out: null };
+  'chat:thank': { in: { correctionId: number }; out: null };
+  'chat:read': { in: { conversationId: string }; out: null };
+  /** The coach checks a draft; only the draft goes to the chosen LLM and nothing is saved. */
+  'chat:check': { in: { text: string }; out: ChatCheck };
 }
 export interface BadgeChange {
   userId: string;
@@ -156,10 +169,15 @@ export const INVOKE_CHANNELS = [
   'social:banner', 'social:members', 'social:profileOf', 'social:socialStats', 'social:follow', 'social:unfollow', 'social:like',
   'social:unlike', 'social:followers', 'social:following', 'safety:block', 'safety:unblock', 'safety:report',
   'moderation:isModerator', 'moderation:reports', 'moderation:history', 'moderation:decide',
-  'moderation:searchMembers', 'moderation:grantBadge', 'moderation:revokeBadge',
+  'moderation:searchMembers', 'moderation:grantBadge', 'moderation:revokeBadge', 'moderation:reportContext',
+  'chat:conversations', 'chat:messages', 'chat:request', 'chat:respond', 'chat:send', 'chat:delete', 'chat:correct',
+  'chat:thank', 'chat:read', 'chat:check',
 ] as const satisfies readonly InvokeChannel[];
 
 export const PROGRESS_EVENT = 'llm:progress';
+/** Main → window: live chat changes and the connection state. */
+export const CHAT_EVENT = 'chat:event';
+export type { ChatLiveEvent };
 
 type R<C extends InvokeChannel> = Promise<Result<Channels[C]['out']>>;
 
@@ -234,5 +252,20 @@ export interface DevtalkApi {
     searchMembers(query: string): R<'moderation:searchMembers'>;
     grantBadge(change: BadgeChange): R<'moderation:grantBadge'>;
     revokeBadge(change: BadgeChange): R<'moderation:revokeBadge'>;
+    reportContext(reportId: number): R<'moderation:reportContext'>;
+  };
+  /** Private chat; live changes arrive through onEvent. */
+  chat: {
+    conversations(): R<'chat:conversations'>;
+    messages(conversationId: string, before: number | null): R<'chat:messages'>;
+    request(userId: string, body: string): R<'chat:request'>;
+    respond(conversationId: string, accept: boolean): R<'chat:respond'>;
+    send(conversationId: string, body: string): R<'chat:send'>;
+    delete(messageId: number): R<'chat:delete'>;
+    correct(messageId: number, corrected: string): R<'chat:correct'>;
+    thank(correctionId: number): R<'chat:thank'>;
+    read(conversationId: string): R<'chat:read'>;
+    check(text: string): R<'chat:check'>;
+    onEvent(cb: (e: ChatLiveEvent) => void): () => void;
   };
 }

@@ -31,7 +31,11 @@ export interface HandlerDeps {
   timeZone?: () => string;
 }
 
-export type SocialChannel = Extract<InvokeChannel, `social:${string}` | `safety:${string}` | `moderation:${string}`>;
+/** Channels served by the community backend; chat:check uses the coach and stays here. */
+export type SocialChannel = Exclude<
+  Extract<InvokeChannel, `social:${string}` | `safety:${string}` | `moderation:${string}` | `chat:${string}`>,
+  'chat:check'
+>;
 export type CoreChannel = Exclude<InvokeChannel, SocialChannel>;
 export type Handlers = HandlerMap<InvokeChannel>;
 
@@ -152,6 +156,19 @@ export function createHandlers(deps: HandlerDeps): HandlerMap<CoreChannel> {
       // The graph shows 53 weeks; the longest streak counts the whole history.
       const first = addDays(today, -GRAPH_DAYS);
       return { days: all.filter((d) => d.day > first && d.day <= today), ...streaks(all, today) };
+    }),
+
+    'chat:check': handle('chat:check', async ({ text }) => {
+      const profile = requireProfile();
+      const engine = new FeedbackEngine({ provider: providerFor(profile), store, clock, coachTemplate: deps.templates().coach });
+      const result = await engine.check(
+        { text: text.trim(), context: { kind: 'free', situation: 'a chat message to another developer' }, learner: profile },
+        new AbortController().signal,
+      );
+      return {
+        rewrite: result.naturalRewrite,
+        corrections: result.corrections.map(({ original, corrected, explanation }) => ({ original, corrected, explanation })),
+      };
     }),
 
     'settings:get': handle('settings:get', () => {

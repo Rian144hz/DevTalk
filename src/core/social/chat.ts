@@ -44,6 +44,15 @@ export interface ChatEvent {
   conversationId: string;
 }
 
+/** What the window hears from the live chat: a change, or the connection going down or coming back. */
+export type ChatLiveEvent = ChatEvent | { kind: 'online' | 'offline' };
+
+/** The coach's view of a draft before it is sent. */
+export interface ChatCheck {
+  rewrite: string;
+  corrections: { original: string; corrected: string; explanation: string }[];
+}
+
 /** A message copied into a report, as moderators see it. */
 export interface ReportedMessage {
   messageId: number;

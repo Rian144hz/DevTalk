@@ -4,6 +4,7 @@ import { LEVELS } from '../../core/domain/types';
 import { PROVIDERS } from '../../shared/providers';
 import { MANUAL_BADGES } from '../../core/social/badges';
 import { MEMBER_QUERY_MAX } from '../../core/social/people';
+import { CHAT_TEXT_MAX, chatText } from '../../core/social/chat';
 import { AREAS, PROFILE_LIMITS, REPORT_CONTEXTS, REPORT_REASONS } from '../../core/social/types';
 import { ProfileDraftSchema } from '../../core/social/validate';
 
@@ -27,6 +28,12 @@ const badgeChange = z
   .object({ userId, badge: z.enum(MANUAL_BADGES), reason: z.string().trim().min(1, 'Write a reason.').max(200) })
   .strict();
 const reportId = z.number().int().positive();
+const chatBody = z
+  .string()
+  .max(CHAT_TEXT_MAX * 2)
+  .refine((s) => chatText(s) !== null, `Write 1 to ${CHAT_TEXT_MAX} characters.`);
+const conversationId = z.string().min(1).max(64);
+const messageId = z.number().int().positive();
 const decision = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('dismiss'), reportId }).strict(),
   z.object({ kind: z.literal('warn'), reportId: reportId.nullable(), target: userId, message: z.string().trim().min(1).max(1000) }).strict(),
@@ -130,4 +137,15 @@ export const INPUT_SCHEMAS = {
   'moderation:searchMembers': z.object({ query: z.string().trim().min(1).max(40) }).strict(),
   'moderation:grantBadge': badgeChange,
   'moderation:revokeBadge': badgeChange,
+  'moderation:reportContext': z.object({ reportId }).strict(),
+  'chat:conversations': empty,
+  'chat:messages': z.object({ conversationId, before: messageId.nullable() }).strict(),
+  'chat:request': z.object({ userId, body: chatBody }).strict(),
+  'chat:respond': z.object({ conversationId, accept: z.boolean() }).strict(),
+  'chat:send': z.object({ conversationId, body: chatBody }).strict(),
+  'chat:delete': z.object({ messageId }).strict(),
+  'chat:correct': z.object({ messageId, corrected: chatBody }).strict(),
+  'chat:thank': z.object({ correctionId: messageId }).strict(),
+  'chat:read': z.object({ conversationId }).strict(),
+  'chat:check': z.object({ text: chatBody }).strict(),
 } satisfies Record<InvokeChannel, z.ZodType>;

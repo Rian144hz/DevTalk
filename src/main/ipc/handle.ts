@@ -33,6 +33,9 @@ const CODES_LIMIT = 'Too many codes were sent. Wait a few minutes and try again.
 const REPORTS_LIMIT = 'You reached the limit of 20 reports a day. Try again tomorrow.';
 const FOLLOWS_LIMIT = 'You reached the limit of 200 follows a day. Try again tomorrow.';
 const LIKES_LIMIT = 'You reached the limit of 200 likes a day. Try again tomorrow.';
+const REQUESTS_LIMIT = 'You reached the limit of 10 message requests a day. Try again tomorrow.';
+const MESSAGES_LIMIT = 'You reached the limit of 500 messages a day. Try again tomorrow.';
+const CORRECTIONS_LIMIT = 'You reached the limit of 200 corrections a day. Try again tomorrow.';
 
 export class AppFailure extends Error {
   constructor(
@@ -57,6 +60,9 @@ function socialAppError(err: SocialError): AppError {
         message: /report limit/i.test(err.message) ? REPORTS_LIMIT
           : /follow limit/i.test(err.message) ? FOLLOWS_LIMIT
           : /like limit/i.test(err.message) ? LIKES_LIMIT
+          : /request limit/i.test(err.message) ? REQUESTS_LIMIT
+          : /message limit/i.test(err.message) ? MESSAGES_LIMIT
+          : /correction limit/i.test(err.message) ? CORRECTIONS_LIMIT
           : CODES_LIMIT,
       };
     case 'suspended':

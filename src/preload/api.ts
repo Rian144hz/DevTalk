@@ -1,7 +1,8 @@
-import { PROGRESS_EVENT, type DevtalkApi, type InvokeChannel, type ProgressEvent, type Result } from '../shared/ipc-contract';
+import { CHAT_EVENT, PROGRESS_EVENT, type DevtalkApi, type InvokeChannel, type Result } from '../shared/ipc-contract';
 
 type Invoke = (channel: InvokeChannel, payload: unknown) => Promise<unknown>;
-type Subscribe = (event: string, cb: (payload: ProgressEvent) => void) => () => void;
+/** Each event has its own payload type, fixed by DevtalkApi. */
+type Subscribe = (event: string, cb: (payload: never) => void) => () => void;
 
 /** Pure mapping from the typed API to IPC channels; the preload only wires it to ipcRenderer. */
 export function buildApi(invoke: Invoke, subscribe: Subscribe): DevtalkApi {
@@ -72,6 +73,20 @@ export function buildApi(invoke: Invoke, subscribe: Subscribe): DevtalkApi {
       searchMembers: (query) => call('moderation:searchMembers', { query }),
       grantBadge: (change) => call('moderation:grantBadge', change),
       revokeBadge: (change) => call('moderation:revokeBadge', change),
+      reportContext: (reportId) => call('moderation:reportContext', { reportId }),
+    },
+    chat: {
+      conversations: () => call('chat:conversations'),
+      messages: (conversationId, before) => call('chat:messages', { conversationId, before }),
+      request: (userId, body) => call('chat:request', { userId, body }),
+      respond: (conversationId, accept) => call('chat:respond', { conversationId, accept }),
+      send: (conversationId, body) => call('chat:send', { conversationId, body }),
+      delete: (messageId) => call('chat:delete', { messageId }),
+      correct: (messageId, corrected) => call('chat:correct', { messageId, corrected }),
+      thank: (correctionId) => call('chat:thank', { correctionId }),
+      read: (conversationId) => call('chat:read', { conversationId }),
+      check: (text) => call('chat:check', { text }),
+      onEvent: (cb) => subscribe(CHAT_EVENT, cb),
     },
   };
 }

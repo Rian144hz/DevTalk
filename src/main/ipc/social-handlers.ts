@@ -17,6 +17,8 @@ export interface SocialHandlerDeps {
   deleteLocalData: () => void;
   /** YYYY-MM-DD, for the export file name. */
   today: () => string;
+  /** The account changed (signed in or out, documents accepted, deleted): the live chat follows. */
+  onSessionChange?: () => void;
 }
 
 const SIGNED_OUT: SocialStatus = {
@@ -35,6 +37,10 @@ function activeSuspension(until: string | null | undefined): string | null {
 
 export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<SocialChannel> {
   const { backend } = deps;
+  const sessionChanged = <T,>(value: T): T => {
+    deps.onSessionChange?.();
+    return value;
+  };
 
   async function status(): Promise<SocialStatus> {
     if (!backend.configured) return { ...SIGNED_OUT, configured: false };
@@ -75,11 +81,11 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
     }),
     'social:verifyCode': handle('social:verifyCode', async ({ email, code }) => {
       await backend.verifyCode(email, code);
-      return status();
+      return sessionChanged(await status());
     }),
     'social:acceptDocuments': handle('social:acceptDocuments', async () => {
       await backend.acceptDocuments();
-      return status();
+      return sessionChanged(await status());
     }),
     'social:getProfile': handle('social:getProfile', () => backend.getOwnProfile()),
     'social:saveProfile': handle('social:saveProfile', (draft) =>
@@ -145,7 +151,7 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
     }),
     'social:signOut': handle('social:signOut', async () => {
       await backend.signOut();
-      return status();
+      return sessionChanged(await status());
     }),
     'social:export': handle('social:export', async ({ includeLocal }) => {
       const community = await backend.exportOwnData();
@@ -163,6 +169,7 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
         throw new AppFailure('validation', 'Type the e-mail of this account to confirm.');
       }
       await backend.deleteAccount();
+      sessionChanged(null);
       if (deleteLocal) deps.deleteLocalData();
       return null;
     }),
@@ -206,6 +213,40 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
       await requireModerator();
       await requireOtherMember(userId);
       await backend.revokeBadge(userId, badge, reason);
+      return null;
+    }),
+    'moderation:reportContext': handle('moderation:reportContext', async ({ reportId }) => {
+      await requireModerator();
+      return backend.reportContext(reportId);
+    }),
+    'chat:conversations': handle('chat:conversations', () => backend.conversations()),
+    'chat:messages': handle('chat:messages', ({ conversationId, before }) => backend.messages(conversationId, before)),
+    'chat:request': handle('chat:request', async ({ userId, body }) => {
+      await refuseSelf(userId, 'You cannot send a message to yourself.');
+      return backend.requestConversation(userId, body);
+    }),
+    'chat:respond': handle('chat:respond', async ({ conversationId, accept }) => {
+      await backend.respondConversation(conversationId, accept);
+      return null;
+    }),
+    'chat:send': handle('chat:send', async ({ conversationId, body }) => {
+      await backend.sendMessage(conversationId, body);
+      return null;
+    }),
+    'chat:delete': handle('chat:delete', async ({ messageId }) => {
+      await backend.deleteMessage(messageId);
+      return null;
+    }),
+    'chat:correct': handle('chat:correct', async ({ messageId, corrected }) => {
+      await backend.suggestCorrection(messageId, corrected);
+      return null;
+    }),
+    'chat:thank': handle('chat:thank', async ({ correctionId }) => {
+      await backend.thankCorrection(correctionId);
+      return null;
+    }),
+    'chat:read': handle('chat:read', async ({ conversationId }) => {
+      await backend.markRead(conversationId);
       return null;
     }),
   };
