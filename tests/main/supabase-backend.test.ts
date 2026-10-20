@@ -433,3 +433,159 @@ describe('people (Supabase)', () => {
     ]);
   });
 });
+
+describe('chat (Supabase)', () => {
+  type Handler = (payload: { table: string; eventType: string; new: Record<string, unknown>; old: Record<string, unknown> }) => void;
+  function fakeChannels() {
+    const opened: { name: string; tables: string[]; handlers: Handler[]; status?: (s: string) => void; closed: boolean }[] = [];
+    const open = (name: string) => {
+      const ch = { name, tables: [] as string[], handlers: [] as Handler[], status: undefined as ((s: string) => void) | undefined, closed: false };
+      opened.push(ch);
+      const api = {
+        on(_type: 'postgres_changes', filter: { table: string }, cb: Handler) {
+          ch.tables.push(filter.table);
+          ch.handlers.push(cb);
+          return api;
+        },
+        subscribe(cb: (s: string) => void) {
+          ch.status = cb;
+          return api;
+        },
+        unsubscribe() {
+          ch.closed = true;
+          return Promise.resolve('ok');
+        },
+      };
+      return api;
+    };
+    return { opened, open };
+  }
+  function chatBackend(routes: Record<string, Reply>) {
+    const f = fakeFetch({ 'POST /auth/v1/verify': json(200, sessionBody()), ...routes });
+    const channels = fakeChannels();
+    const b = createSupabaseBackend({
+      url: URL_BASE, key: 'sb_publishable_test', storage: memoryStorage(), fetch: f.fetch, autoRefreshToken: false, openChannel: channels.open,
+    });
+    return { b, calls: f.calls, channels };
+  }
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+
+  test('conversations map my_conversations', async () => {
+    const { b, calls } = chatBackend({
+      'POST /rest/v1/rpc/my_conversations': json(200, [
+        { id: 'c1', other_id: 'u2', other_name: 'Bia', other_has_avatar: true, other_mascot: 'bear-2', status: 'accepted', requested_by_me: true, preview: 'Hi', last_message_at: '2026-10-15T10:00:00Z', unread: 2 },
+      ]),
+    });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.conversations()).toEqual([
+      { id: 'c1', other: { id: 'u2', displayName: 'Bia', hasAvatar: true, mascot: 'bear-2' }, status: 'accepted', requestedByMe: true, preview: 'Hi', lastMessageAt: '2026-10-15T10:00:00Z', unread: 2 },
+    ]);
+    expect(calls.some((c) => c.path === '/rest/v1/rpc/my_conversations')).toBe(true);
+  });
+
+  test('messages read the newest 50 before a message with their corrections, oldest first', async () => {
+    const correction = { id: 7, message_id: 11, author: 'u2', corrected: 'I have', created_at: '2026-10-15T10:02:00Z', thanked_at: null };
+    const { b, calls } = chatBackend({
+      'GET /rest/v1/messages': json(200, [
+        { id: 11, conversation_id: 'c1', sender: 'user-1', body: 'I has', created_at: '2026-10-15T10:01:00Z', deleted_at: null, corrections: [correction] },
+        { id: 10, conversation_id: 'c1', sender: 'u2', body: '', created_at: '2026-10-15T10:00:00Z', deleted_at: '2026-10-15T10:05:00Z', corrections: [] },
+      ]),
+    });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.messages('c1', 12)).toEqual([
+      { id: 10, conversationId: 'c1', senderId: 'u2', body: '', createdAt: '2026-10-15T10:00:00Z', deleted: true, corrections: [] },
+      {
+        id: 11, conversationId: 'c1', senderId: 'user-1', body: 'I has', createdAt: '2026-10-15T10:01:00Z', deleted: false,
+        corrections: [{ id: 7, messageId: 11, authorId: 'u2', corrected: 'I have', createdAt: '2026-10-15T10:02:00Z', thanked: false }],
+      },
+    ]);
+    const q = calls.find((c) => c.path === '/rest/v1/messages')!.query;
+    expect(q).toMatch(/corrections\(/);
+    expect(q).toMatch(/conversation_id=eq\.c1/);
+    expect(q).toMatch(/id=lt\.12/);
+    expect(q).toMatch(/order=id\.desc/);
+    expect(q).toMatch(/limit=50/);
+  });
+
+  test('requests, answers, sends, corrections and the other actions call the right places', async () => {
+    const { b, calls } = chatBackend({
+      'POST /rest/v1/rpc/request_conversation': json(200, 'c9'),
+      'POST /rest/v1/rpc/respond_conversation': json(200, null),
+      'POST /rest/v1/messages': json(201, null),
+      'POST /rest/v1/corrections': json(201, null),
+      'POST /rest/v1/rpc/delete_message': json(200, null),
+      'POST /rest/v1/rpc/thank_correction': json(200, null),
+      'POST /rest/v1/rpc/mark_read': json(200, null),
+      'POST /rest/v1/rpc/report_context': json(200, [{ message_id: 5, sender_name: null, body: 'hey', created_at: '2026-10-15T10:00:00Z', reported: true }]),
+    });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.requestConversation('u2', '  Hi Bia!\n ')).toBe('c9');
+    await b.respondConversation('c9', false);
+    await b.sendMessage('c9', ' Hello\nthere ');
+    await b.suggestCorrection(11, ' I have ');
+    await b.deleteMessage(11);
+    await b.thankCorrection(7);
+    await b.markRead('c9');
+    expect(await b.reportContext(3)).toEqual([{ messageId: 5, senderName: null, body: 'hey', createdAt: '2026-10-15T10:00:00Z', reported: true }]);
+    const body = (path: string) => calls.find((c) => c.path === path)!.body;
+    expect(body('/rest/v1/rpc/request_conversation')).toEqual({ target: 'u2', body: 'Hi Bia!' });
+    expect(body('/rest/v1/rpc/respond_conversation')).toEqual({ conversation: 'c9', accept: false });
+    expect(body('/rest/v1/messages')).toEqual({ conversation_id: 'c9', sender: 'user-1', body: 'Hello\nthere' });
+    expect(body('/rest/v1/corrections')).toEqual({ message_id: 11, author: 'user-1', corrected: 'I have' });
+    expect(body('/rest/v1/rpc/delete_message')).toEqual({ message: 11 });
+    expect(body('/rest/v1/rpc/thank_correction')).toEqual({ correction: 7 });
+    expect(body('/rest/v1/rpc/mark_read')).toEqual({ conversation: 'c9' });
+    expect(body('/rest/v1/rpc/report_context')).toEqual({ report: 3 });
+  });
+
+  test('blank or too long text is refused before any request', async () => {
+    const { b, calls } = chatBackend({});
+    await b.verifyCode('rian@example.com', '123456');
+    const before = calls.length;
+    expect((await errorOf(b.sendMessage('c1', '  \n '))).kind).toBe('unknown');
+    expect((await errorOf(b.requestConversation('u2', 'x'.repeat(2001)))).kind).toBe('unknown');
+    expect((await errorOf(b.suggestCorrection(1, ''))).kind).toBe('unknown');
+    expect(calls.length).toBe(before);
+  });
+
+  test('daily chat limits come back as rate_limited', async () => {
+    for (const message of ['request limit reached', 'message limit reached', 'correction limit reached']) {
+      expect(mapSupabaseError({ code: 'P0001', message }, 400).kind).toBe('rate_limited');
+    }
+    const { b } = chatBackend({ 'POST /rest/v1/messages': json(400, { code: 'P0001', message: 'message limit reached' }) });
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await errorOf(b.sendMessage('c1', 'hi'))).toMatchObject({ kind: 'rate_limited' });
+  });
+
+  test('subscribe listens to the three chat tables, maps rows to events and stops on sign-out', async () => {
+    const { b, channels } = chatBackend({ 'GET /rest/v1/messages': json(200, { conversation_id: 'c2' }) });
+    await b.verifyCode('rian@example.com', '123456');
+    const events: unknown[] = [];
+    const status: boolean[] = [];
+    b.subscribe((e) => events.push(e), (on) => status.push(on));
+    const ch = channels.opened[0]!;
+    expect([...ch.tables].sort()).toEqual(['conversations', 'corrections', 'messages']);
+    ch.status!('SUBSCRIBED');
+    ch.status!('CHANNEL_ERROR');
+    expect(status).toEqual([true, false]);
+    const fire = (table: string, eventType: string, row: Record<string, unknown>, old: Record<string, unknown> = {}) =>
+      ch.handlers[ch.tables.indexOf(table)]!({ table, eventType, new: row, old });
+    fire('messages', 'INSERT', { id: 1, conversation_id: 'c1' });
+    fire('conversations', 'UPDATE', { id: 'c3', status: 'accepted' });
+    fire('corrections', 'INSERT', { id: 4, message_id: 9 });
+    fire('corrections', 'DELETE', {}, { id: 4 });
+    await flush();
+    expect(events).toEqual([
+      { kind: 'message', conversationId: 'c1' },
+      { kind: 'conversation', conversationId: 'c3' },
+      { kind: 'correction', conversationId: 'c2' },
+    ]);
+    await b.signOut();
+    expect(ch.closed).toBe(true);
+    fire('messages', 'INSERT', { id: 2, conversation_id: 'c1' });
+    ch.status!('SUBSCRIBED');
+    await flush();
+    expect(events).toHaveLength(3);
+    expect(status).toEqual([true, false]);
+  });
+});

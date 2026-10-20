@@ -505,3 +505,201 @@ describe('fake backend: people', () => {
     expect(data['social']).toMatchObject({ following: [{ id: ids['Ana'] }], likesGiven: [{ id: ids['Ana'] }] });
   });
 });
+
+describe('fake backend: chat', () => {
+  async function chat() {
+    const b = createFakeSocialBackend({ seed: 'people' });
+    const ids = Object.fromEntries((await b.peopleForTest()).map((p) => [p.displayName, p.id])) as Record<string, string>;
+    const as = async (name: string) => {
+      await b.verifyCode(`${name.toLowerCase().normalize('NFD').replace(/[^a-z]/g, '')}@example.com`, '123456');
+    };
+    const withBia = async () => (await b.conversations()).find((c) => c.other.displayName === 'Bia')!;
+    return { b, ids, as, withBia };
+  }
+  const errorOf = async (p: Promise<unknown>) => p.then(() => null, (e: unknown) => e as SocialError);
+
+  test('the people seed has a conversation with Bia (with a correction) and a request from Ana', async () => {
+    const { b, ids, withBia } = await chat();
+    expect(await b.conversations()).toEqual([
+      expect.objectContaining({ other: expect.objectContaining({ id: ids['Ana'], displayName: 'Ana' }), status: 'pending', requestedByMe: false, unread: 1 }),
+      expect.objectContaining({ other: expect.objectContaining({ displayName: 'Bia' }), status: 'accepted', unread: 1 }),
+    ]);
+    const msgs = await b.messages((await withBia()).id, null);
+    expect(msgs.length).toBeGreaterThanOrEqual(3);
+    expect(msgs.flatMap((m) => m.corrections)).toEqual([expect.objectContaining({ authorId: ids['Bia'], thanked: false })]);
+    await b.markRead((await withBia()).id);
+    expect((await withBia()).unread).toBe(0);
+  });
+
+  test('only the two people read a conversation; others get nothing', async () => {
+    const { b, as, withBia } = await chat();
+    const c = (await withBia()).id;
+    await as('Caio');
+    expect(await b.conversations()).toEqual([]);
+    expect(await b.messages(c, null)).toEqual([]);
+    expect((await errorOf(b.sendMessage(c, 'hi')))?.kind).toBe('forbidden');
+  });
+
+  test('a request is pending until accepted; a decline is silent and a repeat changes nothing', async () => {
+    const { b, ids, as } = await chat();
+    const c = await b.requestConversation(ids['Dani']!, '  Hi Dani!  ');
+    expect((await errorOf(b.sendMessage(c, 'hello?')))?.kind).toBe('forbidden');
+    expect((await errorOf(b.respondConversation(c, true)))?.kind).toBe('forbidden');
+    await as('Dani');
+    expect(await b.conversations()).toEqual([expect.objectContaining({ id: c, status: 'pending', requestedByMe: false, preview: 'Hi Dani!' })]);
+    await b.respondConversation(c, false);
+    expect(await b.conversations()).toEqual([]);
+    await as('Rian');
+    expect((await b.conversations()).find((x) => x.id === c)).toMatchObject({ status: 'pending', requestedByMe: true });
+    expect(await b.requestConversation(ids['Dani']!, 'again')).toBe(c);
+    expect(await b.messages(c, null)).toHaveLength(1);
+    expect((await errorOf(b.requestConversation(ids['Rian']!, 'me')))?.kind).toBe('forbidden');
+    expect((await errorOf(b.requestConversation(ids['Gil']!, 'blocked')))?.kind).toBe('forbidden');
+    expect((await errorOf(b.requestConversation(ids['Fabi']!, 'suspended')))?.kind).toBe('forbidden');
+    expect((await errorOf(b.requestConversation(ids['Caio']!, '   ')))?.kind).toBe('unknown');
+  });
+
+  test('asking someone who asked you accepts their request; accepting opens the conversation', async () => {
+    const { b, ids, as } = await chat();
+    const fromAna = (await b.conversations()).find((x) => x.other.displayName === 'Ana')!;
+    expect(await b.requestConversation(ids['Ana']!, 'Sure, let us talk!')).toBe(fromAna.id);
+    expect((await b.conversations()).find((x) => x.id === fromAna.id)!.status).toBe('accepted');
+    const c = await b.requestConversation(ids['Caio']!, 'Hi Caio');
+    await as('Caio');
+    await b.respondConversation(c, true);
+    await b.sendMessage(c, 'Hi! Nice to meet you.');
+    expect((await b.messages(c, null)).map((m) => m.body)).toEqual(['Hi Caio', 'Hi! Nice to meet you.']);
+  });
+
+  test('daily limits: 10 requests, 500 messages, 200 corrections', async () => {
+    const { b, ids, as, withBia } = await chat();
+    const extra: string[] = [];
+    for (let i = 0; i < 4; i++) {
+      await b.signOut();
+      await b.verifyCode(`extra${i}@example.com`, '123456');
+      await b.acceptDocuments();
+      extra.push((await b.saveProfile({ ...draft, displayName: `Extra ${i}` })).id);
+    }
+    await as('Rian');
+    const targets = ['Caio', 'Dani', 'Hugo', 'Iris', 'João', 'Lia', 'Max'].map((n) => ids[n]!).concat(extra);
+    for (const t of targets.slice(0, 10)) await b.requestConversation(t, 'Hi!');
+    expect(await errorOf(b.requestConversation(targets[10]!, 'Hi!'))).toMatchObject({ kind: 'rate_limited', message: 'request limit reached' });
+
+    const c = (await withBia()).id;
+    // The 10 first messages of the requests count; the seeded messages are older than a day.
+    for (let i = 10; i < 500; i++) await b.sendMessage(c, `m${i}`);
+    expect(await errorOf(b.sendMessage(c, 'one more'))).toMatchObject({ kind: 'rate_limited', message: 'message limit reached' });
+
+    const fromBia: number[] = [];
+    for (let i = 0; i < 201; i++) {
+      b.sendAsForTest(ids['Bia']!, c, `b${i}`);
+      fromBia.push((await b.messages(c, null)).at(-1)!.id);
+    }
+    for (const id of fromBia.slice(0, 200)) await b.suggestCorrection(id, 'fixed');
+    expect(await errorOf(b.suggestCorrection(fromBia[200]!, 'x'))).toMatchObject({ kind: 'rate_limited', message: 'correction limit reached' });
+  });
+
+  test('delete empties your message and drops its corrections; corrections and Thanks follow the rules', async () => {
+    const { b, ids, as, withBia } = await chat();
+    const c = (await withBia()).id;
+    await b.sendMessage(c, 'I has a bug');
+    const mine = (await b.messages(c, null)).at(-1)!;
+    expect((await errorOf(b.suggestCorrection(mine.id, 'I have a bug')))?.kind).toBe('forbidden');
+    await as('Bia');
+    await b.suggestCorrection(mine.id, 'I have a bug');
+    expect((await errorOf(b.suggestCorrection(mine.id, 'I have a bug!')))?.kind).toBe('unknown');
+    expect((await errorOf(b.deleteMessage(mine.id)))?.kind).toBe('forbidden');
+    const k = (await b.messages(c, null)).at(-1)!.corrections[0]!;
+    expect((await errorOf(b.thankCorrection(k.id)))?.kind).toBe('forbidden');
+    await as('Rian');
+    await b.thankCorrection(k.id);
+    expect((await b.messages(c, null)).at(-1)!.corrections[0]!.thanked).toBe(true);
+    await b.deleteMessage(mine.id);
+    expect((await b.messages(c, null)).at(-1)).toMatchObject({ id: mine.id, body: '', deleted: true, corrections: [] });
+    expect((await withBia()).preview).toBeNull();
+    await as('Bia');
+    expect((await errorOf(b.suggestCorrection(mine.id, 'x')))?.kind).toBe('forbidden');
+  });
+
+  test('a correction counts in the author\'s practice graph', async () => {
+    const { b, ids, withBia } = await chat();
+    const c = (await withBia()).id;
+    b.sendAsForTest(ids['Bia']!, c, 'I goed home');
+    const m = (await b.messages(c, null)).at(-1)!;
+    await b.suggestCorrection(m.id, 'I went home');
+    const graph = await b.practiceGraph(ids['Rian']!);
+    expect(graph.days.at(-1)).toMatchObject({ corrections: 1 });
+    expect(graph.current).toBeGreaterThanOrEqual(1);
+    await b.publishPracticeDays([{ day: graph.days.at(-1)!.day, answers: 2, reviews: 0 }]);
+    expect((await b.practiceGraph(ids['Rian']!)).days.at(-1)).toMatchObject({ answers: 2, corrections: 1 });
+  });
+
+  test('a block closes the conversation for both; unblocking opens it again', async () => {
+    const { b, ids, as, withBia } = await chat();
+    const c = (await withBia()).id;
+    await b.block(ids['Bia']!);
+    expect((await b.conversations()).map((x) => x.other.displayName)).toEqual(['Ana']);
+    expect(await b.messages(c, null)).toEqual([]);
+    await as('Bia');
+    expect(await b.conversations()).toEqual([]);
+    expect((await errorOf(b.sendMessage(c, 'hi')))?.kind).toBe('forbidden');
+    await as('Rian');
+    await b.unblock(ids['Bia']!);
+    expect((await withBia()).id).toBe(c);
+  });
+
+  test('a message report keeps the message and the 10 before it for moderators only', async () => {
+    const { b, ids, as, withBia } = await chat();
+    const c = (await withBia()).id;
+    for (let i = 1; i <= 12; i++) b.sendAsForTest(ids['Bia']!, c, `bia ${i}`);
+    const target = (await b.messages(c, null)).find((m) => m.body === 'bia 11')!;
+    await b.report({ reported: ids['Bia']!, contextType: 'message', contextId: String(target.id), reason: 'harassment', details: '' });
+    b.addModeratorForTest(ids['Dani']!);
+    await as('Dani');
+    const report = (await b.listOpenReports()).find((r) => r.contextType === 'message')!;
+    await as('Bia');
+    await b.deleteMessage(target.id);
+    expect(await b.reportContext(report.id)).toEqual([]);
+    await as('Dani');
+    const context = await b.reportContext(report.id);
+    expect(context).toHaveLength(11);
+    expect(context.at(-1)).toMatchObject({ body: 'bia 11', senderName: 'Bia', reported: true });
+    expect(context.filter((m) => m.reported)).toHaveLength(1);
+  });
+
+  test('live events reach only people who can read the conversation, and stop after sign-out', async () => {
+    const { b, ids, as, withBia } = await chat();
+    const c = (await withBia()).id;
+    const rian: unknown[] = [];
+    const caio: unknown[] = [];
+    const status: boolean[] = [];
+    b.subscribe((e) => rian.push(e), (on) => status.push(on));
+    await as('Caio');
+    b.subscribe((e) => caio.push(e), () => undefined);
+    b.sendAsForTest(ids['Bia']!, c, 'hello');
+    expect(rian).toEqual([{ kind: 'message', conversationId: c }]);
+    expect(caio).toEqual([]);
+    expect(status).toEqual([true]);
+
+    await as('Rian');
+    const d = await b.requestConversation(ids['Dani']!, 'Hi Dani');
+    expect(rian.at(-1)).toEqual({ kind: 'conversation', conversationId: d });
+    const before = rian.length;
+    await as('Dani');
+    await b.respondConversation(d, false);
+    expect(rian).toHaveLength(before);
+
+    await b.signOut();
+    b.sendAsForTest(ids['Bia']!, c, 'still there?');
+    expect(rian).toHaveLength(before);
+  });
+
+  test('deleting your account removes your conversations and messages', async () => {
+    const { b, as, withBia } = await chat();
+    const c = (await withBia()).id;
+    await b.deleteAccount();
+    await as('Bia');
+    expect(await b.conversations()).toEqual([]);
+    expect(await b.messages(c, null)).toEqual([]);
+  });
+});

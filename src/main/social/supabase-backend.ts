@@ -9,6 +9,8 @@ import {
 } from '@supabase/supabase-js';
 import { LEGAL_DOCUMENTS, LEGAL_VERSION } from '../../core/social/types';
 import type { DayActivity } from '../../core/progress/practice';
+import { CHAT_PAGE, chatText } from '../../core/social/chat';
+import type { ChatEvent, ChatMessage, ConversationStatus, ConversationSummary, ReportedMessage } from '../../core/social/chat';
 import type { ManualBadge } from '../../core/social/badges';
 import type { Badge, BadgeGroup, MascotId, MemberRow, NoticeActor, NoticeKind } from '../../core/social/types';
 import type { AvailabilitySlot, ModerationReport, ProfileDraft, SocialProfile } from '../../core/social/types';
@@ -120,12 +122,71 @@ function mapStorageError(err: unknown): SocialError {
   return new SocialError('offline', err instanceof Error ? err.message : String(err));
 }
 
+interface ChangePayload {
+  table: string;
+  eventType: string;
+  new: Record<string, unknown>;
+  old: Record<string, unknown>;
+}
+
+/** The part of a Realtime channel the chat uses (tests pass their own). */
+export interface ChatChannel {
+  on(type: 'postgres_changes', filter: { event: '*'; schema: 'public'; table: string }, cb: (payload: ChangePayload) => void): ChatChannel;
+  subscribe(cb: (status: string) => void): unknown;
+  unsubscribe(): unknown;
+}
+
+const CHAT_TABLES = ['conversations', 'messages', 'corrections'] as const;
+const MESSAGE_COLUMNS = 'id, conversation_id, sender, body, created_at, deleted_at, corrections(id, message_id, author, corrected, created_at, thanked_at)';
+
+interface CorrectionRowDb {
+  id: number;
+  message_id: number;
+  author: string;
+  corrected: string;
+  created_at: string;
+  thanked_at: string | null;
+}
+
+interface MessageRowDb {
+  id: number;
+  conversation_id: string;
+  sender: string;
+  body: string;
+  created_at: string;
+  deleted_at: string | null;
+  corrections: CorrectionRowDb[] | null;
+}
+
+function toChatMessage(r: MessageRowDb): ChatMessage {
+  return {
+    id: r.id,
+    conversationId: r.conversation_id,
+    senderId: r.sender,
+    body: r.body,
+    createdAt: r.created_at,
+    deleted: r.deleted_at !== null,
+    corrections: (r.corrections ?? [])
+      .map((k) => ({ id: k.id, messageId: k.message_id, authorId: k.author, corrected: k.corrected, createdAt: k.created_at, thanked: k.thanked_at !== null }))
+      .sort((a, b) => a.id - b.id),
+  };
+}
+
+/** The trimmed text, or a SocialError before anything is sent. */
+function validText(raw: string): string {
+  const text = chatText(raw);
+  if (text === null) throw new SocialError('unknown', 'Write 1 to 2000 characters.');
+  return text;
+}
+
 export interface SupabaseBackendOptions {
   url: string;
   key: string;
   storage: SessionStore;
   fetch?: typeof fetch;
   autoRefreshToken?: boolean;
+  /** Opens a Realtime channel; defaults to the client's own (tests replace it). */
+  openChannel?: (name: string) => ChatChannel;
 }
 
 export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBackend {
@@ -172,8 +233,29 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
     if (until) throw new SocialError('suspended', `Suspended until ${until}`, until);
   }
 
+  const openChannel = opts.openChannel ?? ((name: string) => client.channel(name) as unknown as ChatChannel);
+  const liveStops = new Set<() => void>();
+  let channelCount = 0;
+
+  /** The conversation a Realtime row belongs to; null when the event carries no way to tell (a deleted correction). */
+  async function eventOf(p: ChangePayload): Promise<ChatEvent | null> {
+    const row = Object.keys(p.new ?? {}).length > 0 ? p.new : p.old ?? {};
+    if (p.table === 'conversations') return typeof row['id'] === 'string' ? { kind: 'conversation', conversationId: row['id'] } : null;
+    if (p.table === 'messages') {
+      return typeof row['conversation_id'] === 'string' ? { kind: 'message', conversationId: row['conversation_id'] } : null;
+    }
+    if (p.table === 'corrections' && typeof row['message_id'] === 'number') {
+      const m = check(await client.from('messages').select('conversation_id').eq('id', row['message_id']).maybeSingle()) as {
+        conversation_id: string;
+      } | null;
+      return m ? { kind: 'correction', conversationId: m.conversation_id } : null;
+    }
+    return null;
+  }
+
   /** Signing out never needs the network: forget the stored session first, then tell the client. */
   async function forgetSession(): Promise<void> {
+    for (const stop of [...liveStops]) stop();
     opts.storage.clear();
     await client.auth.signOut({ scope: 'local' }).catch(() => undefined);
   }
@@ -472,7 +554,7 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
       await me();
       const since = new Date(Date.now() - GRAPH_DAYS * 86_400_000).toISOString().slice(0, 10);
       const days = check(
-        await client.from('practice_days').select('day, answers, reviews').eq('user_id', userId).gte('day', since).order('day'),
+        await client.from('practice_days').select('day, answers, reviews, corrections').eq('user_id', userId).gte('day', since).order('day'),
       ) as DayActivity[];
       const streak = check(await client.rpc('practice_streaks', { target: userId })) as { current: number; longest: number }[] | null;
       return { days: days ?? [], current: streak?.[0]?.current ?? 0, longest: streak?.[0]?.longest ?? 0 };
@@ -610,6 +692,115 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
     async following(userId, page) {
       await me();
       return (check(await client.rpc('following_of', { target: userId, page })) as MemberRowDb[]).map(toMemberRow);
+    },
+
+    async conversations(): Promise<ConversationSummary[]> {
+      await me();
+      const rows = check(await client.rpc('my_conversations')) as {
+        id: string;
+        other_id: string;
+        other_name: string;
+        other_has_avatar: boolean;
+        other_mascot: string | null;
+        status: ConversationStatus;
+        requested_by_me: boolean;
+        preview: string | null;
+        last_message_at: string | null;
+        unread: number;
+      }[];
+      return (rows ?? []).map((r) => ({
+        id: r.id,
+        other: { id: r.other_id, displayName: r.other_name, hasAvatar: r.other_has_avatar, mascot: (r.other_mascot as MascotId | null) ?? null },
+        status: r.status,
+        requestedByMe: r.requested_by_me,
+        preview: r.preview,
+        lastMessageAt: r.last_message_at,
+        unread: r.unread,
+      }));
+    },
+
+    async messages(conversationId, before) {
+      await me();
+      let q = client.from('messages').select(MESSAGE_COLUMNS).eq('conversation_id', conversationId);
+      if (before !== null) q = q.lt('id', before);
+      const rows = check(await q.order('id', { ascending: false }).limit(CHAT_PAGE)) as unknown as MessageRowDb[];
+      return (rows ?? []).map(toChatMessage).reverse();
+    },
+
+    async requestConversation(userId, body) {
+      const text = validText(body);
+      await me();
+      return check(await client.rpc('request_conversation', { target: userId, body: text })) as string;
+    },
+
+    async respondConversation(conversationId, accept) {
+      await me();
+      check(await client.rpc('respond_conversation', { conversation: conversationId, accept }));
+    },
+
+    async sendMessage(conversationId, body) {
+      const text = validText(body);
+      const { userId } = await me();
+      check(await client.from('messages').insert({ conversation_id: conversationId, sender: userId, body: text }));
+    },
+
+    async deleteMessage(messageId) {
+      await me();
+      check(await client.rpc('delete_message', { message: messageId }));
+    },
+
+    async suggestCorrection(messageId, corrected) {
+      const text = validText(corrected);
+      const { userId } = await me();
+      check(await client.from('corrections').insert({ message_id: messageId, author: userId, corrected: text }));
+    },
+
+    async thankCorrection(correctionId) {
+      await me();
+      check(await client.rpc('thank_correction', { correction: correctionId }));
+    },
+
+    async markRead(conversationId) {
+      await me();
+      check(await client.rpc('mark_read', { conversation: conversationId }));
+    },
+
+    async reportContext(reportId): Promise<ReportedMessage[]> {
+      await me();
+      const rows = check(await client.rpc('report_context', { report: reportId })) as {
+        message_id: number;
+        sender_name: string | null;
+        body: string;
+        created_at: string;
+        reported: boolean;
+      }[];
+      return (rows ?? []).map((r) => ({ messageId: r.message_id, senderName: r.sender_name, body: r.body, createdAt: r.created_at, reported: r.reported }));
+    },
+
+    subscribe(onEvent, onStatus) {
+      let open = true;
+      const channel = openChannel(`chat-${++channelCount}`);
+      const handle = (p: ChangePayload) => {
+        if (!open) return;
+        void eventOf(p).then(
+          (e) => {
+            if (open && e) onEvent(e);
+          },
+          () => undefined,
+        );
+      };
+      for (const table of CHAT_TABLES) channel.on('postgres_changes', { event: '*', schema: 'public', table }, handle);
+      channel.subscribe((status) => {
+        if (open) onStatus(status === 'SUBSCRIBED');
+      });
+      const stop = () => {
+        if (!open) return;
+        open = false;
+        liveStops.delete(stop);
+        void Promise.resolve(channel.unsubscribe()).catch(() => undefined);
+      };
+      liveStops.add(stop);
+      return stop;
     },
 
     async deleteAccount() {

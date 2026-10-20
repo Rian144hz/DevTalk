@@ -5,6 +5,8 @@ import { addDays, streaks, type DayActivity } from '../../core/progress/practice
 import { BADGE_LABELS, type ManualBadge } from '../../core/social/badges';
 import { LEGAL_DOCUMENTS, LEGAL_VERSION } from '../../core/social/types';
 import { MEMBER_PAGE_SIZE } from '../../core/social/people';
+import { CHAT_PAGE, chatText } from '../../core/social/chat';
+import type { ChatEvent, ChatMessage, ConversationSummary, ReportedMessage } from '../../core/social/chat';
 import type { Badge, MemberRow, ModerationReport, NoticeKind, ProfileDraft, ReportInput, SocialProfile } from '../../core/social/types';
 import type { MemberSummary, ModerationHistoryItem, Notice, PracticeGraphData, SocialBackend, SocialSession } from './backend';
 import { SocialError } from './errors';
@@ -56,6 +58,31 @@ interface State {
   badgeGrants: { userId: string; badge: string }[];
   follows: { follower: string; followee: string; at: string }[];
   likes: { liker: string; profile: string; at: string }[];
+  conversations: StoredConversation[];
+  messages: StoredMessage[];
+  corrections: { id: number; messageId: number; author: string; corrected: string; createdAt: string; thankedAt: string | null }[];
+  reads: { conversationId: string; userId: string; lastReadId: number }[];
+  reportMessages: { reportId: number; messageId: number; sender: string | null; body: string; createdAt: string }[];
+}
+
+interface StoredConversation {
+  id: string;
+  a: string;
+  b: string;
+  requestedBy: string;
+  status: 'pending' | 'accepted' | 'declined';
+  createdAt: string;
+  respondedAt: string | null;
+  lastMessageAt: string;
+}
+
+interface StoredMessage {
+  id: number;
+  conversationId: string;
+  sender: string;
+  body: string;
+  createdAt: string;
+  deletedAt: string | null;
 }
 
 export interface FakeSocialOptions {
@@ -77,6 +104,9 @@ export interface FakeSocialBackend extends SocialBackend {
   peopleForTest(): Promise<{ id: string; displayName: string }[]>;
   /** Adds `n` follows by `follower` made now, to reach the daily limit. */
   addFollowsForTest(follower: string, n: number): void;
+  /** The other person writes in an accepted conversation (live events follow). */
+  sendAsForTest(userId: string, conversationId: string, body: string): void;
+  addModeratorForTest(userId: string): void;
 }
 
 const emptyState = (): State => ({
@@ -100,6 +130,11 @@ const emptyState = (): State => ({
   badgeGrants: [],
   follows: [],
   likes: [],
+  conversations: [],
+  messages: [],
+  corrections: [],
+  reads: [],
+  reportMessages: [],
 });
 
 const LEVEL_ORDER = ['A2', 'B1', 'B2', 'C1', 'C2'];
@@ -219,6 +254,34 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
     for (const [follower, followee] of ties) state.follows.push({ follower: p[follower], followee, at });
     state.blocks.push({ blocker: p.Gil, blocked: rian });
     state.notices.push({ id: nextId(), userId: rian, message: 'Hugo followed you.', createdAt: at, readAt: null, kind: 'follow', actor: p.Hugo });
+    // Chat: an open conversation with Bia (Rian has not read her last message) and a request from Ana.
+    const talk = (x: string, y: string, requestedBy: string, status: StoredConversation['status'], ms: number) => {
+      const c: StoredConversation = {
+        id: newUuid(), a: x < y ? x : y, b: x < y ? y : x, requestedBy, status,
+        createdAt: iso(ms), respondedAt: status === 'pending' ? null : iso(ms), lastMessageAt: iso(ms),
+      };
+      state.conversations.push(c);
+      return c;
+    };
+    const say = (c: StoredConversation, sender: string, body: string, ms: number) => {
+      const id = nextId();
+      state.messages.push({ id, conversationId: c.id, sender, body, createdAt: iso(ms), deletedAt: null });
+      c.lastMessageAt = iso(ms);
+      return id;
+    };
+    const t0 = now() - 2 * DAY_MS - 3 * 3_600_000;
+    const withBia = talk(rian, p.Bia, rian, 'accepted', t0);
+    say(withBia, rian, 'Hi Bia! Do you want to practise English this week?', t0);
+    say(withBia, p.Bia, 'Yes! I am free on Thursday evening.', t0 + 10 * 60_000);
+    const meeting = say(withBia, rian, 'Yesterday I have a long meeting about our API.', t0 + 20 * 60_000);
+    state.corrections.push({
+      id: nextId(), messageId: meeting, author: p.Bia, corrected: 'Yesterday I had a long meeting about our API.',
+      createdAt: iso(t0 + 25 * 60_000), thankedAt: null,
+    });
+    const last = say(withBia, p.Bia, 'How was the meeting? Did you show the new endpoints?', t0 + 30 * 60_000);
+    state.reads.push({ conversationId: withBia.id, userId: rian, lastReadId: meeting }, { conversationId: withBia.id, userId: p.Bia, lastReadId: last });
+    const fromAna = talk(p.Ana, rian, p.Ana, 'pending', now() - 3_600_000);
+    say(fromAna, p.Ana, 'Hi Rian! Can we practise Python interview questions in English?', now() - 3_600_000);
     state.seeded = Object.values(p);
     state.session = { userId: rian, email: 'rian@example.com' };
     save();
@@ -307,6 +370,61 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
   };
   const recentCount = (rows: { at: string }[]) => rows.filter((r) => Date.parse(r.at) > now() - DAY_MS).length;
 
+  // Chat (mirrors 0008_chat.sql).
+  const convOf = (id: string) => state.conversations.find((c) => c.id === id);
+  const otherIn = (c: StoredConversation, viewer: string) => (c.a === viewer ? c.b : c.a);
+  /** Mirrors can_read_conversation(). */
+  const canRead = (viewer: string, c: StoredConversation | undefined): c is StoredConversation =>
+    !!c && isViewerMember(viewer) && (c.a === viewer || c.b === viewer) && !blockedBetween(c.a, c.b);
+  const canWrite = (viewer: string, c: StoredConversation | undefined): c is StoredConversation =>
+    canRead(viewer, c) && c.status === 'accepted';
+  /** Mirrors the conversations policy: a declined request is hidden from the person who asked. */
+  const seesRow = (viewer: string, c: StoredConversation) => canRead(viewer, c) && (c.status !== 'declined' || c.requestedBy !== viewer);
+  const listeners: { viewer: string; onEvent: (e: ChatEvent) => void }[] = [];
+  const emit = (kind: ChatEvent['kind'], c: StoredConversation) => {
+    for (const l of [...listeners]) {
+      if (kind === 'conversation' ? seesRow(l.viewer, c) : canRead(l.viewer, c)) l.onEvent({ kind, conversationId: c.id });
+    }
+  };
+  const textOrFail = (raw: string) => {
+    const text = chatText(raw);
+    if (text === null) throw new SocialError('unknown', 'Write 1 to 2000 characters.');
+    return text;
+  };
+  const rlsDenied = () => new SocialError('forbidden', 'new row violates row-level security policy');
+  const notAllowed = () => new SocialError('forbidden', 'not allowed');
+  const assertMessageRoom = (sender: string) => {
+    if (state.messages.filter((m) => m.sender === sender && Date.parse(m.createdAt) > now() - DAY_MS).length >= 500) {
+      throw new SocialError('rate_limited', 'message limit reached');
+    }
+  };
+  const addMessage = (c: StoredConversation, sender: string, body: string) => {
+    assertMessageRoom(sender);
+    const m: StoredMessage = { id: nextId(), conversationId: c.id, sender, body, createdAt: iso(), deletedAt: null };
+    state.messages.push(m);
+    c.lastMessageAt = m.createdAt;
+  };
+  const toChatMessage = (m: StoredMessage): ChatMessage => ({
+    id: m.id,
+    conversationId: m.conversationId,
+    senderId: m.sender,
+    body: m.body,
+    createdAt: m.createdAt,
+    deleted: m.deletedAt !== null,
+    corrections: state.corrections
+      .filter((k) => k.messageId === m.id)
+      .map((k) => ({ id: k.id, messageId: k.messageId, authorId: k.author, corrected: k.corrected, createdAt: k.createdAt, thanked: k.thankedAt !== null })),
+  });
+  /** Mirrors count_correction(): +1 on the author's day in their profile's time zone. */
+  const countCorrection = (author: string) => {
+    const day = localToday(state.profiles[author]?.timezone ?? 'UTC');
+    const days = state.practiceDays[author] ?? [];
+    const d = days.find((x) => x.day === day);
+    if (d) d.corrections = Math.min((d.corrections ?? 0) + 1, 2000);
+    else days.push({ day, answers: 0, reviews: 0, corrections: 1 });
+    state.practiceDays[author] = days.sort((x, y) => x.day.localeCompare(y.day));
+  };
+
   const backend: FakeSocialBackend = {
     configured: true,
 
@@ -330,6 +448,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
     async signOut() {
       failIf('signOut');
       state.session = null;
+      listeners.length = 0;
       save();
     },
 
@@ -414,7 +533,18 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       assertActive(userId);
       const recent = state.reports.filter((r) => r.reporter === userId && Date.parse(r.createdAt) > now() - DAY_MS);
       if (recent.length >= 20) throw new SocialError('rate_limited', 'report limit reached');
-      state.reports.push({ ...input, id: nextId(), reporter: userId, status: 'open', createdAt: iso() });
+      const id = nextId();
+      state.reports.push({ ...input, id, reporter: userId, status: 'open', createdAt: iso() });
+      // Mirrors snapshot_reported_message(): the message and the 10 before it, when the reporter is in the conversation.
+      const target = input.contextType === 'message' && /^[0-9]{1,18}$/.test(input.contextId ?? '')
+        ? state.messages.find((m) => m.id === Number(input.contextId))
+        : undefined;
+      const c = target && convOf(target.conversationId);
+      if (target && c && (c.a === userId || c.b === userId)) {
+        for (const m of state.messages.filter((x) => x.conversationId === c.id && x.id <= target.id).slice(-11)) {
+          state.reportMessages.push({ reportId: id, messageId: m.id, sender: m.sender, body: m.body, createdAt: m.createdAt });
+        }
+      }
       save();
     },
 
@@ -538,6 +668,16 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       state.notices = state.notices.filter((n) => n.userId !== userId && n.actor !== userId);
       state.follows = state.follows.filter((f) => f.follower !== userId && f.followee !== userId);
       state.likes = state.likes.filter((l) => l.liker !== userId && l.profile !== userId);
+      const goneConversations = new Set(
+        state.conversations.filter((c) => c.a === userId || c.b === userId || c.requestedBy === userId).map((c) => c.id),
+      );
+      state.conversations = state.conversations.filter((c) => !goneConversations.has(c.id));
+      const goneMessages = new Set(state.messages.filter((m) => goneConversations.has(m.conversationId) || m.sender === userId).map((m) => m.id));
+      state.messages = state.messages.filter((m) => !goneMessages.has(m.id));
+      state.corrections = state.corrections.filter((k) => !goneMessages.has(k.messageId) && k.author !== userId);
+      state.reads = state.reads.filter((r) => !goneConversations.has(r.conversationId) && r.userId !== userId);
+      for (const x of state.reportMessages) if (x.sender === userId) x.sender = null;
+      listeners.length = 0;
       for (const r of state.reports) {
         if (r.reporter === userId) r.reporter = null;
         if (r.reported === userId) r.reported = null;
@@ -587,7 +727,11 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       const { userId } = me();
       assertMember(userId);
       const byDay = new Map((state.practiceDays[userId] ?? []).map((d) => [d.day, d]));
-      for (const d of days) byDay.set(d.day, { ...d });
+      // Corrections are counted by the server, never published by the app.
+      for (const d of days) {
+        const kept = byDay.get(d.day)?.corrections;
+        byDay.set(d.day, { day: d.day, answers: d.answers, reviews: d.reviews, ...(kept ? { corrections: kept } : {}) });
+      }
       state.practiceDays[userId] = [...byDay.values()].sort((a, b) => a.day.localeCompare(b.day));
       save();
     },
@@ -764,6 +908,196 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       return pageOf(rows, page);
     },
 
+    async conversations(): Promise<ConversationSummary[]> {
+      failIf('conversations');
+      const viewer = me().userId;
+      return state.conversations
+        .filter((c) => canRead(viewer, c) && (c.status !== 'declined' || c.requestedBy === viewer) && otherIn(c, viewer) in state.profiles)
+        .sort((x, y) => y.lastMessageAt.localeCompare(x.lastMessageAt) || x.id.localeCompare(y.id))
+        .map((c) => {
+          const otherId = otherIn(c, viewer);
+          const p = state.profiles[otherId]!;
+          const msgs = state.messages.filter((m) => m.conversationId === c.id);
+          const last = msgs.at(-1);
+          const read = state.reads.find((r) => r.conversationId === c.id && r.userId === viewer)?.lastReadId ?? 0;
+          return {
+            id: c.id,
+            other: { id: otherId, displayName: p.displayName, hasAvatar: otherId in state.avatars, mascot: p.mascot },
+            status: c.status === 'declined' ? 'pending' : c.status,
+            requestedByMe: c.requestedBy === viewer,
+            preview: last && last.deletedAt === null ? last.body.slice(0, 140) : null,
+            lastMessageAt: c.lastMessageAt,
+            unread: msgs.filter((m) => m.sender !== viewer && m.deletedAt === null && m.id > read).length,
+          };
+        });
+    },
+
+    async messages(conversationId, before) {
+      failIf('messages');
+      const viewer = me().userId;
+      const c = convOf(conversationId);
+      if (!canRead(viewer, c)) return [];
+      return state.messages
+        .filter((m) => m.conversationId === c.id && (before === null || m.id < before))
+        .slice(-CHAT_PAGE)
+        .map(toChatMessage);
+    },
+
+    async requestConversation(userId, body) {
+      failIf('requestConversation');
+      const text = textOrFail(body);
+      const viewer = me().userId;
+      if (userId === viewer || !(viewer in state.profiles) || !canReach(viewer, userId)) {
+        throw new SocialError('forbidden', 'not allowed');
+      }
+      const [a, b] = viewer < userId ? [viewer, userId] : [userId, viewer];
+      let c = state.conversations.find((x) => x.a === a && x.b === b);
+      if (c) {
+        const declinedLately = c.status === 'declined' && c.requestedBy === viewer && Date.parse(c.respondedAt ?? '') > now() - 30 * DAY_MS;
+        if (c.status === 'accepted' || (c.status === 'pending' && c.requestedBy === viewer) || declinedLately) return c.id;
+        if (c.status === 'pending') {
+          addMessage(c, viewer, text);
+          c.status = 'accepted';
+          c.respondedAt = iso();
+          emit('conversation', c);
+          save();
+          return c.id;
+        }
+      }
+      if (state.conversations.filter((x) => x.requestedBy === viewer && Date.parse(x.createdAt) > now() - DAY_MS).length >= 10) {
+        throw new SocialError('rate_limited', 'request limit reached');
+      }
+      assertMessageRoom(viewer);
+      if (c) Object.assign(c, { status: 'pending', requestedBy: viewer, createdAt: iso(), respondedAt: null });
+      else {
+        c = { id: newUuid(), a, b, requestedBy: viewer, status: 'pending', createdAt: iso(), respondedAt: null, lastMessageAt: iso() };
+        state.conversations.push(c);
+      }
+      addMessage(c, viewer, text);
+      emit('conversation', c);
+      save();
+      return c.id;
+    },
+
+    async respondConversation(conversationId, accept) {
+      failIf('respondConversation');
+      const viewer = me().userId;
+      const c = convOf(conversationId);
+      if (!canRead(viewer, c) || c.status !== 'pending' || c.requestedBy === viewer) throw notAllowed();
+      c.status = accept ? 'accepted' : 'declined';
+      c.respondedAt = iso();
+      emit('conversation', c);
+      save();
+    },
+
+    async sendMessage(conversationId, body) {
+      failIf('sendMessage');
+      const text = textOrFail(body);
+      const viewer = me().userId;
+      const c = convOf(conversationId);
+      if (!canWrite(viewer, c)) throw rlsDenied();
+      addMessage(c, viewer, text);
+      emit('message', c);
+      save();
+    },
+
+    async deleteMessage(messageId) {
+      failIf('deleteMessage');
+      const viewer = me().userId;
+      const m = state.messages.find((x) => x.id === messageId);
+      if (!m || m.sender !== viewer) throw notAllowed();
+      state.corrections = state.corrections.filter((k) => k.messageId !== messageId);
+      if (m.deletedAt === null) {
+        m.body = '';
+        m.deletedAt = iso();
+      }
+      const c = convOf(m.conversationId);
+      if (c) emit('message', c);
+      save();
+    },
+
+    async suggestCorrection(messageId, corrected) {
+      failIf('suggestCorrection');
+      const text = textOrFail(corrected);
+      const viewer = me().userId;
+      const m = state.messages.find((x) => x.id === messageId);
+      const c = m && convOf(m.conversationId);
+      if (!m || m.sender === viewer || m.deletedAt !== null || !canWrite(viewer, c)) throw rlsDenied();
+      if (state.corrections.some((k) => k.messageId === messageId && k.author === viewer)) {
+        throw new SocialError('unknown', 'duplicate key value violates unique constraint');
+      }
+      if (state.corrections.filter((k) => k.author === viewer && Date.parse(k.createdAt) > now() - DAY_MS).length >= 200) {
+        throw new SocialError('rate_limited', 'correction limit reached');
+      }
+      state.corrections.push({ id: nextId(), messageId, author: viewer, corrected: text, createdAt: iso(), thankedAt: null });
+      countCorrection(viewer);
+      emit('correction', c);
+      save();
+    },
+
+    async thankCorrection(correctionId) {
+      failIf('thankCorrection');
+      const viewer = me().userId;
+      const k = state.corrections.find((x) => x.id === correctionId);
+      const m = k && state.messages.find((x) => x.id === k.messageId);
+      const c = m && convOf(m.conversationId);
+      if (!k || !m || m.sender !== viewer || !canRead(viewer, c)) throw notAllowed();
+      k.thankedAt ??= iso();
+      emit('correction', c);
+      save();
+    },
+
+    async markRead(conversationId) {
+      failIf('markRead');
+      const viewer = me().userId;
+      const c = convOf(conversationId);
+      if (!canRead(viewer, c)) return;
+      const last = Math.max(0, ...state.messages.filter((m) => m.conversationId === c.id).map((m) => m.id));
+      const r = state.reads.find((x) => x.conversationId === c.id && x.userId === viewer);
+      if (r) r.lastReadId = Math.max(r.lastReadId, last);
+      else state.reads.push({ conversationId: c.id, userId: viewer, lastReadId: last });
+      save();
+    },
+
+    async reportContext(reportId): Promise<ReportedMessage[]> {
+      failIf('reportContext');
+      const viewer = me().userId;
+      if (!isModerator(viewer) || !isActive(viewer)) return [];
+      const report = state.reports.find((r) => r.id === reportId);
+      return state.reportMessages
+        .filter((x) => x.reportId === reportId)
+        .sort((x, y) => x.messageId - y.messageId)
+        .map((x) => ({
+          messageId: x.messageId,
+          senderName: x.sender ? (state.profiles[x.sender]?.displayName ?? null) : null,
+          body: x.body,
+          createdAt: x.createdAt,
+          reported: report?.contextId === String(x.messageId),
+        }));
+    },
+
+    subscribe(onEvent, onStatus) {
+      if (!state.session) return () => {};
+      const listener = { viewer: state.session.userId, onEvent };
+      listeners.push(listener);
+      onStatus(true);
+      return () => {
+        const i = listeners.indexOf(listener);
+        if (i >= 0) listeners.splice(i, 1);
+      };
+    },
+
+    sendAsForTest(userId, conversationId, body) {
+      const c = convOf(conversationId);
+      if (!c || (c.a !== userId && c.b !== userId) || c.status !== 'accepted') throw new Error('sendAsForTest: not an open conversation of this person');
+      addMessage(c, userId, body);
+      emit('message', c);
+      save();
+    },
+    addModeratorForTest(userId) {
+      if (!state.moderators.includes(userId)) state.moderators.push(userId);
+      save();
+    },
     seededUserIds: () => [...state.seeded],
     async peopleForTest() {
       return Object.values(state.profiles).map((p) => ({ id: p.id, displayName: p.displayName }));

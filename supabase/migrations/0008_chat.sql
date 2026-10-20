@@ -292,8 +292,8 @@ language sql volatile security definer set search_path = public as $$
     set last_read_id = greatest(public.conversation_reads.last_read_id, excluded.last_read_id), last_read_at = now()
 $$;
 
--- The caller's conversations and requests, newest first. A request you declined disappears for you; for the
--- person who asked it stays "pending".
+-- The caller's conversations and requests, newest first. The preview is null when the last message was deleted.
+-- A request you declined disappears for you; for the person who asked it stays "pending".
 create or replace function public.my_conversations()
 returns table (id uuid, other_id uuid, other_name text, other_has_avatar boolean, other_mascot text, status text,
   requested_by_me boolean, preview text, last_message_at timestamptz, unread int)
@@ -301,7 +301,7 @@ language sql stable security definer set search_path = public as $$
   select c.id, p.id, p.display_name, p.avatar_path is not null, p.mascot,
     case when c.status = 'declined' then 'pending' else c.status end,
     c.requested_by = auth.uid(),
-    (select case when m.deleted_at is null then left(m.body, 140) else 'Message deleted' end
+    (select case when m.deleted_at is null then left(m.body, 140) end
       from public.messages m where m.conversation_id = c.id order by m.id desc limit 1),
     c.last_message_at,
     (select count(*)::int from public.messages m

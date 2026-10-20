@@ -1,4 +1,5 @@
 import type { DayActivity, PracticeGraphData } from '../../core/progress/practice';
+import type { ChatEvent, ChatMessage, ConversationSummary, ReportedMessage } from '../../core/social/chat';
 import type { ManualBadge } from '../../core/social/badges';
 import type { Badge, MemberFilters, MemberRow, MemberSummary, NoticeActor, NoticeKind, SocialStats, ModerationDecision, ModerationReport, ProfileDraft, ReportInput, SocialProfile } from '../../core/social/types';
 import { SocialError } from './errors';
@@ -83,6 +84,22 @@ export interface SocialBackend {
   unlike(userId: string): Promise<void>;
   followers(userId: string, page: number): Promise<MemberRow[]>;
   following(userId: string, page: number): Promise<MemberRow[]>;
+  /** The caller's conversations and requests, newest first. */
+  conversations(): Promise<ConversationSummary[]>;
+  /** The newest 50 messages before `before` (all when null), oldest first, with their corrections. */
+  messages(conversationId: string, before: number | null): Promise<ChatMessage[]>;
+  /** Asks for a conversation with a first message; returns the conversation id. */
+  requestConversation(userId: string, body: string): Promise<string>;
+  respondConversation(conversationId: string, accept: boolean): Promise<void>;
+  sendMessage(conversationId: string, body: string): Promise<void>;
+  deleteMessage(messageId: number): Promise<void>;
+  suggestCorrection(messageId: number, corrected: string): Promise<void>;
+  thankCorrection(correctionId: number): Promise<void>;
+  markRead(conversationId: string): Promise<void>;
+  /** Moderators: the messages copied into a message report (empty for anyone else). */
+  reportContext(reportId: number): Promise<ReportedMessage[]>;
+  /** Live changes for the signed-in member; returns the unsubscribe. */
+  subscribe(onEvent: (e: ChatEvent) => void, onStatus: (online: boolean) => void): () => void;
 }
 
 /** Used when the build has no Supabase settings: every call says so. */
@@ -135,5 +152,16 @@ export function createUnconfiguredBackend(): SocialBackend {
     unlike: fail,
     followers: fail,
     following: fail,
+    conversations: fail,
+    messages: fail,
+    requestConversation: fail,
+    respondConversation: fail,
+    sendMessage: fail,
+    deleteMessage: fail,
+    suggestCorrection: fail,
+    thankCorrection: fail,
+    markRead: fail,
+    reportContext: fail,
+    subscribe: () => () => {},
   };
 }

@@ -356,7 +356,7 @@ describe('reads and the list', () => {
     expect(await mine(x)).toEqual([expect.objectContaining({ status: 'accepted', preview: 'two', unread: 2 })]);
     await t.as(y);
     await t.db.query('select public.delete_message($1)', [last]);
-    expect(await mine(x)).toEqual([expect.objectContaining({ preview: 'Message deleted', unread: 1 })]);
+    expect(await mine(x)).toEqual([expect.objectContaining({ preview: null, unread: 1 })]);
   });
 });
 
