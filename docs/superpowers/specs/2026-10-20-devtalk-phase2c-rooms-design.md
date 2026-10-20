@@ -50,7 +50,8 @@ relé TURN; poderes de moderadores do app dentro das salas; escolha de dispositi
 - `rooms (id uuid, created_by, host, title, theme, level, created_at, ended_at, timer_started_at, timer_seconds, card)`:
   `title` 3–60 caracteres; `theme in ('standup','code_review','interview','free')`; `level` A2–C2 ou nulo (qualquer);
   `timer_seconds in (60, 90)` ou nulo; `card` ≥ 0. `created_by` e `host` apontam para `auth.users` (cascade).
-- `room_sessions (id bigint, room_id, user_id, role, joined_at, last_seen, left_at, removed, mute_requested_at)`: uma linha
+- `room_sessions (id bigint, room_id, user_id, role, joined_at, left_at, removed, muted, mute_requested_at)` (o `last_seen`
+  fica em `room_presence`, fora do Realtime): uma linha
   por entrada; `role in ('member','moderator')`; viva = `left_at is null and last_seen > now() - 90 s`. Cascade da sala e
   da pessoa.
 - `room_signals (id bigint, room_id, sender, recipient, kind, payload jsonb, created_at)`: `kind in
@@ -71,10 +72,11 @@ relé TURN; poderes de moderadores do app dentro das salas; escolha de dispositi
   `pass_host(room, user)`: só o anfitrião, para pessoa viva. `mute_member(room, user)`: anfitrião ou moderador da sala,
   nunca contra o anfitrião. `remove_from_room(room, user)`: anfitrião ou moderador da sala, nunca contra o anfitrião nem
   (para o moderador) contra outro moderador; marca `removed` e fecha a sessão. `end_room(room)`: só o anfitrião.
+- **Mutado** — `set_room_muted(room, muted)`: cada um informa o próprio estado; todos veem o ícone de mutado.
 - **Timer e cartão** — `start_timer(room, seconds)` (60 ou 90) e `stop_timer(room)`, `next_card(room)`: qualquer pessoa
   viva na sala.
 - **Ler** — `live_rooms()`: salas não terminadas com pelo menos uma sessão viva, sem bloqueio entre quem pede e quem está
-  dentro; título, tema, nível, anfitrião e as pessoas vivas (id, nome, foto?, mascote). Tabelas: `rooms` e
+  dentro, e sem as salas de onde quem pede foi removido; título, tema, nível, anfitrião e as pessoas vivas (id, nome, foto?, mascote). Tabelas: `rooms` e
   `room_sessions` legíveis por quem está vivo na sala (para o Realtime); `room_signals` só pelo destinatário.
 - **Sinais** — insert direto: `sender` = eu; eu e o destinatário vivos na mesma sala; sem bloqueio entre os dois; no
   máximo 600 sinais por minuto por pessoa.
