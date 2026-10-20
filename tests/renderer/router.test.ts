@@ -42,3 +42,15 @@ test('a user id that is not a uuid falls back to the member list', () => {
   expect(parseHash('#/people/u/')).toEqual({ name: 'people' });
   expect(parseHash("#/people/u/'%3Cscript%3E")).toEqual({ name: 'people' });
 });
+
+test('messages: the list, one conversation and a new message to someone', () => {
+  const id = '00000000-0000-4000-8000-000000000042';
+  expect(parseHash('#/messages')).toEqual({ name: 'messages' });
+  expect(parseHash(`#/messages/${id}`)).toEqual({ name: 'messages', conversationId: id });
+  expect(parseHash(`#/messages/to/${id}`)).toEqual({ name: 'messages', to: id });
+  expect(parseHash('#/messages/not-a-uuid')).toEqual({ name: 'messages' });
+  expect(parseHash('#/messages/to/nope')).toEqual({ name: 'messages' });
+  for (const r of [{ name: 'messages' }, { name: 'messages', conversationId: id }, { name: 'messages', to: id }] as const) {
+    expect(parseHash(toHash(r))).toEqual(r);
+  }
+});

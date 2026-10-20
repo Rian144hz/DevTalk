@@ -7,7 +7,7 @@ import { Button } from './Button';
  * Under a profile's name: Follow / Following and the like button on someone else's profile, then the public counts.
  * Your own profile shows only the counts. Buttons stay disabled while a change is on its way.
  */
-export function SocialActions({ userId, name, stats, self, busy, onFollow, onLike }: {
+export function SocialActions({ userId, name, stats, self, busy, onFollow, onLike, messageHref }: {
   userId: string;
   name: string;
   stats: SocialStats;
@@ -15,6 +15,8 @@ export function SocialActions({ userId, name, stats, self, busy, onFollow, onLik
   busy?: boolean;
   onFollow?(): void;
   onLike?(): void;
+  /** Someone else's profile: where "Send message" goes. */
+  messageHref?: string;
 }) {
   return (
     <div className="social-actions">
@@ -24,6 +26,7 @@ export function SocialActions({ userId, name, stats, self, busy, onFollow, onLik
           {stats.iFollow ? 'Following' : 'Follow'}
         </Button>
       )}
+      {!self && messageHref && <a className="btn btn-secondary" href={messageHref}>Send message</a>}
       {self ? (
         <span className="social-count"><Icon name="heart" size={14} /> {likesText(stats.likes)}</span>
       ) : (

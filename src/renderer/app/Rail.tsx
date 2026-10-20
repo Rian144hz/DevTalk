@@ -7,6 +7,7 @@ const NAV: { route: RouteName; label: string; icon: IconName }[] = [
   { route: 'practice', label: 'Practice', icon: 'practice' },
   { route: 'review', label: 'Review', icon: 'review' },
   { route: 'people', label: 'People', icon: 'people' },
+  { route: 'messages', label: 'Messages', icon: 'chat' },
   { route: 'rooms', label: 'Rooms', icon: 'rooms' },
   { route: 'progress', label: 'Progress', icon: 'progress' },
   { route: 'settings', label: 'Settings', icon: 'settings' },
@@ -15,6 +16,8 @@ const NAV: { route: RouteName; label: string; icon: IconName }[] = [
 export function Rail(props: {
   active: RouteName;
   dueCount: number;
+  /** Unread messages, requests included. */
+  unread?: number;
   provider: ProviderId;
   model: string;
   moderator?: boolean;
@@ -36,6 +39,9 @@ export function Rail(props: {
                 {item.label}
                 {item.route === 'review' && props.dueCount > 0 && (
                   <span className="count num">{props.dueCount}<span className="visually-hidden"> due</span></span>
+                )}
+                {item.route === 'messages' && (props.unread ?? 0) > 0 && (
+                  <span className="count num">{props.unread}<span className="visually-hidden"> unread</span></span>
                 )}
                 {item.route === 'rooms' && <span className="later">Later</span>}
               </a>

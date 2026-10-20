@@ -7,6 +7,10 @@ interface AppData {
   profile: StoredProfile | null | undefined;
   dueCount: number;
   refresh(): Promise<void>;
+  /** Unread messages for the rail, requests included. */
+  unread: number;
+  /** Screens that load the conversations tell the rail at once (reading clears the count). */
+  setUnread(n: number): void;
 }
 
 const Ctx = createContext<AppData | null>(null);
@@ -14,6 +18,7 @@ const Ctx = createContext<AppData | null>(null);
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<StoredProfile | null | undefined>(undefined);
   const [dueCount, setDueCount] = useState(0);
+  const [unread, setUnread] = useState(0);
   const refresh = useCallback(async () => {
     const p = unwrap(await api().profile.get());
     setProfile(p);
@@ -22,7 +27,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
-  return <Ctx.Provider value={{ profile, dueCount, refresh }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ profile, dueCount, refresh, unread, setUnread }}>{children}</Ctx.Provider>;
 }
 
 export function useAppData(): AppData {

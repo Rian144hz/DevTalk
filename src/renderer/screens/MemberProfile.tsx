@@ -89,7 +89,7 @@ export function MemberProfile({ userId, myId }: { userId: string; myId: string }
     <>
       <ProfileView {...data} own={false}
         actions={
-          <SocialActions userId={userId} name={name} stats={stats} self={false} busy={busy}
+          <SocialActions userId={userId} name={name} stats={stats} self={false} busy={busy} messageHref={`#/messages/to/${userId}`}
             onFollow={() => void change(applyFollow(stats, !stats.iFollow), () => (stats.iFollow ? api().social.unfollow(userId) : api().social.follow(userId)))}
             onLike={() => void change(applyLike(stats, !stats.iLike), () => (stats.iLike ? api().social.unlike(userId) : api().social.like(userId)))} />
         } />
