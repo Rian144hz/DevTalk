@@ -213,6 +213,7 @@ test('the export includes the moderation actions about the person', async () => 
     'GET /rest/v1/notices': json(200, []),
     'POST /rest/v1/rpc/my_moderation_actions': json(200, [{ action: 'warn', reason: 'Be kind', until: null, created_at: '2026-10-14T10:00:00Z' }]),
     'POST /rest/v1/rpc/my_progress_export': json(200, { practiceDays: [], milestones: [] }),
+    'POST /rest/v1/rpc/my_chat_export': json(200, { conversations: [], messagesSent: [], correctionsGiven: [] }),
     'POST /rest/v1/rpc/my_social_export': json(200, { following: [], followers: [], likesGiven: [] }),
     'POST /rest/v1/rpc/profile_badges': json(200, []),
   });
@@ -236,6 +237,7 @@ test('the export includes practice days and milestones with their times, badges,
     'GET /rest/v1/notices': json(200, []),
     'POST /rest/v1/rpc/my_moderation_actions': json(200, []),
     'POST /rest/v1/rpc/my_progress_export': json(200, progress),
+    'POST /rest/v1/rpc/my_chat_export': json(200, { conversations: [], messagesSent: [{ id: 3, body: 'hi' }], correctionsGiven: [] }),
     'POST /rest/v1/rpc/my_social_export': json(200, { following: [{ id: 'u2', at: '2026-10-15T10:00:00Z' }], followers: [], likesGiven: [] }),
     'POST /rest/v1/rpc/profile_badges': json(200, [{ id: 'mentor', grp: 'community', label: 'Mentor', detail: null }]),
     'POST /storage/v1/object/sign/banners/user-1/banner.gif': json(200, { signedURL: '/object/sign/banners/user-1/banner.gif?token=t' }),
@@ -244,6 +246,7 @@ test('the export includes practice days and milestones with their times, badges,
   const data = await b.exportOwnData();
   expect(data).toMatchObject({ progress, usesLinux: true, badges: [{ id: 'mentor', group: 'community', label: 'Mentor', detail: null }] });
   expect(data['social']).toEqual({ following: [{ id: 'u2', at: '2026-10-15T10:00:00Z' }], followers: [], likesGiven: [] });
+  expect(data['chat']).toEqual({ conversations: [], messagesSent: [{ id: 3, body: 'hi' }], correctionsGiven: [] });
   expect(String(data['bannerUrl'])).toContain('banners/user-1/banner.gif');
   expect(calls.find((c) => c.path === '/rest/v1/rpc/profile_badges')!.body).toEqual({ target: 'user-1' });
 });

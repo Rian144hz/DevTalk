@@ -401,6 +401,26 @@ describe('reports', () => {
   });
 });
 
+describe('export', () => {
+  test('my_chat_export gives your own messages and corrections, never the other person\'s; progress has corrections', async () => {
+    const { a, b, c } = await pair();
+    const theirs = await send(b, c, 'I goes home');
+    await correct(a, theirs, 'I go home');
+    await send(a, c, 'See you');
+    const [x] = await rows<{ x: { conversations: { id: string; with: string }[]; messagesSent: { body: string }[]; correctionsGiven: { corrected: string }[] } }>(
+      a,
+      'select public.my_chat_export() as x',
+    );
+    expect(x!.x.conversations).toEqual([expect.objectContaining({ id: c, with: b })]);
+    expect(x!.x.messagesSent.map((m) => m.body)).toEqual(['Hi! Can we practise together?', 'See you']);
+    expect(x!.x.correctionsGiven).toEqual([expect.objectContaining({ corrected: 'I go home', thanked: false })]);
+    const [p] = await rows<{ x: { practiceDays: { corrections: number }[] } }>(a, 'select public.my_progress_export() as x');
+    expect(p!.x.practiceDays.at(-1)).toMatchObject({ corrections: 1 });
+    await t.as(null);
+    await expect(t.db.query('select public.my_chat_export()')).rejects.toThrow(/permission denied/);
+  });
+});
+
 describe('account deletion', () => {
   test("deleting an account removes its conversations, messages and corrections, and blanks the sender in report copies", async () => {
     const { a, b, c } = await pair();

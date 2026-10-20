@@ -1355,12 +1355,53 @@ language sql stable security definer set search_path = public as $$
   order by s.message_id
 $$;
 
+-- "Export my data": your conversations, the messages you sent and the corrections you gave. The other
+-- person's messages are their data and stay out.
+create or replace function public.my_chat_export() returns json
+language sql stable security definer set search_path = public as $$
+  select json_build_object(
+    'conversations', coalesce((
+      select json_agg(json_build_object(
+        'id', c.id, 'with', case when c.a = auth.uid() then c.b else c.a end,
+        'status', case when c.status = 'declined' and c.requested_by = auth.uid() then 'pending' else c.status end,
+        'requestedByMe', c.requested_by = auth.uid(), 'startedAt', c.created_at) order by c.created_at)
+      from public.conversations c where auth.uid() in (c.a, c.b)
+    ), '[]'::json),
+    'messagesSent', coalesce((
+      select json_agg(json_build_object('id', m.id, 'conversationId', m.conversation_id, 'body', m.body,
+        'createdAt', m.created_at, 'deleted', m.deleted_at is not null) order by m.id)
+      from public.messages m where m.sender = auth.uid()
+    ), '[]'::json),
+    'correctionsGiven', coalesce((
+      select json_agg(json_build_object('messageId', k.message_id, 'corrected', k.corrected, 'createdAt', k.created_at,
+        'thanked', k.thanked_at is not null) order by k.id)
+      from public.corrections k where k.author = auth.uid()
+    ), '[]'::json)
+  )
+$$;
+
+-- The progress export now has the corrections of each day too.
+create or replace function public.my_progress_export() returns json
+language sql stable security definer set search_path = public as $$
+  select json_build_object(
+    'practiceDays', coalesce((
+      select json_agg(json_build_object('day', d.day, 'answers', d.answers, 'reviews', d.reviews, 'corrections', d.corrections,
+        'updatedAt', d.updated_at) order by d.day)
+      from public.practice_days d where d.user_id = auth.uid()
+    ), '[]'::json),
+    'milestones', coalesce((
+      select json_agg(json_build_object('kind', m.kind, 'value', m.value, 'achievedAt', m.achieved_at) order by m.achieved_at)
+      from public.milestones m where m.user_id = auth.uid()
+    ), '[]'::json)
+  )
+$$;
+
 revoke execute on function public.request_conversation(uuid, text), public.respond_conversation(uuid, boolean),
   public.delete_message(bigint), public.thank_correction(bigint), public.mark_read(uuid), public.my_conversations(),
-  public.report_context(bigint) from public, anon;
+  public.report_context(bigint), public.my_chat_export(), public.my_progress_export() from public, anon;
 grant execute on function public.request_conversation(uuid, text), public.respond_conversation(uuid, boolean),
   public.delete_message(bigint), public.thank_correction(bigint), public.mark_read(uuid), public.my_conversations(),
-  public.report_context(bigint) to authenticated;
+  public.report_context(bigint), public.my_chat_export(), public.my_progress_export() to authenticated;
 
 -- Streaks count days with answers, reviews or corrections.
 create or replace function public.practice_streak_values(target uuid)

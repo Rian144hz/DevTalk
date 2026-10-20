@@ -282,7 +282,7 @@ describe('fake social backend', () => {
     const data = await b.exportOwnData();
     expect(data).toMatchObject({ account: { email: 'rian@example.com' }, profile: { displayName: 'Rian' } });
     expect(Object.keys(data).sort()).toEqual([
-      'account', 'avatarUrl', 'badges', 'bannerUrl', 'blocks', 'consents', 'exportedAt', 'moderationActions', 'notices', 'profile', 'progress', 'reportsMade', 'social', 'usesLinux',
+      'account', 'avatarUrl', 'badges', 'bannerUrl', 'blocks', 'chat', 'consents', 'exportedAt', 'moderationActions', 'notices', 'profile', 'progress', 'reportsMade', 'social', 'usesLinux',
     ]);
     expect(data['progress']).toEqual({ practiceDays: [], milestones: [] });
     await b.deleteAccount();
@@ -692,6 +692,18 @@ describe('fake backend: chat', () => {
     await b.signOut();
     b.sendAsForTest(ids['Bia']!, c, 'still there?');
     expect(rian).toHaveLength(before);
+  });
+
+  test('the export has your own messages and corrections, not the other person\'s', async () => {
+    const { b, ids, withBia } = await chat();
+    const c = (await withBia()).id;
+    await b.sendMessage(c, 'Mine to keep');
+    b.sendAsForTest(ids['Bia']!, c, 'Hers');
+    const data = (await b.exportOwnData())['chat'] as { messagesSent: { body: string }[]; correctionsGiven: unknown[]; conversations: { with: string }[] };
+    expect(data.messagesSent.map((m) => m.body)).toContain('Mine to keep');
+    expect(data.messagesSent.map((m) => m.body)).not.toContain('Hers');
+    expect(data.conversations.map((x) => x.with)).toEqual(expect.arrayContaining([ids['Bia'], ids['Ana']]));
+    expect(data.correctionsGiven).toEqual([]);
   });
 
   test('deleting your account removes your conversations and messages', async () => {

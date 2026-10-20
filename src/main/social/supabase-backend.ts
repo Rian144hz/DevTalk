@@ -523,6 +523,7 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
       }
       const progress = check(await client.rpc('my_progress_export'));
       const social = check(await client.rpc('my_social_export'));
+      const chat = check(await client.rpc('my_chat_export'));
       const badges = await this.badges(userId);
       return {
         exportedAt: new Date().toISOString(),
@@ -539,6 +540,7 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
         badges,
         progress,
         social,
+        chat,
       };
     },
 

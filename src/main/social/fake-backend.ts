@@ -647,6 +647,23 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
           followers: state.follows.filter((f) => f.followee === userId).map((f) => ({ id: f.follower, at: f.at })),
           likesGiven: state.likes.filter((l) => l.liker === userId).map((l) => ({ id: l.profile, at: l.at })),
         },
+        chat: {
+          conversations: state.conversations
+            .filter((c) => c.a === userId || c.b === userId)
+            .map((c) => ({
+              id: c.id,
+              with: otherIn(c, userId),
+              status: c.status === 'declined' && c.requestedBy === userId ? 'pending' : c.status,
+              requestedByMe: c.requestedBy === userId,
+              startedAt: c.createdAt,
+            })),
+          messagesSent: state.messages
+            .filter((m) => m.sender === userId)
+            .map((m) => ({ id: m.id, conversationId: m.conversationId, body: m.body, createdAt: m.createdAt, deleted: m.deletedAt !== null })),
+          correctionsGiven: state.corrections
+            .filter((k) => k.author === userId)
+            .map((k) => ({ messageId: k.messageId, corrected: k.corrected, createdAt: k.createdAt, thanked: k.thankedAt !== null })),
+        },
         progress: {
           practiceDays: (state.practiceDays[userId] ?? []).map((d) => ({ ...d })),
           milestones: state.milestones.filter((m) => m.userId === userId).map((m) => ({ kind: m.kind, value: m.value, achievedAt: m.at })),
