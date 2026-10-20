@@ -1,4 +1,6 @@
 // 0009 — voice rooms: rooms, sessions, roles, signals, readers, report context, export and badges.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createDb } from './harness';
 import type { TestDb } from './harness';
 import { member, moderator, suspend } from './people';
@@ -45,7 +47,7 @@ interface State {
   title: string;
   theme: string;
   level: string | null;
-  hostId: string;
+  hostId: string | null;
   endedAt: string | null;
   timer: { startedAt: string; seconds: number } | null;
   card: number;
@@ -71,7 +73,8 @@ const liveIds = async (who: string) => (await live(who)).map((r) => r.id);
 /** Makes `who`'s open session in `room` silent for `seconds`. */
 const silence = (who: string, room: string, seconds = 91) =>
   owner(
-    `update room_sessions set last_seen = now() - make_interval(secs => $3) where room_id = $1 and user_id = $2 and left_at is null`,
+    `update room_presence p set last_seen = now() - make_interval(secs => $3) from room_sessions s
+     where s.id = p.session_id and s.room_id = $1 and s.user_id = $2 and s.left_at is null`,
     [room, who, seconds],
   );
 async function block(blocker: string, blocked: string) {
@@ -127,6 +130,9 @@ describe('creating and listing', () => {
     expect((await state(a, short))!.level).toBeNull();
     const spaced = await create(a, '\u00a0\tabc\u3000\n', 'interview', 'A2');
     expect((await state(a, spaced))!.title).toBe('abc');
+    const pad = String.fromCharCode(0xfeff, 0xa0, 0x2029, 0x2007);
+    const padded = await create(a, `${pad}Pair talk${pad}`, 'free', null);
+    expect((await state(a, padded))!.title).toBe('Pair talk');
     const sixty = 'é'.repeat(59) + '👋';
     const long = await create(a, sixty, 'code_review', 'C2');
     expect((await state(a, long))!.title).toBe(sixty);
@@ -178,7 +184,11 @@ describe('seats and sessions', () => {
     expect(await heartbeat(others[0]!, room)).toBe(false);
     expect((await state(others[0]!, room))!.me.live).toBe(false);
 
-    await owner(`update room_sessions set last_seen = now() - interval '91 seconds' where room_id = $1`, [room]);
+    await owner(
+      `update room_presence p set last_seen = now() - interval '91 seconds' from room_sessions s
+       where s.id = p.session_id and s.room_id = $1`,
+      [room],
+    );
     const outsider = await named('Outsider');
     expect(await liveIds(outsider)).not.toContain(room);
     await expect(joinRoom(outsider, room)).rejects.toThrow(/not allowed/);
@@ -188,13 +198,23 @@ describe('seats and sessions', () => {
     const { room, others } = await roomWith(1);
     const b = others[0]!;
     await silence(b, room, 60);
-    expect(await heartbeat(b, room)).toBe(true);
-    expect(
-      await count(
-        `select count(*)::int as n from room_sessions where room_id = $1 and user_id = $2 and last_seen > now() - interval '5 seconds'`,
+    const session = () =>
+      owner<{ r: unknown }>('select row_to_json(s) as r from room_sessions s where room_id = $1 and user_id = $2', [room, b]);
+    const fresh = () =>
+      count(
+        `select count(*)::int as n from room_presence p join room_sessions s on s.id = p.session_id
+         where s.room_id = $1 and s.user_id = $2 and p.last_seen > now() - interval '5 seconds'`,
         [room, b],
-      ),
-    ).toBe(1);
+      );
+    const before = await session();
+    expect(await fresh()).toBe(0);
+    expect(await heartbeat(b, room)).toBe(true);
+    // The heartbeat writes only to room_presence, which is not published: the session row (and Realtime) stay quiet.
+    expect(await session()).toEqual(before);
+    expect(await fresh()).toBe(1);
+    await t.as(b);
+    await expect(t.db.query('select * from room_presence')).rejects.toThrow(/permission denied/);
+    await expect(t.db.query('update room_presence set last_seen = now()')).rejects.toThrow(/permission denied/);
     const outsider = await named('Outsider');
     expect(await heartbeat(outsider, room)).toBe(false);
     await leaveRoom(b, room);
@@ -461,7 +481,9 @@ describe('reading', () => {
       `insert into rooms (created_by, host, title, theme) values ('${host}', '${host}', 'Sneaky', 'free')`,
       `delete from rooms where id = '${room}'`,
       `update room_sessions set role = 'moderator' where room_id = '${room}'`,
-      `update room_sessions set last_seen = now() + interval '1 day' where room_id = '${room}'`,
+      `update room_sessions set joined_at = now() - interval '1 day' where room_id = '${room}'`,
+      `update room_presence set last_seen = now() + interval '1 day'`,
+      `insert into room_presence (session_id) values (1)`,
       `delete from room_sessions where room_id = '${room}'`,
       `update room_signals set payload = '{}'`,
       `delete from room_signals`,
@@ -502,7 +524,9 @@ describe('reading', () => {
     // The internal helpers are not callable by members either.
     await named('Curious');
     for (const sql of [
-      `select public.room_session_live(null, now())`,
+      `select public.room_session_live(1)`,
+      `select public.room_seen(1)`,
+      `select public.room_left_at(1)`,
       `select public.room_settle(${u})`,
       `select public.room_close_session(${u}, ${u})`,
       `select public.room_is_live(${u}, ${u})`,
@@ -620,7 +644,8 @@ describe('signals', () => {
     const b = others[0]!;
     await block(b, host);
     // Put the blocker back in the room past the functions, to check the rule on the table itself.
-    await owner(`update room_sessions set left_at = null, last_seen = now() where room_id = $1 and user_id = $2`, [room, b]);
+    await owner(`update room_sessions set left_at = null where room_id = $1 and user_id = $2`, [room, b]);
+    await silence(b, room, 0);
     await expect(signal(b, room, host)).rejects.toThrow(/row-level security/);
     await expect(signal(host, room, b)).rejects.toThrow(/row-level security/);
   });
@@ -647,20 +672,39 @@ describe('signals', () => {
     await signal(host, room, b, 'candidate', '{}');
   });
 
-  test('a heartbeat deletes signals older than 5 minutes', async () => {
+  test('a heartbeat deletes signals older than 5 minutes, in any room', async () => {
     const { room, host, others } = await roomWith(1);
     const b = others[0]!;
     await signal(host, room, b, 'offer', '{"old":true}');
     await signal(host, room, b, 'candidate', '{"new":true}');
     await owner(`update room_signals set created_at = now() - interval '301 seconds' where room_id = $1 and kind = 'offer'`, [room]);
-    // Old signals of a room that ended, where nobody sends heartbeats any more, go too.
-    const { room: ended, host: x, others: [y] } = await roomWith(1, 'Ended room');
-    await signal(x, ended, y!, 'offer', '{"ip":"203.0.113.7"}');
-    await call(x, 'end_room', ended);
-    await owner(`update room_signals set created_at = now() - interval '301 seconds' where room_id = $1`, [ended]);
+    // Everyone in this room dropped out without leaving, so it gets no heartbeats any more; its old signals go too.
+    const { room: dropped, host: x, others: [y] } = await roomWith(1, 'Dropped room');
+    await signal(x, dropped, y!, 'offer', '{"ip":"203.0.113.7"}');
+    await silence(x, dropped, 400);
+    await silence(y!, dropped, 400);
+    await owner(`update room_signals set created_at = now() - interval '301 seconds' where room_id = $1`, [dropped]);
     expect(await heartbeat(b, room)).toBe(true);
     expect(await inbox(b)).toEqual([{ sender: host, kind: 'candidate', payload: '{"new":true}' }]);
-    expect(await count('select count(*)::int as n from room_signals where room_id = $1', [ended])).toBe(0);
+    expect(await count('select count(*)::int as n from room_signals where room_id = $1', [dropped])).toBe(0);
+  });
+
+  test('a room that ends takes its signals with it', async () => {
+    const { room, host, others } = await roomWith(1);
+    const b = others[0]!;
+    await signal(host, room, b, 'offer');
+    await signal(b, room, host, 'answer');
+    const kept = (id: string) => count('select count(*)::int as n from room_signals where room_id = $1', [id]);
+    await leaveRoom(b, room);
+    expect(await kept(room)).toBe(2);
+    await leaveRoom(host, room);
+    expect(await kept(room)).toBe(0);
+
+    const { room: other, host: h, others: [c] } = await roomWith(1, 'Ended by the host');
+    await signal(h, other, c!, 'offer');
+    await signal(c!, other, h, 'answer');
+    await call(h, 'end_room', other);
+    expect(await kept(other)).toBe(0);
   });
 });
 
@@ -683,6 +727,34 @@ describe('account deletion', () => {
     expect(await count('select count(*)::int as n from room_signals where $1 in (sender, recipient) or room_id = $2', [a, own])).toBe(0);
     expect(await peopleIn(c, theirs)).toEqual([c]);
   });
+
+  test('the current host deleting their account keeps the room: a live heir takes over, or the room ends', async () => {
+    const x = await named('Xavi');
+    const y = await named('Yara');
+    const z = await named('Zeca');
+    const room = await create(x, 'Kept room');
+    await joinRoom(y, room);
+    await joinRoom(z, room);
+    await call(x, 'pass_host', room, y);
+    await call(y, 'make_room_moderator', room, z);
+    await owner('delete from auth.users where id = $1', [y]);
+    expect(await count('select count(*)::int as n from rooms where id = $1', [room])).toBe(1);
+    expect(await count('select count(*)::int as n from room_sessions where room_id = $1 and user_id = $2', [room, x])).toBe(1);
+    expect(await state(x, room)).toMatchObject({ hostId: z, endedAt: null, me: { live: true } });
+    expect(await peopleIn(z, room)).toEqual([x, z].sort());
+
+    // Alone in the room when the account goes: the room ends, and stays for its creator.
+    const w = await named('Wil');
+    const second = await create(x, 'Second room');
+    await joinRoom(w, second);
+    await call(x, 'pass_host', second, w);
+    await leaveRoom(x, second);
+    await owner('delete from auth.users where id = $1', [w]);
+    const s = await state(x, second);
+    expect(s).toMatchObject({ hostId: null, me: { live: false } });
+    expect(s!.endedAt).not.toBeNull();
+    expect(await count('select count(*)::int as n from room_sessions where room_id = $1 and user_id = $2', [second, x])).toBe(1);
+  });
 });
 
 describe('badges', () => {
@@ -696,8 +768,8 @@ describe('badges', () => {
        select $1, $1, 'Room ' || g, 'free', now() - interval '2 days', now() - interval '2 days' from generate_series(1, 5) g`,
       [a],
     );
-    const session = `insert into room_sessions (room_id, user_id, joined_at, last_seen, left_at)
-      select id, $1, created_at, created_at, created_at + interval '10 minutes' from rooms where created_by = $2`;
+    const session = `insert into room_sessions (room_id, user_id, joined_at, left_at)
+      select id, $1, created_at, created_at + interval '10 minutes' from rooms where created_by = $2`;
     await owner(session, [a, a]);
     await owner(`${session} and title <> 'Room 5'`, [b, a]);
     expect((await badges(a)).map((x) => x.id)).not.toContain('room_host');
@@ -718,17 +790,22 @@ describe('badges', () => {
     );
     // Ana: 6 minutes in each room. The 10th room is left open but silent (its end is the last heartbeat).
     await owner(
-      `insert into room_sessions (room_id, user_id, joined_at, last_seen, left_at)
-       select id, $1, created_at, created_at + interval '6 minutes',
-         case when title = 'Talk 10' then null else created_at + interval '6 minutes' end
+      `insert into room_sessions (room_id, user_id, joined_at, left_at)
+       select id, $1, created_at, case when title = 'Talk 10' then null else created_at + interval '6 minutes' end
        from rooms where created_by = $2`,
       [a, b],
     );
+    await owner(
+      `update room_presence p set last_seen = r.created_at + interval '6 minutes'
+       from room_sessions s join rooms r on r.id = s.room_id
+       where s.id = p.session_id and s.user_id = $1 and r.title = 'Talk 10'`,
+      [a],
+    );
     // Bia overlaps 6 minutes in Talk 1–9, 4 minutes in Talk 10 and only 4 minutes in Talk 11.
     await owner(
-      `insert into room_sessions (room_id, user_id, joined_at, last_seen, left_at)
+      `insert into room_sessions (room_id, user_id, joined_at, left_at)
        select id, $1, created_at + case when title in ('Talk 10', 'Talk 11') then interval '2 minutes' else interval '0 minutes' end,
-         created_at + interval '30 minutes', created_at + interval '30 minutes'
+         created_at + interval '30 minutes'
        from rooms where created_by = $1`,
       [b],
     );
@@ -741,4 +818,12 @@ describe('badges', () => {
     );
     expect(await has()).toEqual({ id: 'active_speaker', grp: 'community', label: 'Active speaker' });
   });
+});
+
+test('0009 has no invisible or unusual space characters that a paste in the SQL Editor could change', () => {
+  const sql = readFileSync(join(__dirname, '..', '..', 'supabase', 'migrations', '0009_rooms.sql'), 'utf8');
+  const invisible = [0xa0, 0x1680, 0x2028, 0x2029, 0x202f, 0x205f, 0x3000, 0xfeff, 0x200b, 0x200c, 0x200d, 0x2060];
+  for (let c = 0x2000; c <= 0x200a; c++) invisible.push(c);
+  const found = [...sql].map((ch) => ch.codePointAt(0)!).filter((c) => invisible.includes(c));
+  expect(found.map((c) => c.toString(16))).toEqual([]);
 });

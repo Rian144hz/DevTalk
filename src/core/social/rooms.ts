@@ -111,7 +111,8 @@ export interface RoomState {
   title: string;
   theme: RoomTheme;
   level: Level | null;
-  hostId: string;
+  /** Null only for an ended room whose host deleted their account before anyone could take over. */
+  hostId: string | null;
   /** Set when the room has ended. */
   endedAt: string | null;
   /** The running speaking timer; null when none is running. */

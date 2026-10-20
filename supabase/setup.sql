@@ -1562,11 +1562,12 @@ $$;
 -- which room and when, and the short-lived signals that let two computers connect.
 -- Paste this file alone in the SQL Editor on a project that already ran 0001–0008.
 
--- A room. The host can change; the room ends when nobody is live in it.
+-- A room. The host can change; the room ends when nobody is live in it. The host is null only when the host's
+-- account was deleted and nobody was live to take over (the room has then ended).
 create table public.rooms (
   id uuid primary key default gen_random_uuid(),
   created_by uuid not null references auth.users (id) on delete cascade,
-  host uuid not null references auth.users (id) on delete cascade,
+  host uuid references auth.users (id) on delete set null,
   title text not null check (char_length(title) between 3 and 60),
   theme text not null check (theme in ('standup', 'code_review', 'interview', 'free')),
   level text check (level is null or level in ('A2', 'B1', 'B2', 'C1', 'C2')),
@@ -1581,14 +1582,14 @@ create index rooms_created_by on public.rooms (created_by, created_at);
 create index rooms_host on public.rooms (host);
 create index rooms_open on public.rooms (created_at) where ended_at is null;
 
--- One row each time someone enters a room. Live while open and heard from in the last 90 seconds.
+-- One row each time someone enters a room. It changes only when something people see changes (leaving, removal,
+-- role, a mute request), because Realtime sends every change to the people in the room.
 create table public.room_sessions (
   id bigint generated always as identity primary key,
   room_id uuid not null references public.rooms (id) on delete cascade,
   user_id uuid not null references auth.users (id) on delete cascade,
   role text not null default 'member' check (role in ('member', 'moderator')),
   joined_at timestamptz not null default now(),
-  last_seen timestamptz not null default now(),
   left_at timestamptz,
   removed boolean not null default false,
   mute_requested_at timestamptz,
@@ -1599,8 +1600,15 @@ create index room_sessions_user on public.room_sessions (user_id, room_id);
 -- One open session per person: one room at a time.
 create unique index room_sessions_one_open on public.room_sessions (user_id) where left_at is null;
 
+-- When each session was last heard from. The 30-second heartbeats write here, a table Realtime does not publish
+-- and no client reads. A session is live while it is open and heard from in the last 90 seconds.
+create table public.room_presence (
+  session_id bigint primary key references public.room_sessions (id) on delete cascade,
+  last_seen timestamptz not null default now()
+);
+
 -- Connection signals (offers, answers, network candidates, bye). They hold network addresses: only the recipient
--- reads them, and a heartbeat deletes them after 5 minutes.
+-- reads them; they are deleted when the room ends, and by any heartbeat after 5 minutes.
 create table public.room_signals (
   id bigint generated always as identity primary key,
   room_id uuid not null references public.rooms (id) on delete cascade,
@@ -1618,22 +1626,38 @@ create index room_signals_created on public.room_signals (created_at);
 
 -- Internal helpers. They take any ids or change any room, so nobody calls them through the API.
 
--- A session is live while it is open and its last heartbeat is less than 90 seconds old.
-create or replace function public.room_session_live(left_at timestamptz, last_seen timestamptz) returns boolean
-language sql stable set search_path = public as $$
-  select left_at is null and last_seen > now() - interval '90 seconds'
+-- When session `entry` was last heard from.
+create or replace function public.room_seen(entry bigint) returns timestamptz
+language sql stable security definer set search_path = public as $$
+  select p.last_seen from public.room_presence p where p.session_id = entry
+$$;
+
+-- Session `entry` is live: open, and heard from in the last 90 seconds.
+create or replace function public.room_session_live(entry bigint) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.room_sessions s join public.room_presence p on p.session_id = s.id
+    where s.id = entry and s.left_at is null and p.last_seen > now() - interval '90 seconds'
+  )
+$$;
+
+-- When the open session `entry` closes: now while it is live, else at its last heartbeat.
+create or replace function public.room_left_at(entry bigint) returns timestamptz
+language sql stable security definer set search_path = public as $$
+  select case when public.room_session_live(entry) then now() else coalesce(public.room_seen(entry), now()) end
 $$;
 
 create or replace function public.room_is_live(room uuid, member uuid) returns boolean
 language sql stable security definer set search_path = public as $$
   select exists (
     select 1 from public.room_sessions s
-    where s.room_id = room and s.user_id = member and public.room_session_live(s.left_at, s.last_seen)
+    where s.room_id = room and s.user_id = member and s.left_at is null and public.room_session_live(s.id)
   )
 $$;
 
--- After someone leaves or goes silent: silent sessions close at their last heartbeat; a host who is gone hands the
--- room to the oldest live room moderator, else to the earliest live member; a room with nobody live ends.
+-- After someone leaves, goes silent or is deleted: silent sessions close at their last heartbeat; a host who is gone
+-- hands the room to the oldest live room moderator, else to the earliest live member; a room with nobody live ends
+-- and its signals go. A room that no longer exists is left alone.
 create or replace function public.room_settle(room uuid) returns void
 language plpgsql volatile security definer set search_path = public as $$
 declare
@@ -1644,17 +1668,18 @@ begin
   if not found then
     return;
   end if;
-  update public.room_sessions s set left_at = s.last_seen
-    where s.room_id = room and s.left_at is null and not public.room_session_live(s.left_at, s.last_seen);
+  update public.room_sessions s set left_at = public.room_left_at(s.id)
+    where s.room_id = room and s.left_at is null and not public.room_session_live(s.id);
   if public.room_is_live(room, current_host) then
     return;
   end if;
   select s.user_id into heir from public.room_sessions s
-    where s.room_id = room and public.room_session_live(s.left_at, s.last_seen)
+    where s.room_id = room and s.left_at is null and public.room_session_live(s.id)
     order by s.role = 'moderator' desc, s.joined_at, s.id
     limit 1;
   if heir is null then
     update public.rooms r set ended_at = now(), timer_started_at = null, timer_seconds = null where r.id = room;
+    delete from public.room_signals g where g.room_id = room;
   else
     update public.rooms r set host = heir where r.id = room;
   end if;
@@ -1666,8 +1691,7 @@ create or replace function public.room_close_session(room uuid, member uuid) ret
 language plpgsql volatile security definer set search_path = public as $$
 begin
   perform 1 from public.rooms r where r.id = room for update;
-  update public.room_sessions s
-    set left_at = case when public.room_session_live(s.left_at, s.last_seen) then now() else s.last_seen end
+  update public.room_sessions s set left_at = public.room_left_at(s.id)
     where s.room_id = room and s.user_id = member and s.left_at is null;
   perform public.room_settle(room);
 end
@@ -1688,8 +1712,9 @@ begin
 end
 $$;
 
-revoke execute on function public.room_session_live(timestamptz, timestamptz), public.room_is_live(uuid, uuid),
-  public.room_settle(uuid), public.room_close_session(uuid, uuid), public.room_close_others(uuid, uuid)
+revoke execute on function public.room_seen(bigint), public.room_session_live(bigint), public.room_left_at(bigint),
+  public.room_is_live(uuid, uuid), public.room_settle(uuid), public.room_close_session(uuid, uuid),
+  public.room_close_others(uuid, uuid)
   from public, anon, authenticated;
 
 -- Caller-only helpers for the policies: each answers about the signed-in person.
@@ -1720,6 +1745,29 @@ revoke execute on function public.viewer_in_room(uuid), public.viewer_was_in_roo
   from public, anon;
 grant execute on function public.viewer_in_room(uuid), public.viewer_was_in_room(uuid), public.can_signal(uuid, uuid)
   to authenticated;
+
+-- Every session starts as heard from when it opened.
+create or replace function public.start_room_presence() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.room_presence (session_id, last_seen) values (new.id, new.joined_at);
+  return null;
+end
+$$;
+create trigger room_sessions_presence after insert on public.room_sessions
+  for each row execute function public.start_room_presence();
+
+-- A session that disappears (its account was deleted) settles its room: when it was the host's, the room goes to
+-- the heir, or ends when nobody is live. Nothing happens when the room itself was deleted.
+create or replace function public.settle_room_after_session() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  perform public.room_settle(old.room_id);
+  return null;
+end
+$$;
+create trigger room_sessions_settle after delete on public.room_sessions
+  for each row execute function public.settle_room_after_session();
 
 -- At most 600 signals per person in any minute.
 create or replace function public.limit_room_signals() returns trigger
@@ -1753,17 +1801,17 @@ $$;
 create trigger blocks_leave_rooms after insert on public.blocks
   for each row execute function public.leave_rooms_on_block();
 
-revoke execute on function public.limit_room_signals(), public.leave_rooms_on_block() from public, anon, authenticated;
+revoke execute on function public.start_room_presence(), public.settle_room_after_session(),
+  public.limit_room_signals(), public.leave_rooms_on_block() from public, anon, authenticated;
 
 -- Open a room and enter it as the host. Leaves the room you were in, if any.
 create or replace function public.create_room(title text, theme text, level text) returns uuid
 language plpgsql volatile security definer set search_path = public as $$
 declare
   me uuid := auth.uid();
-  -- Trimmed like JavaScript's String.prototype.trim.
-  clean text := regexp_replace(coalesce(create_room.title, ''),
-    '^[\t\n\v\f\r    -     　﻿]+|[\t\n\v\f\r    -     　﻿]+$',
-    '', 'g');
+  -- The characters JavaScript's String.prototype.trim removes, written as regex escapes (plain ASCII in this file).
+  spaces text := '[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]';
+  clean text := regexp_replace(coalesce(create_room.title, ''), '^' || spaces || '+|' || spaces || '+$', '', 'g');
   room uuid;
 begin
   if me is null or not public.viewer_is_member() or not exists (select 1 from public.profiles p where p.id = me) then
@@ -1818,13 +1866,14 @@ begin
     raise exception 'not allowed' using errcode = '42501', hint = 'You were removed from this room.';
   end if;
   select count(*) into seats from public.room_sessions s
-    where s.room_id = room and public.room_session_live(s.left_at, s.last_seen);
+    where s.room_id = room and s.left_at is null and public.room_session_live(s.id);
   if seats = 0 then
     raise exception 'not allowed' using errcode = '42501', hint = 'This room has ended.';
   end if;
   if exists (
     select 1 from public.room_sessions s
-    where s.room_id = room and public.room_session_live(s.left_at, s.last_seen) and public.is_blocked_between(me, s.user_id)
+    where s.room_id = room and s.left_at is null and public.room_session_live(s.id)
+      and public.is_blocked_between(me, s.user_id)
   ) then
     raise exception 'not allowed' using errcode = '42501', hint = 'You cannot join this room.';
   end if;
@@ -1833,7 +1882,8 @@ begin
   end if;
   perform public.room_close_others(me, room);
   -- A silent session of yours in this room closes at its last heartbeat before the new one opens.
-  update public.room_sessions s set left_at = s.last_seen where s.room_id = room and s.user_id = me and s.left_at is null;
+  update public.room_sessions s set left_at = public.room_left_at(s.id)
+    where s.room_id = room and s.user_id = me and s.left_at is null;
   insert into public.room_sessions (room_id, user_id) values (room, me);
   perform public.room_settle(room);
 end
@@ -1850,9 +1900,10 @@ begin
 end
 $$;
 
--- "I am still here", every 30 seconds. False when you are no longer live in the room (silent too long, removed,
--- left, the room ended, or you are no longer a member). Also settles the room and deletes every signal older than
--- 5 minutes, in any room (also rooms nobody sends heartbeats to any more), skipping rows another heartbeat is deleting.
+-- "I am still here", every 30 seconds. It writes only to room_presence, so it sends nothing through Realtime unless
+-- something changes for people. False when you are no longer live in the room (silent too long, removed, left, the
+-- room ended, or you are no longer a member). Also settles the room and deletes every signal older than 5 minutes,
+-- in any room (also rooms nobody sends heartbeats to any more), skipping rows another heartbeat is deleting.
 create or replace function public.room_heartbeat(room uuid) returns boolean
 language plpgsql volatile security definer set search_path = public as $$
 declare
@@ -1866,8 +1917,11 @@ begin
     return false;
   end if;
   perform 1 from public.rooms r where r.id = room for update;
-  update public.room_sessions s set last_seen = now()
-    where s.room_id = room and s.user_id = me and public.room_session_live(s.left_at, s.last_seen)
+  update public.room_presence p set last_seen = now()
+    where p.session_id in (
+      select s.id from public.room_sessions s
+      where s.room_id = room and s.user_id = me and s.left_at is null and public.room_session_live(s.id)
+    )
       and public.viewer_is_member();
   still := found;
   if not still then
@@ -1892,7 +1946,7 @@ begin
     raise exception 'not allowed' using errcode = '42501';
   end if;
   update public.room_sessions s set role = 'moderator'
-    where s.room_id = room and s.user_id = member and s.left_at is null;
+    where s.room_id = room and s.user_id = member and s.left_at is null and s.role <> 'moderator';
 end
 $$;
 
@@ -1905,7 +1959,7 @@ begin
     raise exception 'not allowed' using errcode = '42501';
   end if;
   update public.room_sessions s set role = 'member'
-    where s.room_id = room and s.user_id = member and s.left_at is null;
+    where s.room_id = room and s.user_id = member and s.left_at is null and s.role <> 'member';
 end
 $$;
 
@@ -1931,7 +1985,7 @@ declare
 begin
   select r.host into host_id from public.rooms r where r.id = room and r.ended_at is null for update;
   select s.role into my_role from public.room_sessions s
-    where s.room_id = room and s.user_id = me and public.room_session_live(s.left_at, s.last_seen);
+    where s.room_id = room and s.user_id = me and s.left_at is null and public.room_session_live(s.id);
   if host_id is null or not public.viewer_is_member() or my_role is null or member is null or member = me
     or member = host_id or not (me = host_id or my_role = 'moderator') or not public.room_is_live(room, member) then
     raise exception 'not allowed' using errcode = '42501';
@@ -1952,21 +2006,19 @@ declare
 begin
   select r.host into host_id from public.rooms r where r.id = room and r.ended_at is null for update;
   select s.role into my_role from public.room_sessions s
-    where s.room_id = room and s.user_id = me and public.room_session_live(s.left_at, s.last_seen);
+    where s.room_id = room and s.user_id = me and s.left_at is null and public.room_session_live(s.id);
   select s.role into their_role from public.room_sessions s
     where s.room_id = room and s.user_id = member and s.left_at is null;
   if host_id is null or not public.viewer_is_member() or my_role is null or their_role is null or member = me
     or member = host_id or not (me = host_id or (my_role = 'moderator' and their_role = 'member')) then
     raise exception 'not allowed' using errcode = '42501';
   end if;
-  update public.room_sessions s
-    set removed = true,
-      left_at = case when public.room_session_live(s.left_at, s.last_seen) then now() else s.last_seen end
+  update public.room_sessions s set removed = true, left_at = public.room_left_at(s.id)
     where s.room_id = room and s.user_id = member and s.left_at is null;
 end
 $$;
 
--- End the room for everyone: only the host, live in it.
+-- End the room for everyone: only the host, live in it. Its signals go with it.
 create or replace function public.end_room(room uuid) returns void
 language plpgsql volatile security definer set search_path = public as $$
 begin
@@ -1974,10 +2026,10 @@ begin
   if not found or not public.viewer_in_room(room) then
     raise exception 'not allowed' using errcode = '42501';
   end if;
-  update public.room_sessions s
-    set left_at = case when public.room_session_live(s.left_at, s.last_seen) then now() else s.last_seen end
+  update public.room_sessions s set left_at = public.room_left_at(s.id)
     where s.room_id = room and s.left_at is null;
   update public.rooms r set ended_at = now(), timer_started_at = null, timer_seconds = null where r.id = room;
+  delete from public.room_signals g where g.room_id = room;
 end
 $$;
 
@@ -2001,7 +2053,8 @@ begin
   if not public.viewer_in_room(room) then
     raise exception 'not allowed' using errcode = '42501';
   end if;
-  update public.rooms r set timer_started_at = null, timer_seconds = null where r.id = room and r.ended_at is null;
+  update public.rooms r set timer_started_at = null, timer_seconds = null
+    where r.id = room and r.ended_at is null and r.timer_started_at is not null;
 end
 $$;
 
@@ -2025,7 +2078,7 @@ language sql stable security definer set search_path = public as $$
       select jsonb_agg(jsonb_build_object('id', p.id, 'name', p.display_name, 'hasAvatar', p.avatar_path is not null,
         'mascot', p.mascot) order by s.joined_at, s.id)
       from public.room_sessions s join public.profiles p on p.id = s.user_id
-      where s.room_id = r.id and public.room_session_live(s.left_at, s.last_seen)
+      where s.room_id = r.id and s.left_at is null and public.room_session_live(s.id)
     ), '[]'::jsonb),
     r.created_at
   from public.rooms r
@@ -2033,18 +2086,20 @@ language sql stable security definer set search_path = public as $$
   where public.viewer_is_member()
     and r.ended_at is null
     and exists (
-      select 1 from public.room_sessions s where s.room_id = r.id and public.room_session_live(s.left_at, s.last_seen)
+      select 1 from public.room_sessions s
+      where s.room_id = r.id and s.left_at is null and public.room_session_live(s.id)
     )
     and not exists (
       select 1 from public.room_sessions s
-      where s.room_id = r.id and public.room_session_live(s.left_at, s.last_seen)
+      where s.room_id = r.id and s.left_at is null and public.room_session_live(s.id)
         and public.is_blocked_between(auth.uid(), s.user_id)
     )
   order by r.created_at desc, r.id
 $$;
 
 -- What the window draws for a room the caller has been in; null for any other room. People only while the caller
--- is live there. `me` describes the caller's latest session.
+-- is live there. `me` describes the caller's latest session. hostId is null only for an ended room whose host
+-- deleted their account.
 create or replace function public.room_state(room uuid) returns json
 language plpgsql stable security definer set search_path = public as $$
 declare
@@ -2061,7 +2116,7 @@ begin
     return null;
   end if;
   select * into r from public.rooms x where x.id = room;
-  is_live := public.viewer_is_member() and r.ended_at is null and public.room_session_live(mine.left_at, mine.last_seen);
+  is_live := public.viewer_is_member() and r.ended_at is null and public.room_session_live(mine.id);
   return json_build_object(
     'id', r.id, 'title', r.title, 'theme', r.theme, 'level', r.level, 'hostId', r.host, 'endedAt', r.ended_at,
     'timer', case when r.timer_started_at is null then null
@@ -2077,7 +2132,7 @@ begin
         'mascot', p.mascot, 'level', p.level, 'role', case when s.user_id = r.host then 'host' else s.role end)
         order by s.joined_at, s.id)
       from public.room_sessions s join public.profiles p on p.id = s.user_id
-      where s.room_id = room and public.room_session_live(s.left_at, s.last_seen)
+      where s.room_id = room and s.left_at is null and public.room_session_live(s.id)
     ), '[]'::json) else '[]'::json end
   );
 end
@@ -2111,7 +2166,7 @@ begin
     select json_build_object('title', r.title, 'theme', r.theme, 'hostName', h.display_name, 'createdAt', r.created_at,
       'people', coalesce((
         select json_agg(json_build_object('name', p.display_name, 'joinedAt', s.joined_at,
-          'leftAt', coalesce(s.left_at, case when not public.room_session_live(s.left_at, s.last_seen) then s.last_seen end))
+          'leftAt', coalesce(s.left_at, case when not public.room_session_live(s.id) then public.room_seen(s.id) end))
           order by s.joined_at, s.id)
         from public.room_sessions s left join public.profiles p on p.id = s.user_id
         where s.room_id = r.id
@@ -2153,7 +2208,8 @@ grant execute on function public.create_room(text, text, text), public.join_room
   to authenticated;
 
 -- Badges, now with Room host (5 rooms opened where someone else had a session) and Active speaker (10 sessions of
--- 5+ minutes that overlapped someone else's session by 5+ minutes) after Diff master.
+-- 5+ minutes that overlapped someone else's session by 5+ minutes) after Diff master. A session still open ends at
+-- its last heartbeat.
 create or replace function public.profile_badges(target uuid)
 returns table (id text, grp text, label text, detail text)
 language plpgsql stable security definer set search_path = public as $$
@@ -2196,11 +2252,11 @@ begin
   end if;
   if (select count(*) from public.room_sessions s
       where s.user_id = target
-        and coalesce(s.left_at, s.last_seen) - s.joined_at >= interval '5 minutes'
+        and coalesce(s.left_at, public.room_seen(s.id)) - s.joined_at >= interval '5 minutes'
         and exists (
           select 1 from public.room_sessions o
           where o.room_id = s.room_id and o.user_id <> target
-            and least(coalesce(s.left_at, s.last_seen), coalesce(o.left_at, o.last_seen))
+            and least(coalesce(s.left_at, public.room_seen(s.id)), coalesce(o.left_at, public.room_seen(o.id)))
               - greatest(s.joined_at, o.joined_at) >= interval '5 minutes'
         )) >= 10 then
     return query select 'active_speaker'::text, 'community'::text, 'Active speaker'::text, null::text;
@@ -2240,12 +2296,14 @@ $$;
 revoke execute on function public.profile_badges(uuid) from public, anon;
 grant execute on function public.profile_badges(uuid) to authenticated;
 
--- Grants and policies. Rooms and sessions change only through the functions above; signals are inserted directly.
+-- Grants and policies. Rooms and sessions change only through the functions above; signals are inserted directly;
+-- presence is for the functions only (row-level security on, no grants, no policies).
 alter table public.rooms enable row level security;
 alter table public.room_sessions enable row level security;
+alter table public.room_presence enable row level security;
 alter table public.room_signals enable row level security;
 
-revoke all on public.rooms, public.room_sessions, public.room_signals from anon, authenticated;
+revoke all on public.rooms, public.room_sessions, public.room_presence, public.room_signals from anon, authenticated;
 grant select on public.rooms, public.room_sessions, public.room_signals to authenticated;
 grant insert (room_id, sender, recipient, kind, payload) on public.room_signals to authenticated;
 
@@ -2262,7 +2320,7 @@ create policy room_signals_select on public.room_signals for select to authentic
 create policy room_signals_insert on public.room_signals for insert to authenticated
   with check (sender = (select auth.uid()) and public.can_signal(room_id, recipient));
 
--- Live updates for the app (Supabase Realtime applies the policies above to every event).
+-- Live updates for the app (Supabase Realtime applies the policies above to every event). room_presence stays out.
 do $$
 begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
