@@ -1,3 +1,5 @@
+import { ROOM_CONNECT_TIMEOUT_MS } from '../../core/social/rooms';
+
 export interface SocialConfig {
   url: string;
   key: string;
@@ -50,4 +52,14 @@ export function findShippedSecrets(env: Record<string, string | undefined>): str
     .filter(([name, value]) => BUNDLED_PREFIXES.some((p) => name.startsWith(p)) && value)
     .filter(([, value]) => value!.trim().startsWith('sb_secret_') || jwtRole(value!.trim()) === 'service_role')
     .map(([name]) => name);
+}
+
+/**
+ * How long a room peer may take to connect. DEVTALK_ROOM_TIMEOUT_MS (a positive whole number of milliseconds) shortens it
+ * for dev and e2e runs; a packaged app ignores it.
+ */
+export function roomConnectTimeoutMs(env: Record<string, string | undefined>, packaged: boolean): number {
+  const raw = packaged ? undefined : env['DEVTALK_ROOM_TIMEOUT_MS'];
+  const ms = raw !== undefined && /^[1-9][0-9]{0,8}$/.test(raw) ? Number(raw) : null;
+  return ms ?? ROOM_CONNECT_TIMEOUT_MS;
 }

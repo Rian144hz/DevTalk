@@ -1,4 +1,4 @@
-import { CHAT_EVENT, PROGRESS_EVENT, type DevtalkApi, type InvokeChannel, type Result } from '../shared/ipc-contract';
+import { CHAT_EVENT, PROGRESS_EVENT, ROOM_EVENT, type DevtalkApi, type InvokeChannel, type Result } from '../shared/ipc-contract';
 
 type Invoke = (channel: InvokeChannel, payload: unknown) => Promise<unknown>;
 /** Each event has its own payload type, fixed by DevtalkApi. */
@@ -74,6 +74,7 @@ export function buildApi(invoke: Invoke, subscribe: Subscribe): DevtalkApi {
       grantBadge: (change) => call('moderation:grantBadge', change),
       revokeBadge: (change) => call('moderation:revokeBadge', change),
       reportContext: (reportId) => call('moderation:reportContext', { reportId }),
+      roomContext: (reportId) => call('moderation:roomContext', { reportId }),
     },
     chat: {
       conversations: () => call('chat:conversations'),
@@ -87,6 +88,24 @@ export function buildApi(invoke: Invoke, subscribe: Subscribe): DevtalkApi {
       read: (conversationId) => call('chat:read', { conversationId }),
       check: (text) => call('chat:check', { text }),
       onEvent: (cb) => subscribe(CHAT_EVENT, cb),
+    },
+    rooms: {
+      list: () => call('rooms:list'),
+      create: (draft) => call('rooms:create', draft),
+      join: (roomId) => call('rooms:join', { roomId }),
+      leave: (roomId) => call('rooms:leave', { roomId }),
+      state: (roomId) => call('rooms:state', { roomId }),
+      signal: (roomId, to, signal, payload) => call('rooms:signal', { roomId, to, signal, payload }),
+      makeModerator: (roomId, userId) => call('rooms:makeModerator', { roomId, userId }),
+      removeModerator: (roomId, userId) => call('rooms:removeModerator', { roomId, userId }),
+      passHost: (roomId, userId) => call('rooms:passHost', { roomId, userId }),
+      mute: (roomId, userId) => call('rooms:mute', { roomId, userId }),
+      remove: (roomId, userId) => call('rooms:remove', { roomId, userId }),
+      end: (roomId) => call('rooms:end', { roomId }),
+      timer: (roomId, seconds) => call('rooms:timer', { roomId, seconds }),
+      nextCard: (roomId) => call('rooms:nextCard', { roomId }),
+      settings: () => call('rooms:settings'),
+      onEvent: (cb) => subscribe(ROOM_EVENT, cb),
     },
   };
 }

@@ -1,10 +1,13 @@
+import { vi } from 'vitest';
+import type { RoomLiveEvent } from '../../src/core/social/rooms';
 import type { ProfileDraft } from '../../src/core/social/types';
 import { toAppError } from '../../src/main/ipc/handle';
 import { createSocialHandlers } from '../../src/main/ipc/social-handlers';
 import { SocialError } from '../../src/main/social/errors';
 import type { SocialHandlerDeps } from '../../src/main/ipc/social-handlers';
-import { createUnconfiguredBackend } from '../../src/main/social/backend';
+import { createUnconfiguredBackend, type SocialBackend } from '../../src/main/social/backend';
 import { createFakeSocialBackend } from '../../src/main/social/fake-backend';
+import { createRoomLive } from '../../src/main/social/room-live';
 import type { FakeSocialOptions } from '../../src/main/social/fake-backend';
 import { gif, webp as bannerWebp } from './banner-fixtures';
 
@@ -458,5 +461,257 @@ describe('chat channels', () => {
     await ok(h['social:acceptDocuments']({}));
     await ok(h['social:deleteAccount']({ confirmEmail: 'new@example.com', deleteLocal: false }));
     expect(sessions).toHaveLength(4);
+  });
+});
+
+describe('room channels', () => {
+  /** A recording stand-in for the live bridge. */
+  function bridge(current: string | null = null) {
+    const entered: string[] = [];
+    let exited = 0;
+    return {
+      entered,
+      exited: () => exited,
+      live: {
+        enter: (id: string) => void entered.push(id),
+        exit: async () => void exited++,
+        current: () => current,
+        leaving: () => false,
+      },
+    };
+  }
+  async function rooms(over: Partial<SocialHandlerDeps> = {}, fake: FakeSocialOptions = {}) {
+    const stub = bridge();
+    const s = setup({ seed: 'people', ...fake }, { roomLive: stub.live, ...over });
+    const ids = Object.fromEntries((await s.backend.peopleForTest()).map((p) => [p.displayName, p.id])) as Record<string, string>;
+    const as = <T,>(name: string, act: (x: SocialBackend) => Promise<T>) => s.backend.actAsForTest(ids[name]!, act) as Promise<T>;
+    const biaRoom = (await ok(s.h['rooms:list']({}))).find((r) => r.hostName === 'Bia')!.id;
+    return { ...s, ...stub, ids, as, biaRoom };
+  }
+  const kindOf = (r: { ok: boolean; error?: { kind: string } }) => (r.ok ? 'ok' : r.error!.kind);
+  const create = { title: 'Code review night', theme: 'code_review', level: 'B2' } as const;
+
+  test('the list shows the live rooms', async () => {
+    const { h } = await rooms();
+    expect(await ok(h['rooms:list']({}))).toEqual([expect.objectContaining({ title: 'Stand-up practice', theme: 'standup', hostName: 'Bia' })]);
+  });
+
+  test('creating or joining a room makes the live bridge follow it; a refused call does not', async () => {
+    const { h, entered, biaRoom, ids } = await rooms();
+    const mine = await ok(h['rooms:create'](create));
+    expect(entered).toEqual([mine]);
+    expect(await ok(h['rooms:state']({ roomId: mine }))).toMatchObject({ title: 'Code review night', hostId: ids['Rian'], me: { live: true, role: 'host' } });
+    await ok(h['rooms:join']({ roomId: biaRoom }));
+    expect(entered).toEqual([mine, biaRoom]);
+    expect(kindOf(await h['rooms:join']({ roomId: 'no-such-room' }))).toBe('forbidden');
+    expect(entered).toHaveLength(2);
+  });
+
+  test('a refused create or join (offline, say) does not make the bridge follow', async () => {
+    const { h, entered, biaRoom } = await rooms({}, { fail: { createRoom: 'offline', joinRoom: 'offline' } });
+    expect(kindOf(await h['rooms:create'](create))).toBe('offline');
+    expect(kindOf(await h['rooms:join']({ roomId: biaRoom }))).toBe('offline');
+    expect(entered).toEqual([]);
+  });
+
+  test('leaving the room the bridge follows exits it; leaving any other room leaves it directly', async () => {
+    const backend = createFakeSocialBackend({ seed: 'people' });
+    const live = createRoomLive({ backend, emit: () => {} });
+    const { h } = setup({}, { backend, roomLive: live });
+    const mine = await ok(h['rooms:create'](create));
+    expect(live.current()).toBe(mine);
+    await ok(h['rooms:leave']({ roomId: mine }));
+    expect(live.current()).toBeNull();
+    expect((await ok(h['rooms:state']({ roomId: mine })))?.me.live).toBe(false);
+    // The bridge is not following this room (it stopped, say): the seat is still given up.
+    const biaRoom = (await ok(h['rooms:list']({}))).find((r) => r.hostName === 'Bia')!.id;
+    await backend.joinRoom(biaRoom);
+    expect((await ok(h['rooms:state']({ roomId: biaRoom })))?.me.live).toBe(true);
+    await ok(h['rooms:leave']({ roomId: biaRoom }));
+    expect((await ok(h['rooms:state']({ roomId: biaRoom })))?.me.live).toBe(false);
+  });
+
+  test('without a bridge the handlers still work', async () => {
+    const { h, backend } = setup({ seed: 'people' });
+    const mine = await ok(h['rooms:create'](create));
+    await ok(h['rooms:leave']({ roomId: mine }));
+    expect((await backend.roomState(mine))?.me.live).toBe(false);
+  });
+
+  test('the host runs the room: roles, mute, remove, timer, cards and end', async () => {
+    const { h, as, ids } = await rooms();
+    const mine = await ok(h['rooms:create'](create));
+    for (const name of ['Ana', 'Dani', 'Lia']) await as(name, (x) => x.joinRoom(mine));
+    const people = async () => (await ok(h['rooms:state']({ roomId: mine })))!.people;
+    const roleOf = async (name: string) => (await people()).find((p) => p.id === ids[name])!.role;
+
+    await ok(h['rooms:makeModerator']({ roomId: mine, userId: ids['Ana']! }));
+    expect(await roleOf('Ana')).toBe('moderator');
+    await ok(h['rooms:removeModerator']({ roomId: mine, userId: ids['Ana']! }));
+    expect(await roleOf('Ana')).toBe('member');
+
+    await ok(h['rooms:mute']({ roomId: mine, userId: ids['Dani']! }));
+    expect((await as('Dani', (x) => x.roomState(mine)))?.me.muteRequestedAt).not.toBeNull();
+
+    await ok(h['rooms:timer']({ roomId: mine, seconds: 90 }));
+    expect((await ok(h['rooms:state']({ roomId: mine })))?.timer).toMatchObject({ seconds: 90 });
+    await ok(h['rooms:timer']({ roomId: mine, seconds: null }));
+    expect((await ok(h['rooms:state']({ roomId: mine })))?.timer).toBeNull();
+    await ok(h['rooms:nextCard']({ roomId: mine }));
+    expect((await ok(h['rooms:state']({ roomId: mine })))?.card).toBe(1);
+
+    await ok(h['rooms:remove']({ roomId: mine, userId: ids['Lia']! }));
+    expect((await as('Lia', (x) => x.roomState(mine)))?.me).toMatchObject({ live: false, removed: true });
+
+    await ok(h['rooms:passHost']({ roomId: mine, userId: ids['Dani']! }));
+    expect((await ok(h['rooms:state']({ roomId: mine })))?.hostId).toBe(ids['Dani']);
+    // Rian is not the host any more: he cannot end the room, but the new host can.
+    expect(kindOf(await h['rooms:end']({ roomId: mine }))).toBe('forbidden');
+    await as('Dani', (x) => x.endRoom(mine));
+    expect((await ok(h['rooms:state']({ roomId: mine })))?.endedAt).not.toBeNull();
+  });
+
+  test('the host ends the room', async () => {
+    const { h } = await rooms();
+    const mine = await ok(h['rooms:create'](create));
+    await ok(h['rooms:end']({ roomId: mine }));
+    expect((await ok(h['rooms:state']({ roomId: mine })))?.endedAt).not.toBeNull();
+  });
+
+  test('a signal reaches only the person it is for', async () => {
+    const { h, as, ids } = await rooms();
+    const mine = await ok(h['rooms:create'](create));
+    await as('Ana', (x) => x.joinRoom(mine));
+    const heard: RoomLiveEvent[] = [];
+    await as('Ana', async (x) => void x.subscribeRoom(mine, (e) => heard.push(e)));
+    await ok(h['rooms:signal']({ roomId: mine, to: ids['Ana']!, signal: 'offer', payload: '{"sdp":"v=0"}' }));
+    expect(heard).toContainEqual({ kind: 'signal', from: ids['Rian'], signal: 'offer', payload: '{"sdp":"v=0"}' });
+    // Not to myself, not to someone who is not in the room.
+    expect(kindOf(await h['rooms:signal']({ roomId: mine, to: ids['Rian']!, signal: 'offer', payload: 'x' }))).toBe('forbidden');
+    expect(kindOf(await h['rooms:signal']({ roomId: mine, to: ids['Max']!, signal: 'offer', payload: 'x' }))).toBe('forbidden');
+  });
+
+  test('hostile input is refused before the backend: titles, themes, levels, timers, payloads, kinds, ids', async () => {
+    const { h, backend, entered } = await rooms();
+    const created = vi.spyOn(backend, 'createRoom');
+    const bad = (title: string, theme: string = 'free', level: string | null = null) => h['rooms:create']({ title, theme, level });
+    for (const title of ['', '  ', 'ab', ' ab ', 'x'.repeat(61), `  ${'x'.repeat(61)}  `, '😀'.repeat(61), '😀😀']) {
+      expect(kindOf(await bad(title))).toBe('validation');
+    }
+    expect(kindOf(await bad('Good title', 'party'))).toBe('validation');
+    expect(kindOf(await bad('Good title', 'free', 'D1'))).toBe('validation');
+    expect(kindOf(await bad('Good title', 'free', 'b1'))).toBe('validation');
+    expect(kindOf(await h['rooms:create']({ title: 'Good title', theme: 'free' }))).toBe('validation');
+    expect(kindOf(await h['rooms:create']({ title: 'Good title', theme: 'free', level: null, extra: 1 }))).toBe('validation');
+    expect(created).not.toHaveBeenCalled();
+    expect(entered).toEqual([]);
+
+    // The edges that are fine: 3 and 60 characters, emoji and right-to-left text count as characters.
+    for (const title of ['abc', 'x'.repeat(60), '  abc  ', '😀'.repeat(60), '😀😀😀', 'مرحبا بالعالم']) {
+      expect(kindOf(await bad(title))).toBe('ok');
+    }
+  });
+
+  test('the speaking timer is 60 or 90 seconds, or off', async () => {
+    const { h, backend } = await rooms();
+    const timer = vi.spyOn(backend, 'setRoomTimer');
+    const mine = await ok(h['rooms:create'](create));
+    for (const seconds of [30, 0, 61, 120, -60, 60.5, '60', undefined]) {
+      expect(kindOf(await h['rooms:timer']({ roomId: mine, seconds }))).toBe('validation');
+    }
+    expect(timer).not.toHaveBeenCalled();
+    for (const seconds of [60, 90, null]) expect(kindOf(await h['rooms:timer']({ roomId: mine, seconds }))).toBe('ok');
+    expect(timer.mock.calls.map((c) => c[1])).toEqual([60, 90, null]);
+  });
+
+  test('a signal is one of four kinds with a payload of at most 16 384 bytes', async () => {
+    const { h, backend, ids, as } = await rooms();
+    const send = vi.spyOn(backend, 'sendRoomSignal');
+    const mine = await ok(h['rooms:create'](create));
+    await as('Ana', (x) => x.joinRoom(mine));
+    const to = ids['Ana']!;
+    const signal = (over: Record<string, unknown>) => h['rooms:signal']({ roomId: mine, to, signal: 'offer', payload: 'x', ...over });
+    expect(kindOf(await signal({ payload: 'x'.repeat(16_385) }))).toBe('validation');
+    // Counted in bytes, not characters: 8 193 two-byte letters are 16 386 bytes.
+    expect(kindOf(await signal({ payload: 'é'.repeat(8193) }))).toBe('validation');
+    expect(kindOf(await signal({ signal: 'hello' }))).toBe('validation');
+    expect(kindOf(await signal({ signal: 'OFFER' }))).toBe('validation');
+    expect(kindOf(await signal({ payload: 42 }))).toBe('validation');
+    expect(kindOf(await signal({ to: '' }))).toBe('validation');
+    expect(kindOf(await signal({ roomId: '' }))).toBe('validation');
+    expect(send).not.toHaveBeenCalled();
+    expect(kindOf(await signal({ payload: 'x'.repeat(16_384) }))).toBe('ok');
+    expect(kindOf(await signal({ payload: 'é'.repeat(8192) }))).toBe('ok');
+    for (const kind of ['offer', 'answer', 'candidate', 'bye']) expect(kindOf(await signal({ signal: kind, payload: '' }))).toBe('ok');
+  });
+
+  test('room ids and user ids must be present', async () => {
+    const { h } = await rooms();
+    for (const channel of ['rooms:join', 'rooms:leave', 'rooms:state', 'rooms:end', 'rooms:nextCard'] as const) {
+      expect(kindOf(await h[channel]({}))).toBe('validation');
+      expect(kindOf(await h[channel]({ roomId: '' }))).toBe('validation');
+      expect(kindOf(await h[channel]({ roomId: 'x'.repeat(65) }))).toBe('validation');
+    }
+    for (const channel of ['rooms:makeModerator', 'rooms:removeModerator', 'rooms:passHost', 'rooms:mute', 'rooms:remove'] as const) {
+      expect(kindOf(await h[channel]({ roomId: 'r1' }))).toBe('validation');
+      expect(kindOf(await h[channel]({ roomId: 'r1', userId: '' }))).toBe('validation');
+    }
+    expect(kindOf(await h['rooms:list']({ extra: true }))).toBe('validation');
+  });
+
+  test('the room limits get their own message', async () => {
+    expect(toAppError(new SocialError('rate_limited', 'room limit reached'))).toEqual({
+      kind: 'rate_limited', message: 'You can create up to 10 rooms a day. Try again tomorrow.',
+    });
+    expect(toAppError(new SocialError('rate_limited', 'signal limit reached'))).toEqual({
+      kind: 'rate_limited', message: 'Too many connection messages. Wait a moment.',
+    });
+    expect(toAppError(new SocialError('unknown', 'room is full'))).toEqual({ kind: 'validation', message: 'This room is full.' });
+    expect(toAppError(new SocialError('unknown', 'duplicate key value violates unique constraint "room_sessions_one_open"'))).toEqual({
+      kind: 'validation', message: 'You are already joining a room.',
+    });
+    // Other duplicates keep the generic path (and are logged).
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(toAppError(new SocialError('unknown', 'duplicate key value violates unique constraint')).kind).toBe('internal');
+    logged.mockRestore();
+  });
+
+  test('the 11th room of the day and the 7th person get the plain messages', async () => {
+    const { h, as, biaRoom } = await rooms();
+    for (let i = 0; i < 10; i++) await ok(h['rooms:create']({ ...create, title: `Room number ${i}` }));
+    expect(await h['rooms:create'](create)).toEqual({ ok: false, error: { kind: 'rate_limited', message: 'You can create up to 10 rooms a day. Try again tomorrow.' } });
+    for (const name of ['Ana', 'Dani', 'Lia', 'Max']) await as(name, (x) => x.joinRoom(biaRoom));
+    expect(await h['rooms:join']({ roomId: biaRoom })).toEqual({ ok: false, error: { kind: 'validation', message: 'This room is full.' } });
+  });
+
+  test('the connect timeout is 20 seconds unless the app says otherwise', async () => {
+    expect(await ok((await rooms()).h['rooms:settings']({}))).toEqual({ connectTimeoutMs: 20_000 });
+    expect(await ok((await rooms({ roomConnectTimeoutMs: 1500 })).h['rooms:settings']({}))).toEqual({ connectTimeoutMs: 1500 });
+  });
+
+  test('room context is for moderators only', async () => {
+    const { h, backend, ids, biaRoom } = await rooms();
+    await ok(h['rooms:join']({ roomId: biaRoom }));
+    await ok(h['safety:report']({ reported: ids['Bia']!, contextType: 'room', contextId: biaRoom, reason: 'harassment', details: '' }));
+    expect(await h['moderation:roomContext']({ reportId: 1 })).toEqual({ ok: false, error: { kind: 'forbidden', message: 'Only moderators can see this.' } });
+    backend.addModeratorForTest(ids['Dani']!);
+    await ok(h['social:verifyCode']({ email: 'dani@example.com', code: '123456' }));
+    const report = (await ok(h['moderation:reports']({}))).find((r) => r.contextType === 'room')!;
+    expect(await ok(h['moderation:roomContext']({ reportId: report.id }))).toMatchObject({
+      title: 'Stand-up practice', theme: 'standup', hostName: 'Bia', people: expect.arrayContaining([expect.objectContaining({ name: 'Rian' })]),
+    });
+    expect(kindOf(await h['moderation:roomContext']({ reportId: 0 }))).toBe('validation');
+  });
+
+  test('signing out leaves the room first, while the session still exists', async () => {
+    const backend = createFakeSocialBackend({ seed: 'people' });
+    let sessionAtExit: unknown = 'exit was not called';
+    const { h } = setup({}, {
+      backend,
+      roomLive: { enter: () => {}, current: () => 'r1', leaving: () => false, exit: async () => void (sessionAtExit = await backend.session()) },
+    });
+    await ok(h['social:signOut']({}));
+    expect(sessionAtExit).toMatchObject({ email: 'rian@example.com' });
+    expect(await backend.session()).toBeNull();
   });
 });

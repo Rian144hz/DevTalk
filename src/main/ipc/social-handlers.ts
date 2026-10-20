@@ -1,7 +1,9 @@
 import { normalizeStackTags } from '../../core/social/validate';
+import { ROOM_CONNECT_TIMEOUT_MS } from '../../core/social/rooms';
 import type { SocialStatus } from '../../shared/ipc-contract';
 import { validateAvatar } from '../social/avatar';
 import type { SocialBackend } from '../social/backend';
+import type { RoomLive } from '../social/room-live';
 import { prepareBannerUpload } from '../../core/media/banner';
 import { AppFailure, handle, type HandlerMap } from './handle';
 import type { SocialChannel } from './handlers';
@@ -19,6 +21,10 @@ export interface SocialHandlerDeps {
   today: () => string;
   /** The account changed (signed in or out, documents accepted, deleted): the live chat follows. */
   onSessionChange?: () => void;
+  /** Follows the room the person is in (events and heartbeat). Without it the room calls still work, they just are not followed. */
+  roomLive?: RoomLive;
+  /** How long a room peer may take to connect (default 20 s). */
+  roomConnectTimeoutMs?: number;
 }
 
 const SIGNED_OUT: SocialStatus = {
@@ -150,6 +156,8 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
       return null;
     }),
     'social:signOut': handle('social:signOut', async () => {
+      // Give up the seat while the session still exists, so the others do not wait 90 seconds for a ghost.
+      await deps.roomLive?.exit();
       await backend.signOut();
       return sessionChanged(await status());
     }),
@@ -219,6 +227,10 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
       await requireModerator();
       return backend.reportContext(reportId);
     }),
+    'moderation:roomContext': handle('moderation:roomContext', async ({ reportId }) => {
+      await requireModerator();
+      return backend.roomReportContext(reportId);
+    }),
     'chat:conversations': handle('chat:conversations', () => backend.conversations()),
     'chat:messages': handle('chat:messages', ({ conversationId, before }) => backend.messages(conversationId, before)),
     'chat:request': handle('chat:request', async ({ userId, body }) => {
@@ -249,5 +261,59 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
       await backend.markRead(conversationId);
       return null;
     }),
+    'rooms:list': handle('rooms:list', () => backend.liveRooms()),
+    'rooms:create': handle('rooms:create', async ({ title, theme, level }) => {
+      const roomId = await backend.createRoom({ title, theme, level });
+      deps.roomLive?.enter(roomId);
+      return roomId;
+    }),
+    'rooms:join': handle('rooms:join', async ({ roomId }) => {
+      await backend.joinRoom(roomId);
+      deps.roomLive?.enter(roomId);
+      return null;
+    }),
+    'rooms:leave': handle('rooms:leave', async ({ roomId }) => {
+      if (deps.roomLive?.current() === roomId) await deps.roomLive.exit();
+      else await backend.leaveRoom(roomId);
+      return null;
+    }),
+    'rooms:state': handle('rooms:state', ({ roomId }) => backend.roomState(roomId)),
+    'rooms:signal': handle('rooms:signal', async ({ roomId, to, signal, payload }) => {
+      await backend.sendRoomSignal(roomId, to, signal, payload);
+      return null;
+    }),
+    'rooms:makeModerator': handle('rooms:makeModerator', async ({ roomId, userId }) => {
+      await backend.makeRoomModerator(roomId, userId);
+      return null;
+    }),
+    'rooms:removeModerator': handle('rooms:removeModerator', async ({ roomId, userId }) => {
+      await backend.removeRoomModerator(roomId, userId);
+      return null;
+    }),
+    'rooms:passHost': handle('rooms:passHost', async ({ roomId, userId }) => {
+      await backend.passHost(roomId, userId);
+      return null;
+    }),
+    'rooms:mute': handle('rooms:mute', async ({ roomId, userId }) => {
+      await backend.muteMember(roomId, userId);
+      return null;
+    }),
+    'rooms:remove': handle('rooms:remove', async ({ roomId, userId }) => {
+      await backend.removeFromRoom(roomId, userId);
+      return null;
+    }),
+    'rooms:end': handle('rooms:end', async ({ roomId }) => {
+      await backend.endRoom(roomId);
+      return null;
+    }),
+    'rooms:timer': handle('rooms:timer', async ({ roomId, seconds }) => {
+      await backend.setRoomTimer(roomId, seconds);
+      return null;
+    }),
+    'rooms:nextCard': handle('rooms:nextCard', async ({ roomId }) => {
+      await backend.nextCard(roomId);
+      return null;
+    }),
+    'rooms:settings': handle('rooms:settings', () => ({ connectTimeoutMs: deps.roomConnectTimeoutMs ?? ROOM_CONNECT_TIMEOUT_MS })),
   };
 }

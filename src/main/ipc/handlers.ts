@@ -33,7 +33,7 @@ export interface HandlerDeps {
 
 /** Channels served by the community backend; chat:check uses the coach and stays here. */
 export type SocialChannel = Exclude<
-  Extract<InvokeChannel, `social:${string}` | `safety:${string}` | `moderation:${string}` | `chat:${string}`>,
+  Extract<InvokeChannel, `social:${string}` | `safety:${string}` | `moderation:${string}` | `chat:${string}` | `rooms:${string}`>,
   'chat:check'
 >;
 export type CoreChannel = Exclude<InvokeChannel, SocialChannel>;

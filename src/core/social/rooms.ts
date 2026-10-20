@@ -76,7 +76,8 @@ export const ROOM_CARDS: Record<RoomTheme, readonly string[]> = {
 };
 
 export type RoomRole = 'host' | 'moderator' | 'member';
-export type RoomSignalKind = 'offer' | 'answer' | 'candidate' | 'bye';
+export const ROOM_SIGNAL_KINDS = ['offer', 'answer', 'candidate', 'bye'] as const;
+export type RoomSignalKind = (typeof ROOM_SIGNAL_KINDS)[number];
 
 /** What the person fills in to open a room. */
 export interface RoomDraft {

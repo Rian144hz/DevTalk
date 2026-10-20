@@ -8,10 +8,11 @@ import { SqliteStudyStore } from './db/sqlite-store';
 import { createHandlers, type Handlers } from './ipc/handlers';
 import { createSocialHandlers } from './ipc/social-handlers';
 import { createUnconfiguredBackend, type SocialBackend } from './social/backend';
-import { readSocialConfig } from './social/config';
+import { readSocialConfig, roomConnectTimeoutMs } from './social/config';
 import type { SocialErrorKind } from './social/errors';
 import { createFakeSocialBackend } from './social/fake-backend';
 import { createChatLive } from './social/chat-live';
+import { createRoomLive } from './social/room-live';
 import { createPracticeSync, type PracticeSync } from './social/practice-sync';
 import { createSessionStore } from './social/session-store';
 import { createSupabaseBackend } from './social/supabase-backend';
@@ -19,7 +20,7 @@ import { createAnthropicProvider } from './llm/anthropic-provider';
 import { createGeminiProvider } from './llm/gemini-provider';
 import { checkOllama, createOllamaProvider } from './llm/ollama-provider';
 import { GEMINI_FALLBACK_MODEL, type ProviderId } from '../shared/providers';
-import { CHAT_EVENT } from '../shared/ipc-contract';
+import { CHAT_EVENT, ROOM_EVENT } from '../shared/ipc-contract';
 import { createFixtureProvider } from './llm/fake-fixtures';
 import { createKeyVault, isKeyringUsable, type KeyVault, type SafeStorageLike } from './vault/key-vault';
 
@@ -27,6 +28,10 @@ export interface AppContext {
   handlers: Handlers;
   /** Background work that may use the network; started once the window is up, never by the CLI. */
   startBackground(): void;
+  /** True while a voice room is being followed or a leave is still on its way (quitting should wait for it). */
+  inRoom(): boolean;
+  /** Gives up the voice-room seat, if any. Never rejects; may wait for the network, so callers set their own limit. */
+  leaveRoom(): Promise<void>;
   close(): void;
 }
 
@@ -159,10 +164,18 @@ export function createAppContext(
   });
 
   const chatLive = createChatLive({ backend, emit: (e) => getWindow()?.webContents.send(CHAT_EVENT, e) });
+  const roomLive = createRoomLive({ backend, emit: (e) => getWindow()?.webContents.send(ROOM_EVENT, e) });
 
   const socialHandlers = createSocialHandlers({
     backend,
-    onSessionChange: () => void chatLive.start(),
+    // Signing in or out, accepting the documents or deleting the account ends the live chat and the voice-room seat.
+    onSessionChange: () => {
+      void chatLive.start();
+      void roomLive.exit();
+    },
+    roomLive,
+    // Dev and e2e can shorten it (DEVTALK_ROOM_TIMEOUT_MS); a packaged app always waits 20 seconds.
+    roomConnectTimeoutMs: roomConnectTimeoutMs(process.env, app.isPackaged),
     exportLocal: () => exportLocalData(db),
     chooseSavePath: async (defaultName) => {
       const win = getWindow();
@@ -190,8 +203,11 @@ export function createAppContext(
       void practiceSync?.start();
       void chatLive.start();
     },
+    inRoom: () => roomLive.current() !== null || roomLive.leaving(),
+    leaveRoom: () => roomLive.exit(),
     close: () => {
       chatLive.stop();
+      void roomLive.exit();
       db.close();
     },
   };

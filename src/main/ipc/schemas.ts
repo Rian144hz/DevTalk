@@ -5,6 +5,7 @@ import { PROVIDERS } from '../../shared/providers';
 import { MANUAL_BADGES } from '../../core/social/badges';
 import { MEMBER_QUERY_MAX } from '../../core/social/people';
 import { CHAT_TEXT_MAX, chatText } from '../../core/social/chat';
+import { ROOM_SIGNAL_KINDS, ROOM_SIGNAL_MAX_BYTES, ROOM_THEMES, ROOM_TITLE_MAX, ROOM_TITLE_MIN, roomTitle } from '../../core/social/rooms';
 import { AREAS, PROFILE_LIMITS, REPORT_CONTEXTS, REPORT_REASONS } from '../../core/social/types';
 import { ProfileDraftSchema } from '../../core/social/validate';
 
@@ -34,6 +35,19 @@ const chatBody = z
   .refine((s) => chatText(s) !== null, `Write 1 to ${CHAT_TEXT_MAX} characters.`);
 const conversationId = z.string().min(1).max(64);
 const messageId = z.number().int().positive();
+const roomId = z.string().min(1).max(64);
+const inRoom = z.object({ roomId }).strict();
+const onMember = z.object({ roomId, userId }).strict();
+// Characters, not UTF-16 units: the same count the database makes. The length cap only keeps a giant string out of the check.
+const roomTitleText = z
+  .string()
+  .max(ROOM_TITLE_MAX * 4)
+  .refine((s) => roomTitle(s) !== null, `Write ${ROOM_TITLE_MIN} to ${ROOM_TITLE_MAX} characters.`);
+// A character is at least one byte, so a longer string is too big whatever it holds; the byte count decides the rest.
+const roomSignalPayload = z
+  .string()
+  .max(ROOM_SIGNAL_MAX_BYTES, 'The connection message is too long.')
+  .refine((s) => Buffer.byteLength(s, 'utf8') <= ROOM_SIGNAL_MAX_BYTES, 'The connection message is too long.');
 const decision = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('dismiss'), reportId }).strict(),
   z.object({ kind: z.literal('warn'), reportId: reportId.nullable(), target: userId, message: z.string().trim().min(1).max(1000) }).strict(),
@@ -148,4 +162,20 @@ export const INPUT_SCHEMAS = {
   'chat:thank': z.object({ correctionId: messageId }).strict(),
   'chat:read': z.object({ conversationId }).strict(),
   'chat:check': z.object({ text: chatBody }).strict(),
+  'moderation:roomContext': z.object({ reportId }).strict(),
+  'rooms:list': empty,
+  'rooms:create': z.object({ title: roomTitleText, theme: z.enum(ROOM_THEMES), level: z.enum(LEVELS).nullable() }).strict(),
+  'rooms:join': inRoom,
+  'rooms:leave': inRoom,
+  'rooms:state': inRoom,
+  'rooms:signal': z.object({ roomId, to: userId, signal: z.enum(ROOM_SIGNAL_KINDS), payload: roomSignalPayload }).strict(),
+  'rooms:makeModerator': onMember,
+  'rooms:removeModerator': onMember,
+  'rooms:passHost': onMember,
+  'rooms:mute': onMember,
+  'rooms:remove': onMember,
+  'rooms:end': inRoom,
+  'rooms:timer': z.object({ roomId, seconds: z.union([z.literal(60), z.literal(90), z.null()]) }).strict(),
+  'rooms:nextCard': inRoom,
+  'rooms:settings': empty,
 } satisfies Record<InvokeChannel, z.ZodType>;

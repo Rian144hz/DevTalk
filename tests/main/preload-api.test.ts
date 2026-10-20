@@ -1,10 +1,10 @@
 import { buildApi } from '../../src/preload/api';
-import { CHAT_EVENT, PROGRESS_EVENT } from '../../src/shared/ipc-contract';
+import { CHAT_EVENT, PROGRESS_EVENT, ROOM_EVENT } from '../../src/shared/ipc-contract';
 
 test('exposes exactly the spec groups', () => {
   const api = buildApi(async () => ({ ok: true, data: null }), () => () => {});
   expect(Object.keys(api).sort()).toEqual([
-    'challenges', 'chat', 'feedback', 'keys', 'llm', 'llmCheck', 'moderation', 'profile', 'progress', 'review', 'safety', 'settings', 'social',
+    'challenges', 'chat', 'feedback', 'keys', 'llm', 'llmCheck', 'moderation', 'profile', 'progress', 'review', 'rooms', 'safety', 'settings', 'social',
   ]);
 });
 
@@ -173,4 +173,58 @@ test('chat methods map to their channels and onEvent listens to the chat event',
   ]);
   expect(api.chat.onEvent(() => {})).toBe(unsubscribe);
   expect(subscribed).toBe(CHAT_EVENT);
+});
+
+test('room methods map to their channels and onEvent listens to the room event', async () => {
+  const calls: [string, unknown][] = [];
+  let subscribed = '';
+  const unsubscribe = () => {};
+  const api = buildApi(async (channel, payload) => {
+    calls.push([channel, payload]);
+    return { ok: true, data: null };
+  }, (event) => {
+    subscribed = event;
+    return unsubscribe;
+  });
+  await api.rooms.list();
+  await api.rooms.create({ title: 'Code review night', theme: 'code_review', level: 'B2' });
+  await api.rooms.create({ title: 'Free talk', theme: 'free', level: null });
+  await api.rooms.join('r1');
+  await api.rooms.leave('r1');
+  await api.rooms.state('r1');
+  await api.rooms.signal('r1', 'u2', 'offer', 'sdp');
+  await api.rooms.makeModerator('r1', 'u2');
+  await api.rooms.removeModerator('r1', 'u2');
+  await api.rooms.passHost('r1', 'u2');
+  await api.rooms.mute('r1', 'u2');
+  await api.rooms.remove('r1', 'u2');
+  await api.rooms.end('r1');
+  await api.rooms.timer('r1', 60);
+  await api.rooms.timer('r1', null);
+  await api.rooms.nextCard('r1');
+  await api.rooms.settings();
+  await api.moderation.roomContext(9);
+  expect(calls).toEqual([
+    ['rooms:list', {}],
+    ['rooms:create', { title: 'Code review night', theme: 'code_review', level: 'B2' }],
+    ['rooms:create', { title: 'Free talk', theme: 'free', level: null }],
+    ['rooms:join', { roomId: 'r1' }],
+    ['rooms:leave', { roomId: 'r1' }],
+    ['rooms:state', { roomId: 'r1' }],
+    ['rooms:signal', { roomId: 'r1', to: 'u2', signal: 'offer', payload: 'sdp' }],
+    ['rooms:makeModerator', { roomId: 'r1', userId: 'u2' }],
+    ['rooms:removeModerator', { roomId: 'r1', userId: 'u2' }],
+    ['rooms:passHost', { roomId: 'r1', userId: 'u2' }],
+    ['rooms:mute', { roomId: 'r1', userId: 'u2' }],
+    ['rooms:remove', { roomId: 'r1', userId: 'u2' }],
+    ['rooms:end', { roomId: 'r1' }],
+    ['rooms:timer', { roomId: 'r1', seconds: 60 }],
+    ['rooms:timer', { roomId: 'r1', seconds: null }],
+    ['rooms:nextCard', { roomId: 'r1' }],
+    ['rooms:settings', {}],
+    ['moderation:roomContext', { reportId: 9 }],
+  ]);
+  expect(api.rooms.onEvent(() => {})).toBe(unsubscribe);
+  expect(subscribed).toBe(ROOM_EVENT);
+  expect(ROOM_EVENT).toBe('room:event');
 });

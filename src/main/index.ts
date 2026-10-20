@@ -1,13 +1,13 @@
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { app, BrowserWindow, dialog, shell } from 'electron';
+import { app, BrowserWindow, dialog, session, shell } from 'electron';
 import { PROGRESS_EVENT } from '../shared/ipc-contract';
 import { createAppContext, type AppContext } from './app-context';
 import { isCliMode, runCli } from './cli';
 import { DatabaseTooNewError } from './db/open';
 import { registerIpc } from './ipc/register';
 import { linuxPasswordStoreSwitch } from './vault/key-vault';
-import { isAppUrl, secureWebPreferences } from './security';
+import { installPermissionHandlers, isAppUrl, secureWebPreferences } from './security';
 
 const DEV_URL = process.env['ELECTRON_RENDERER_URL'];
 const RENDERER_FILE = join(__dirname, '../renderer/index.html');
@@ -24,7 +24,18 @@ if (process.platform === 'linux') {
 const overrideUserData = process.env['DEVTALK_USER_DATA'];
 if (overrideUserData && !app.isPackaged) app.setPath('userData', overrideUserData);
 
-function createMainWindow(): BrowserWindow {
+// Dev/e2e only: Chromium supplies a fake microphone and skips its own prompt, so voice rooms can be tried without hardware.
+// The app's own permission rules (microphone only, own page only) still decide.
+if (!app.isPackaged && process.env['DEVTALK_FAKE_MEDIA'] === '1') {
+  app.commandLine.appendSwitch('use-fake-device-for-media-stream');
+  app.commandLine.appendSwitch('use-fake-ui-for-media-stream');
+}
+
+/** At most this long is spent giving up the voice-room seat when the app quits; then it quits anyway. */
+const QUIT_ROOM_WAIT_MS = 2000;
+
+/** `leaveRoom` runs when the page is gone or replaced (window closed, reload, crash): the room lives in the page. */
+function createMainWindow(leaveRoom: () => void): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280,
     height: 820,
@@ -45,8 +56,13 @@ function createMainWindow(): BrowserWindow {
   win.webContents.on('will-navigate', (event, url) => {
     if (!isAppUrl(url, APP_URL)) event.preventDefault();
   });
+  win.webContents.on('did-start-navigation', (event) => {
+    if (event.isMainFrame && !event.isSameDocument) leaveRoom();
+  });
+  win.webContents.on('render-process-gone', leaveRoom);
   win.on('closed', () => {
     if (mainWindow === win) mainWindow = null;
+    leaveRoom();
   });
 
   if (DEV_URL) void win.loadURL(DEV_URL);
@@ -69,6 +85,8 @@ function openContext(): AppContext | null {
 }
 
 void app.whenReady().then(async () => {
+  // The microphone for voice rooms, to the app's own page; every other permission is denied.
+  installPermissionHandlers(session.defaultSession, APP_URL);
   const ctx = openContext();
   if (!ctx) {
     app.exit(1);
@@ -82,10 +100,20 @@ void app.whenReady().then(async () => {
   }
 
   registerIpc(ctx.handlers, () => mainWindow);
-  mainWindow = createMainWindow();
+  const leaveRoom = () => void ctx.leaveRoom();
+  mainWindow = createMainWindow(leaveRoom);
   mainWindow.once('ready-to-show', () => ctx.startBackground());
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) mainWindow = createMainWindow();
+    if (BrowserWindow.getAllWindows().length === 0) mainWindow = createMainWindow(leaveRoom);
+  });
+  // Quitting from a room: give up the seat first so the others do not see a ghost for 90 seconds.
+  let leftRoomOnQuit = false;
+  app.on('before-quit', (event) => {
+    if (leftRoomOnQuit || !ctx.inRoom()) return;
+    leftRoomOnQuit = true;
+    event.preventDefault();
+    const patience = new Promise<void>((resolve) => setTimeout(resolve, QUIT_ROOM_WAIT_MS));
+    void Promise.race([ctx.leaveRoom(), patience]).finally(() => app.quit());
   });
   app.on('will-quit', () => ctx.close());
 });

@@ -8,6 +8,7 @@ import type { PracticeGraphData } from '../core/progress/practice';
 import type { ProgressSummary } from '../core/progress/summary';
 import type { ManualBadge } from '../core/social/badges';
 import type { ChatCheck, ChatLiveEvent, ChatMessage, ConversationSummary, ReportedMessage } from '../core/social/chat';
+import type { LiveRoom, RoomDraft, RoomLiveEvent, RoomReportContext, RoomSignalKind, RoomState, RoomTimer } from '../core/social/rooms';
 import type {
   Badge, MemberFilters, MemberRow, MemberSummary, ModerationDecision, ModerationReport, NoticeActor, NoticeKind, ProfileDraft, ReportInput, SocialProfile, SocialStats,
 } from '../core/social/types';
@@ -151,6 +152,32 @@ export interface Channels {
   'chat:read': { in: { conversationId: string }; out: null };
   /** The coach checks a draft; only the draft goes to the chosen LLM and nothing is saved. */
   'chat:check': { in: { text: string }; out: ChatCheck };
+  'moderation:roomContext': { in: { reportId: number }; out: RoomReportContext | null };
+  /** Rooms with someone live in them that the person may join, newest first. */
+  'rooms:list': { in: Record<string, never>; out: LiveRoom[] };
+  /** Opens a room and enters it as its host; returns the room id. */
+  'rooms:create': { in: RoomDraft; out: string };
+  'rooms:join': { in: { roomId: string }; out: null };
+  'rooms:leave': { in: { roomId: string }; out: null };
+  'rooms:state': { in: { roomId: string }; out: RoomState | null };
+  /** One connection message (an offer, an answer, a candidate or a goodbye) to a person live in the same room. */
+  'rooms:signal': { in: { roomId: string; to: string; signal: RoomSignalKind; payload: string }; out: null };
+  'rooms:makeModerator': { in: { roomId: string; userId: string }; out: null };
+  'rooms:removeModerator': { in: { roomId: string; userId: string }; out: null };
+  'rooms:passHost': { in: { roomId: string; userId: string }; out: null };
+  /** Asks a person to mute; they can unmute whenever they are ready. */
+  'rooms:mute': { in: { roomId: string; userId: string }; out: null };
+  'rooms:remove': { in: { roomId: string; userId: string }; out: null };
+  'rooms:end': { in: { roomId: string }; out: null };
+  /** Starts the shared speaking timer (60 or 90 seconds); null stops it. */
+  'rooms:timer': { in: { roomId: string; seconds: RoomTimer | null }; out: null };
+  'rooms:nextCard': { in: { roomId: string }; out: null };
+  /** Numbers the window needs from main (the connect timeout can be shortened in dev and e2e). */
+  'rooms:settings': { in: Record<string, never>; out: RoomSettings };
+}
+export interface RoomSettings {
+  /** How long a peer may take to connect before the window says "Could not connect". */
+  connectTimeoutMs: number;
 }
 export interface BadgeChange {
   userId: string;
@@ -172,12 +199,17 @@ export const INVOKE_CHANNELS = [
   'moderation:searchMembers', 'moderation:grantBadge', 'moderation:revokeBadge', 'moderation:reportContext',
   'chat:conversations', 'chat:messages', 'chat:request', 'chat:respond', 'chat:send', 'chat:delete', 'chat:correct',
   'chat:thank', 'chat:read', 'chat:check',
+  'moderation:roomContext',
+  'rooms:list', 'rooms:create', 'rooms:join', 'rooms:leave', 'rooms:state', 'rooms:signal', 'rooms:makeModerator', 'rooms:removeModerator',
+  'rooms:passHost', 'rooms:mute', 'rooms:remove', 'rooms:end', 'rooms:timer', 'rooms:nextCard', 'rooms:settings',
 ] as const satisfies readonly InvokeChannel[];
 
 export const PROGRESS_EVENT = 'llm:progress';
 /** Main → window: live chat changes and the connection state. */
 export const CHAT_EVENT = 'chat:event';
-export type { ChatLiveEvent };
+/** Main → window: changes of the room the person is in, signals from its peers, and the connection state. */
+export const ROOM_EVENT = 'room:event';
+export type { ChatLiveEvent, RoomLiveEvent };
 
 type R<C extends InvokeChannel> = Promise<Result<Channels[C]['out']>>;
 
@@ -253,6 +285,7 @@ export interface DevtalkApi {
     grantBadge(change: BadgeChange): R<'moderation:grantBadge'>;
     revokeBadge(change: BadgeChange): R<'moderation:revokeBadge'>;
     reportContext(reportId: number): R<'moderation:reportContext'>;
+    roomContext(reportId: number): R<'moderation:roomContext'>;
   };
   /** Private chat; live changes arrive through onEvent. */
   chat: {
@@ -267,5 +300,24 @@ export interface DevtalkApi {
     read(conversationId: string): R<'chat:read'>;
     check(text: string): R<'chat:check'>;
     onEvent(cb: (e: ChatLiveEvent) => void): () => void;
+  };
+  /** Voice rooms: the room list and the person's own room. The voice itself never passes through main. */
+  rooms: {
+    list(): R<'rooms:list'>;
+    create(draft: RoomDraft): R<'rooms:create'>;
+    join(roomId: string): R<'rooms:join'>;
+    leave(roomId: string): R<'rooms:leave'>;
+    state(roomId: string): R<'rooms:state'>;
+    signal(roomId: string, to: string, signal: RoomSignalKind, payload: string): R<'rooms:signal'>;
+    makeModerator(roomId: string, userId: string): R<'rooms:makeModerator'>;
+    removeModerator(roomId: string, userId: string): R<'rooms:removeModerator'>;
+    passHost(roomId: string, userId: string): R<'rooms:passHost'>;
+    mute(roomId: string, userId: string): R<'rooms:mute'>;
+    remove(roomId: string, userId: string): R<'rooms:remove'>;
+    end(roomId: string): R<'rooms:end'>;
+    timer(roomId: string, seconds: RoomTimer | null): R<'rooms:timer'>;
+    nextCard(roomId: string): R<'rooms:nextCard'>;
+    settings(): R<'rooms:settings'>;
+    onEvent(cb: (e: RoomLiveEvent) => void): () => void;
   };
 }

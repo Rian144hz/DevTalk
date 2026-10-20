@@ -36,6 +36,10 @@ const LIKES_LIMIT = 'You reached the limit of 200 likes a day. Try again tomorro
 const REQUESTS_LIMIT = 'You reached the limit of 10 message requests a day. Try again tomorrow.';
 const MESSAGES_LIMIT = 'You reached the limit of 500 messages a day. Try again tomorrow.';
 const CORRECTIONS_LIMIT = 'You reached the limit of 200 corrections a day. Try again tomorrow.';
+const ROOMS_LIMIT = 'You can create up to 10 rooms a day. Try again tomorrow.';
+const SIGNALS_LIMIT = 'Too many connection messages. Wait a moment.';
+const ROOM_FULL = 'This room is full.';
+const ROOM_ALREADY_JOINING = 'You are already joining a room.';
 
 export class AppFailure extends Error {
   constructor(
@@ -63,11 +67,16 @@ function socialAppError(err: SocialError): AppError {
           : /request limit/i.test(err.message) ? REQUESTS_LIMIT
           : /message limit/i.test(err.message) ? MESSAGES_LIMIT
           : /correction limit/i.test(err.message) ? CORRECTIONS_LIMIT
+          : /room limit/i.test(err.message) ? ROOMS_LIMIT
+          : /signal limit/i.test(err.message) ? SIGNALS_LIMIT
           : CODES_LIMIT,
       };
     case 'suspended':
       return { kind: 'suspended', message: suspendedMessage(err.until) };
     case 'unknown':
+      // Not faults: a seventh person at the door, or two joins at the same moment (one open seat per person).
+      if (/room is full/i.test(err.message)) return { kind: 'validation', message: ROOM_FULL };
+      if (/room_sessions_one_open/.test(err.message)) return { kind: 'validation', message: ROOM_ALREADY_JOINING };
       console.error('[devtalk] community error:', err.message);
       return { kind: 'internal', message: err.message || MESSAGES.internal };
     default:
