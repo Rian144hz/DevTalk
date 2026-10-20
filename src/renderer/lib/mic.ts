@@ -37,22 +37,30 @@ export function rmsLevel(samples: ArrayLike<number>): number {
  */
 export function levelMeter(stream: MediaStream, onLevel: (level: number) => void): () => void {
   const context = new AudioContext();
-  const source = context.createMediaStreamSource(stream);
-  const analyser = context.createAnalyser();
-  analyser.fftSize = 1024;
-  source.connect(analyser);
+  let source: MediaStreamAudioSourceNode;
+  let analyser: AnalyserNode;
+  try {
+    source = context.createMediaStreamSource(stream);
+    analyser = context.createAnalyser();
+    analyser.fftSize = 1024;
+    source.connect(analyser);
+  } catch (e) {
+    // A stream with no audio track, for example: free the audio context, then let the caller know.
+    void context.close().catch(() => {});
+    throw e;
+  }
   if (context.state === 'suspended') void context.resume().catch(() => {});
   const samples = new Float32Array(analyser.fftSize);
   let stopped = false;
   let last = Number.NEGATIVE_INFINITY;
   const tick = (now: number) => {
     if (stopped) return;
-    if (now - last >= METER_INTERVAL_MS) {
-      last = now;
-      analyser.getFloatTimeDomainData(samples);
-      onLevel(rmsLevel(samples));
-    }
+    // The next frame first, so an error in onLevel does not stop the meter (and onLevel may call stop).
     frame = requestAnimationFrame(tick);
+    if (now - last < METER_INTERVAL_MS) return;
+    last = now;
+    analyser.getFloatTimeDomainData(samples);
+    onLevel(rmsLevel(samples));
   };
   let frame = requestAnimationFrame(tick);
   return () => {

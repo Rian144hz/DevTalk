@@ -12,7 +12,11 @@ export const OFFER_RESEND_MS = 3_000;
 /** …at most this many times. */
 export const OFFER_RESENDS = 3;
 /** A signal still on its way after this long no longer holds back the next one to the same person. */
-const SEND_WAIT_MS = 5_000;
+export const SEND_WAIT_MS = 5_000;
+/** A failed pair tries again by itself this long after failing… */
+export const RETRY_MS = 5_000;
+/** …at most this many times in a row; after that it stays failed until a sync gives it one more try. */
+export const RETRIES = 3;
 /** Candidates kept per person and connection (theirs before their description, ours before ours). */
 const MAX_CANDIDATES = 64;
 /** People whose candidates are kept before anything else from them has arrived. */
@@ -82,9 +86,17 @@ interface Peer {
   waiting: RTCIceCandidateInit[];
   /** Runs while connecting; when it fires the peer is failed. */
   timer: ReturnType<typeof setTimeout> | null;
-  /** A sync already tried this failed pair once more; cleared when it connects. */
-  retried: boolean;
+  /** Runs while failed: the next try by itself. */
+  retry: ReturnType<typeof setTimeout> | null;
+  /** Runs while we wait for their offer: when it fires we offer ourselves. */
+  nudge: ReturnType<typeof setTimeout> | null;
+  /** Tries by itself since the pair last connected. */
+  retries: number;
+  /** A sync already gave this failed pair its extra try; cleared when it connects. */
+  syncTried: boolean;
 }
+
+type PeerTimer = 'timer' | 'retry' | 'nudge';
 
 const encoder = new TextEncoder();
 const bytes = (s: string) => encoder.encode(s).byteLength;
@@ -92,9 +104,11 @@ const noop = () => {};
 
 /**
  * The calls of one person in one room. `sync` with the room's live people after every change; `handle` every signal
- * addressed to you. In each pair the smaller id offers (see `meshPlan`); if both offer at once (glare), the smaller
- * id keeps its offer and the larger one answers it. Every peer is reported `connecting`, then `connected`, or `failed`
- * when it has not connected after `timeoutMs` (it stays failed; a later `sync` that still lists it tries once more).
+ * addressed to you. In each pair the smaller id offers (see `meshPlan`); the larger id waits, and offers itself if it
+ * hears nothing for 2 × OFFER_RESEND_MS (half the timeout at most). If both offer at once (glare), the smaller id keeps
+ * its offer and the larger one answers it. Every peer is reported `connecting`, then `connected`, or `failed` when it
+ * has not connected after `timeoutMs`. While that person is still live, a failed pair tries again by itself
+ * `RETRIES` times, `RETRY_MS` apart; after that it stays failed until a `sync` gives it one more try.
  */
 export class RoomCall {
   private readonly peers = new Map<string, Peer>();
@@ -103,28 +117,48 @@ export class RoomCall {
   /** The last signal on its way to each person. */
   private readonly outbox = new Map<string, Promise<void>>();
   private readonly timeoutMs: number;
+  /** How long the waiting side waits for an offer before it offers itself. */
+  private readonly nudgeMs: number;
+  /** The live people of the last sync, without you. */
+  private live = new Set<string>();
   private closed = false;
 
   constructor(private readonly o: RoomCallOptions) {
     this.timeoutMs = o.timeoutMs ?? ROOM_CONNECT_TIMEOUT_MS;
+    this.nudgeMs = Math.min(2 * OFFER_RESEND_MS, Math.floor(this.timeoutMs / 2));
   }
 
   /** Follows the room's live people (you may be in the list): connects new people, says bye to people who left. */
   sync(live: string[]): void {
     if (this.closed) return;
+    this.live = new Set(live);
+    this.live.delete(this.o.myId);
     const plan = meshPlan(this.o.myId, live, [...this.peers.keys()]);
     for (const id of plan.drop) {
       this.post(id, 'bye', '');
       this.remove(id);
     }
-    for (const id of plan.await) this.add(id);
-    for (const id of plan.offer) void this.offer(this.add(id));
-    // A failed pair gets one more try while the person is still here; whoever retries offers, glare sorts out the rest.
-    const here = new Set(live);
-    const retry = [...this.peers.values()].filter((p) => p.state === 'failed' && !p.retried && here.has(p.id));
-    for (const peer of retry) {
-      peer.retried = true;
-      void this.offer(peer);
+    for (const id of plan.await) {
+      const peer = this.add(id);
+      if (peer) this.wait(peer);
+    }
+    for (const id of plan.offer) {
+      const peer = this.add(id);
+      if (peer) void this.offer(peer);
+    }
+    // A failed pair waiting for its next try takes it now; one that used up its tries gets one more from a sync.
+    for (const peer of [...this.peers.values()]) {
+      if (this.closed) return;
+      if (peer.state !== 'failed' || !this.live.has(peer.id)) continue;
+      if (peer.retry) {
+        this.cancel(peer, 'retry');
+        peer.retries++;
+      } else if (!peer.syncTried) {
+        peer.syncTried = true;
+      } else {
+        continue;
+      }
+      this.reconnect(peer);
     }
   }
 
@@ -160,7 +194,7 @@ export class RoomCall {
     for (const id of this.peers.keys()) this.post(id, 'bye', '');
     this.closed = true;
     for (const peer of this.peers.values()) {
-      this.disarm(peer);
+      this.cancel(peer, 'timer', 'retry', 'nudge');
       this.shut(peer);
     }
     this.peers.clear();
@@ -181,6 +215,7 @@ export class RoomCall {
     if (mine && (mine.makingOffer || mine.pc.signalingState === 'have-local-offer') && this.o.myId < from) return;
     // Any other offer starts the pair over: a first offer, a retry, or the other window restarted.
     const peer = known ?? this.add(from);
+    if (!peer) return;
     const s = this.open(peer);
     if (!s) return;
     s.answering = offer.sdp;
@@ -220,8 +255,9 @@ export class RoomCall {
     await s.pc.addIceCandidate(candidate).catch(noop);
   }
 
-  /** A new peer, connecting; its clock starts now. */
-  private add(id: string): Peer {
+  /** A new peer, connecting; its clock starts now. Null once the call is closed (onPeer may close it). */
+  private add(id: string): Peer | null {
+    if (this.closed) return null;
     const peer: Peer = {
       id,
       session: null,
@@ -229,13 +265,37 @@ export class RoomCall {
       stream: null,
       waiting: this.early.get(id) ?? [],
       timer: null,
-      retried: false,
+      retry: null,
+      nudge: null,
+      retries: 0,
+      syncTried: false,
     };
     this.early.delete(id);
     this.peers.set(id, peer);
     this.arm(peer);
     this.notify(peer);
-    return peer;
+    return this.closed ? null : peer;
+  }
+
+  /** Starts the pair again from the side the id rule gives: the smaller id offers, the larger one waits. */
+  private reconnect(peer: Peer): void {
+    if (this.o.myId < peer.id) void this.offer(peer);
+    else this.wait(peer);
+  }
+
+  /** Waits for their offer (they have the smaller id). If nothing comes for a while, offers itself: glare sorts it out. */
+  private wait(peer: Peer): void {
+    if (this.closed) return;
+    this.shut(peer);
+    this.cancel(peer, 'retry', 'nudge');
+    this.set(peer, 'connecting', null);
+    if (this.closed) return;
+    if (!peer.timer) this.arm(peer);
+    peer.nudge = setTimeout(() => {
+      peer.nudge = null;
+      const silent = !peer.session && peer.state === 'connecting';
+      if (!this.closed && this.peers.get(peer.id) === peer && silent) void this.offer(peer);
+    }, this.nudgeMs);
   }
 
   private async offer(peer: Peer): Promise<void> {
@@ -257,8 +317,11 @@ export class RoomCall {
 
   /** A new connection for `peer`, closing any older one. Null when the browser refuses (the peer is then failed). */
   private open(peer: Peer): Session | null {
+    if (this.closed) return null;
     this.shut(peer);
+    this.cancel(peer, 'retry', 'nudge');
     this.set(peer, 'connecting', null);
+    if (this.closed) return null; // onPeer closed the call
     if (!peer.timer) this.arm(peer);
     let pc: PeerLike | null = null;
     try {
@@ -298,15 +361,16 @@ export class RoomCall {
 
   private onState(peer: Peer, state: RTCPeerConnectionState): void {
     if (state === 'connected') {
-      this.disarm(peer);
-      peer.retried = false;
+      this.cancel(peer, 'timer');
+      peer.retries = 0;
+      peer.syncTried = false;
       this.set(peer, 'connected', peer.stream);
     } else if (state === 'failed') {
       this.fail(peer);
     } else if (state === 'disconnected' && peer.state === 'connected') {
       // Often only a moment (the network changing): it may come back by itself, until the timeout.
-      this.set(peer, 'connecting', peer.stream);
       this.arm(peer);
+      this.set(peer, 'connecting', peer.stream);
     }
   }
 
@@ -365,9 +429,22 @@ export class RoomCall {
   }
 
   private fail(peer: Peer): void {
-    this.disarm(peer);
+    this.cancel(peer, 'timer', 'nudge');
     this.shut(peer);
     this.set(peer, 'failed', null);
+    this.retryLater(peer);
+  }
+
+  /** While the person is still live, a failed pair tries again by itself, up to RETRIES times in a row. */
+  private retryLater(peer: Peer): void {
+    if (this.closed || peer.retry || peer.retries >= RETRIES) return;
+    if (this.peers.get(peer.id) !== peer || !this.live.has(peer.id)) return;
+    peer.retry = setTimeout(() => {
+      peer.retry = null;
+      if (this.closed || this.peers.get(peer.id) !== peer || peer.state !== 'failed' || !this.live.has(peer.id)) return;
+      peer.retries++;
+      this.reconnect(peer);
+    }, RETRY_MS);
   }
 
   /** Closes the peer's connection, if any, and stops listening to it. */
@@ -391,23 +468,25 @@ export class RoomCall {
     this.early.delete(id);
     const peer = this.peers.get(id);
     if (!peer) return;
-    this.disarm(peer);
+    this.cancel(peer, 'timer', 'retry', 'nudge');
     this.shut(peer);
     this.peers.delete(id);
   }
 
   private arm(peer: Peer): void {
-    this.disarm(peer);
+    this.cancel(peer, 'timer');
     peer.timer = setTimeout(() => {
       peer.timer = null;
       if (!this.closed && this.peers.get(peer.id) === peer && peer.state !== 'connected') this.fail(peer);
     }, this.timeoutMs);
   }
 
-  private disarm(peer: Peer): void {
-    if (!peer.timer) return;
-    clearTimeout(peer.timer);
-    peer.timer = null;
+  private cancel(peer: Peer, ...timers: PeerTimer[]): void {
+    for (const key of timers) {
+      const t = peer[key];
+      if (t) clearTimeout(t);
+      peer[key] = null;
+    }
   }
 
   /** True while `s` is still the peer's connection and the peer is still in the call. */
