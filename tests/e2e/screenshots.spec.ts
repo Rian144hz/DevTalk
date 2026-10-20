@@ -274,3 +274,35 @@ test.describe('people', () => {
     }
   });
 });
+
+test.describe('messages', () => {
+  test.use({ social: 'people' });
+
+  test('conversation with a correction, a request, the coach check and a first message', async ({ page }) => {
+    test.setTimeout(240_000);
+    await onboard(page);
+    const list = page.getByRole('navigation', { name: 'Conversations' });
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      await go(page, '#/messages', 'Messages');
+      await list.getByRole('link', { name: /Bia/ }).click();
+      const pane = page.getByRole('region', { name: 'Conversation with Bia' });
+      await pane.getByText('How was the meeting?').waitFor();
+      await shoot(page, 'messages', theme);
+      await pane.getByLabel('Message to Bia').fill('Yesterday I have fixed the bug, so we can discuss about the release.');
+      await pane.getByRole('button', { name: 'Check with the coach' }).click();
+      await pane.getByRole('region', { name: 'The coach on your draft' }).waitFor();
+      await shoot(page, 'chat-check', theme);
+      await pane.getByRole('button', { name: 'Keep mine' }).click();
+      await pane.getByLabel('Message to Bia').fill('');
+      await list.getByRole('link', { name: /Ana/ }).click();
+      await page.getByRole('region', { name: 'Conversation with Ana' }).getByRole('button', { name: 'Accept' }).waitFor();
+      await shoot(page, 'chat-request', theme);
+      await go(page, '#/people', 'People');
+      await page.getByRole('list', { name: 'Members' }).getByRole('link', { name: /Caio/ }).click();
+      await page.getByRole('link', { name: 'Send message' }).click();
+      await page.getByRole('heading', { level: 3, name: 'Message Caio' }).waitFor();
+      await shoot(page, 'chat-new', theme);
+    }
+  });
+});

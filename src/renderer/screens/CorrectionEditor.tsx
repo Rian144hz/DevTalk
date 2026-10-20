@@ -7,11 +7,20 @@ import { Button } from '../design-system';
 export function DiffText({ before, after }: { before: string; after: string }) {
   return (
     <p className="chat-diff">
-      {wordDiff(before, after).map((p, i) =>
-        p.kind === 'del' ? <del key={i}><span className="visually-hidden">removed: </span>{p.text}</del>
-          : p.kind === 'ins' ? <ins key={i}><span className="visually-hidden">added: </span>{p.text}</ins>
-          : <span key={i}>{p.text}</span>,
-      )}
+      {wordDiff(before, after).map((p, i) => {
+        if (p.kind === 'same') return <span key={i}>{p.text}</span>;
+        // The mark covers the words only; a trailing space stays plain so a removal does not look like a dash.
+        const word = p.text.trimEnd();
+        const space = p.text.slice(word.length);
+        return (
+          <span key={i}>
+            {p.kind === 'del'
+              ? <del><span className="visually-hidden">removed: </span>{word}</del>
+              : <ins><span className="visually-hidden">added: </span>{word}</ins>}
+            {space}
+          </span>
+        );
+      })}
     </p>
   );
 }

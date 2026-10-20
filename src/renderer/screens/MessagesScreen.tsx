@@ -141,10 +141,10 @@ function NewConversation({ userId, onSent }: { userId: string; onSent(conversati
     <section className="chat-pane chat-new" aria-label={`New message to ${name}`}>
       <header className="chat-head">
         <Avatar src={avatar} name={name} userId={userId} mascot={profile.mascot} size={32} />
-        <a className="chat-name" href={`#/people/u/${userId}`}>{name}</a>
+        <h2 className="chat-name"><a href={`#/people/u/${userId}`}>{name}</a></h2>
       </header>
       <div className="chat-new-body">
-        <h2>Message {name}</h2>
+        <h3>Message {name}</h3>
         <p className="lede">Your first message is a request. When {name} accepts it, you can talk and correct each other.</p>
         <label className="visually-hidden" htmlFor="chat-request">First message to {name}</label>
         <textarea id="chat-request" className="textarea chat-input" rows={4} value={text} maxLength={CHAT_TEXT_MAX * 2}

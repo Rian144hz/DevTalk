@@ -38,11 +38,20 @@ function MessageItem({ m, myId, otherName, open, actions }: {
   actions: MessageActions;
 }) {
   const mine = m.senderId === myId;
+  const item = useRef<HTMLLIElement>(null);
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const corrected = m.corrections.some((k) => k.authorId === myId);
+
+  /** After an inline panel closes, keep keyboard focus on this message instead of losing it. */
+  const refocus = () => requestAnimationFrame(() => item.current?.focus());
+  const close = (set: (v: boolean) => void) => () => {
+    set(false);
+    refocus();
+  };
+  const at = messageTime(m.createdAt);
 
   async function run(action: () => Promise<string | null>, done?: () => void) {
     setBusy(true);
@@ -54,15 +63,19 @@ function MessageItem({ m, myId, otherName, open, actions }: {
   }
 
   return (
-    <li className={`chat-message${mine ? ' is-mine' : ''}`}>
+    <li className={`chat-message${mine ? ' is-mine' : ''}`} ref={item} tabIndex={-1}>
       {m.deleted ? <p className="chat-bubble is-deleted">Message deleted</p> : <p className="chat-bubble">{m.body}</p>}
       <div className="chat-meta">
         <time className="chat-time" dateTime={m.createdAt}>{messageTime(m.createdAt)}</time>
         {!m.deleted && !editing && !confirming && (
           <span className="chat-actions">
-            {!mine && open && !corrected && <Button variant="quiet" onClick={() => setEditing(true)}>Suggest a correction</Button>}
-            {!mine && <Button variant="quiet" onClick={() => actions.report(m)}>Report</Button>}
-            {mine && <Button variant="quiet" onClick={() => setConfirming(true)}>Delete</Button>}
+            {!mine && open && !corrected && (
+              <Button variant="quiet" aria-label={`Suggest a correction to ${otherName}'s message at ${at}`} onClick={() => setEditing(true)}>
+                Suggest a correction
+              </Button>
+            )}
+            {!mine && <Button variant="quiet" aria-label={`Report ${otherName}'s message at ${at}`} onClick={() => actions.report(m)}>Report</Button>}
+            {mine && <Button variant="quiet" aria-label={`Delete your message at ${at}`} onClick={() => setConfirming(true)}>Delete</Button>}
           </span>
         )}
       </div>
@@ -73,7 +86,8 @@ function MessageItem({ m, myId, otherName, open, actions }: {
           {k.thanked ? (
             <p className="chat-thanked">Thanked</p>
           ) : mine ? (
-            <Button variant="secondary" disabled={busy} onClick={() => void run(() => actions.thank(k.id, m.id))}>Thanks</Button>
+            <Button variant="quiet" disabled={busy} aria-label={`Thanks to ${otherName} for this correction`}
+              onClick={() => void run(() => actions.thank(k.id, m.id))}>Thanks</Button>
           ) : null}
         </div>
       ))}
@@ -81,17 +95,17 @@ function MessageItem({ m, myId, otherName, open, actions }: {
         <CorrectionEditor original={m.body} name={otherName}
           onSubmit={async (text) => {
             const failure = await actions.correct(m.id, text);
-            if (!failure) setEditing(false);
+            if (!failure) close(setEditing)();
             return failure;
           }}
-          onCancel={() => setEditing(false)} />
+          onCancel={close(setEditing)} />
       )}
       {confirming && (
         <div className="chat-confirm" role="group" aria-label="Delete this message">
           <p>Delete this message? Its corrections go too. This cannot be undone.</p>
           <div className="row-actions">
-            <Button variant="secondary" busy={busy} autoFocus onClick={() => void run(() => actions.remove(m.id), () => setConfirming(false))}>Delete</Button>
-            <Button variant="quiet" disabled={busy} onClick={() => setConfirming(false)}>Cancel</Button>
+            <Button variant="secondary" busy={busy} autoFocus onClick={() => void run(() => actions.remove(m.id), close(setConfirming))}>Delete</Button>
+            <Button variant="quiet" disabled={busy} onClick={close(setConfirming)}>Cancel</Button>
           </div>
         </div>
       )}
@@ -106,21 +120,24 @@ function CoachCheck({ draft, check, onUse, onKeep }: { draft: string; check: Cha
   const same = version === draft;
   return (
     <section className="chat-check" aria-label="The coach on your draft">
-      {same ? (
-        <p className="chat-check-none">The coach found nothing to change.</p>
-      ) : (
-        <>
-          <DiffText before={draft} after={version} />
-          <ul className="chat-check-notes">
-            {check.corrections.filter((c) => draft.includes(c.original)).map((c, i) => (
-              <li key={i}><span className="chat-check-edit">{c.original} → {c.corrected}</span> {c.explanation}</li>
-            ))}
-          </ul>
-        </>
-      )}
-      {check.rewrite && check.rewrite !== version && (
-        <p className="chat-check-rewrite"><span>A more natural way:</span> {check.rewrite}</p>
-      )}
+      <p className="chat-correction-who">The coach on your draft</p>
+      <div className="chat-check-body">
+        {same ? (
+          <p className="chat-check-none">The coach found nothing to change.</p>
+        ) : (
+          <>
+            <DiffText before={draft} after={version} />
+            <ul className="chat-check-notes">
+              {check.corrections.filter((c) => draft.includes(c.original)).map((c, i) => (
+                <li key={i}><span className="chat-check-edit">{c.original} → {c.corrected}</span> {c.explanation}</li>
+              ))}
+            </ul>
+          </>
+        )}
+        {check.rewrite && check.rewrite !== version && (
+          <p className="chat-check-rewrite"><span>A more natural way:</span> {check.rewrite}</p>
+        )}
+      </div>
       <div className="row-actions">
         {!same && <Button variant="secondary" onClick={() => onUse(version)}>Use this version</Button>}
         <Button variant="quiet" onClick={onKeep}>{same ? 'Close' : 'Keep mine'}</Button>
@@ -331,7 +348,7 @@ export function ConversationView({ summary, myId, avatar, onChanged }: {
     <section className="chat-pane" aria-label={`Conversation with ${other.displayName}`}>
       <header className="chat-head">
         <Avatar src={avatar} name={other.displayName} userId={other.id} mascot={other.mascot} size={32} />
-        <a className="chat-name" href={`#/people/u/${other.id}`}>{other.displayName}</a>
+        <h2 className="chat-name"><a href={`#/people/u/${other.id}`}>{other.displayName}</a></h2>
       </header>
       <div className="chat-scroll" ref={scroller}
         onScroll={(e) => {

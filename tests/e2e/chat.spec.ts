@@ -67,7 +67,7 @@ test('Send message on a profile starts a request; then it waits for the answer',
   await go(page, '#/people');
   await page.getByRole('list', { name: 'Members' }).getByRole('link', { name: /Caio/ }).click();
   await page.getByRole('link', { name: 'Send message' }).click();
-  await expect(page.getByRole('heading', { level: 2, name: 'Message Caio' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 3, name: 'Message Caio' })).toBeVisible();
   if (shot) await page.screenshot({ path: `${shot}/new.png` });
   await page.getByLabel('First message to Caio').fill('Hi Caio! Can we practise data talk?');
   await page.getByRole('button', { name: 'Send request' }).click();
