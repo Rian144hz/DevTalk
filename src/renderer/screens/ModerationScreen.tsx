@@ -52,7 +52,9 @@ function RoomContext({ room }: { room: RoomReportContext | null | undefined }) {
               <li key={i}>
                 <span className="room-context-who">{p.name ?? 'Deleted account'}</span>
                 <span className="muted">
-                  {when(p.joinedAt)} to {p.leftAt ? (sameDay(p.joinedAt, p.leftAt) ? messageTime(p.leftAt) : when(p.leftAt)) : 'still there'}
+                  {p.leftAt
+                    ? `${when(p.joinedAt)} to ${sameDay(p.joinedAt, p.leftAt) ? messageTime(p.leftAt) : when(p.leftAt)}`
+                    : `${when(p.joinedAt)}, still in the room`}
                 </span>
               </li>
             ))}

@@ -1,9 +1,9 @@
 // Phase 2C — voice rooms against the seeded fake community (signed in as Rian) with Chromium's fake microphone.
 // Bia hosts "Stand-up practice" with Caio inside; seeded people never answer WebRTC signals, so they end up as
 // "Could not connect" after the shortened timeout. Other members act through the fake community in the main process.
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { expect, onboard, test } from './fixtures';
-import { asMember, controls, go, idOf, makeModerator, meterMoves, muteButton, options, personRow, roomOf, roomRow, unmuteButton } from './room-helpers';
+import { asMember, controls, go, idOf, makeModerator, meterMoves, muteButton, options, people, personRow, roomOf, roomRow, unmuteButton } from './room-helpers';
 
 async function joinStandup(page: Page): Promise<void> {
   await go(page, '#/rooms');
@@ -86,8 +86,7 @@ test('the list, the microphone check and the room: people, card, timer, mute, a 
   await expect(unmuteButton(page)).toBeVisible();
 
   // Seeded people never answer: after the (shortened) timeout the room says so, and the call goes on.
-  await expect(page.getByText('Could not connect to Bia. Your network may block calls.')).toBeVisible();
-  await expect(page.getByText('Could not connect to Caio. Your network may block calls.')).toBeVisible();
+  await expect(page.getByText('Could not connect to Bia and Caio. Your network may block calls.')).toBeVisible();
 
   await page.getByRole('button', { name: 'Leave', exact: true }).click();
   await expect(page).toHaveURL(/#\/rooms$/);
@@ -96,17 +95,22 @@ test('the list, the microphone check and the room: people, card, timer, mute, a 
   await expect(muteButton(page)).toHaveCount(0);
 });
 
-test('a person\'s options open above the bar, even in a small window', async ({ page }) => {
+test('with the keyboard, a focused control and a person\'s options stay above the bar, even in a small window', async ({ page }) => {
   await onboard(page);
   await page.setViewportSize({ width: 960, height: 520 });
   await joinStandup(page);
-  const panel = await options(page, 'Caio');
-  await expect(panel.getByRole('button', { name: 'Report' })).toBeVisible();
-  // The bar is sticky: the options scroll into view above it instead of hiding under it.
-  await expect.poll(async () => {
-    const [box, bar] = await Promise.all([panel.boundingBox(), controls(page).boundingBox()]);
+  const above = async (target: Locator) => {
+    const [box, bar] = await Promise.all([target.boundingBox(), controls(page).boundingBox()]);
     return box !== null && bar !== null && box.y >= 0 && box.y + box.height <= bar.y + 1;
-  }).toBe(true);
+  };
+  // The bar is sticky: focus and the opening panel scroll with it in mind instead of hiding under it.
+  const button = people(page).getByRole('button', { name: 'Options for Caio' });
+  await button.focus();
+  await expect.poll(() => above(button)).toBe(true);
+  await page.keyboard.press('Enter');
+  const panel = page.getByRole('group', { name: 'Options for Caio' });
+  await expect(panel.getByRole('button', { name: 'Report' })).toBeVisible();
+  await expect.poll(() => above(panel)).toBe(true);
 });
 
 test('the host mutes Rian, who can unmute; then she removes him and he is back on the list', async ({ page, app, dataDir }) => {
@@ -191,6 +195,76 @@ test('Rian opens a room; Ana joins, becomes room moderator, is removed and canno
   await expect(roomRow(page, 'Mock interview')).toHaveCount(0);
   const ended = (await asMember(app, ana, 'roomState', [room])) as { endedAt: string | null };
   expect(ended.endedAt).not.toBeNull();
+});
+
+test('options in two groups; closing a panel or a question puts focus back on the button that opened it', async ({ page, app, dataDir }) => {
+  await onboard(page);
+  await go(page, '#/rooms');
+  await page.getByRole('button', { name: 'Create a room' }).click();
+  const form = page.getByRole('region', { name: 'Create a room' });
+  await form.getByLabel('Title').fill('Focus check');
+  await meterMoves(page);
+  await form.getByRole('button', { name: 'Create', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Focus check' })).toBeVisible();
+  await asMember(app, idOf(dataDir, 'Ana'), 'joinRoom', [roomOf(dataDir, 'Focus check')]);
+  await expect(personRow(page, 'Ana')).toBeVisible();
+
+  const row = personRow(page, 'Ana');
+  const optionsButton = row.getByRole('button', { name: 'Options for Ana' });
+  const button = (name: string) => row.getByRole('button', { name, exact: true });
+
+  // What is about you comes first; what the host can do to the room is its own row, with its own wording.
+  const panel = await options(page, 'Ana');
+  for (const name of ['Mute for me', 'Report', 'Block Ana', 'Mute for everyone', 'Make moderator', 'Make host', 'Remove']) {
+    await expect(panel.getByRole('button', { name, exact: true })).toBeVisible();
+  }
+  // Escape on the Options button closes the panel and focus stays there.
+  await page.keyboard.press('Escape');
+  await expect(panel).toHaveCount(0);
+  await expect(optionsButton).toBeFocused();
+
+  // Escape inside the panel closes it and puts focus back on Options.
+  await optionsButton.click();
+  await button('Report').focus();
+  await page.keyboard.press('Escape');
+  await expect(row.getByRole('group', { name: 'Options for Ana' })).toHaveCount(0);
+  await expect(optionsButton).toBeFocused();
+
+  // A question (Make host, Remove) closes with Escape or Cancel and focus returns to the button that asked it.
+  await optionsButton.click();
+  for (const name of ['Make host', 'Remove']) {
+    await button(name).click();
+    const question = row.getByRole('group', { name: name === 'Remove' ? 'Remove Ana' : 'Make Ana the host' });
+    await expect(question).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(question).toHaveCount(0);
+    await expect(button(name)).toBeFocused();
+    await button(name).click();
+    await row.getByRole('button', { name: 'Cancel' }).click();
+    await expect(question).toHaveCount(0);
+    await expect(button(name)).toBeFocused();
+  }
+
+  // Block asks too; Cancel puts focus back on Block.
+  await button('Block Ana').click();
+  await row.getByRole('group', { name: 'Block Ana' }).getByRole('button', { name: 'Cancel' }).click();
+  await expect(button('Block Ana')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(row.getByRole('group', { name: 'Options for Ana' })).toHaveCount(0);
+  await expect(optionsButton).toBeFocused();
+
+  // End room asks as well: Escape and Cancel return to End room.
+  const endRoom = controls(page).getByRole('button', { name: 'End room', exact: true });
+  await endRoom.click();
+  const ending = page.getByRole('group', { name: 'End the room' });
+  await expect(ending).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(ending).toHaveCount(0);
+  await expect(endRoom).toBeFocused();
+  await endRoom.click();
+  await ending.getByRole('button', { name: 'Cancel' }).click();
+  await expect(ending).toHaveCount(0);
+  await expect(endRoom).toBeFocused();
 });
 
 test('leaving the room page leaves the room; blocking someone inside makes you leave, and the room is hidden', async ({ page, app, dataDir }) => {

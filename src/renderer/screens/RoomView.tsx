@@ -4,7 +4,7 @@ import { Icon } from '../app/icons';
 import { Button, Notice, ReportDialog, Skeleton } from '../design-system';
 import { AppErrorException, api, unwrap } from '../lib/api';
 import type { RoomSession } from '../lib/room-session';
-import { OUTCOME_TEXT, roomMeta, seatsText } from '../lib/rooms';
+import { namesList, OUTCOME_TEXT, roomMeta, seatsText } from '../lib/rooms';
 import { RoomPeople, type PersonActions } from './RoomPeople';
 
 const message = (e: unknown) => (e instanceof AppErrorException ? e.message : 'Something went wrong. Try again.');
@@ -52,6 +52,15 @@ export function RoomView({ session, myId, onExit }: { session: RoomSession; myId
   const now = useNow(state?.timer ? 250 : null);
   const exit = useRef(onExit);
   exit.current = onExit;
+  const endButton = useRef<HTMLButtonElement>(null);
+  const wasEnding = useRef(false);
+
+  // Cancelling (or Escape on) the End room question hands focus back to End room, not to the page.
+  useEffect(() => {
+    const lost = document.activeElement === null || document.activeElement === document.body;
+    if (wasEnding.current && !ending && lost) endButton.current?.focus();
+    wasEnding.current = ending;
+  }, [ending]);
 
   // Removed, the room ended, or the seat was lost: back to the list, saying why.
   useEffect(() => {
@@ -123,9 +132,14 @@ export function RoomView({ session, myId, onExit }: { session: RoomSession; myId
         {snap.muted ? 'Unmute' : 'Mute'}
       </Button>
       <Button variant="secondary" onClick={() => onExit(null)}>Leave</Button>
-      {isHost && !ending && <Button variant="quiet" onClick={() => setEnding(true)}>End room</Button>}
+      {isHost && !ending && <Button ref={endButton} variant="quiet" onClick={() => setEnding(true)}>End room</Button>}
       {isHost && ending && (
-        <div className="room-confirm" role="group" aria-label="End the room">
+        <div className="room-confirm" role="group" aria-label="End the room"
+          onKeyDown={(e) => {
+            if (e.key !== 'Escape' || busy === 'end') return;
+            e.stopPropagation();
+            setEnding(false);
+          }}>
           <p>End the room for everyone? The call stops for all.</p>
           <div className="row-actions">
             <Button variant="secondary" busy={busy === 'end'} autoFocus
@@ -156,7 +170,8 @@ export function RoomView({ session, myId, onExit }: { session: RoomSession; myId
 
   const host = state.people.find((p) => p.id === state.hostId);
   const left = timerLeft(state.timer, now);
-  const nameOf = (id: string) => state.people.find((p) => p.id === id)?.displayName ?? 'someone';
+  // One notice for everyone the call could not reach, in the order they sit in the room; people who left are not named.
+  const unreachable = state.people.filter((p) => snap.unreachable.includes(p.id)).map((p) => p.displayName);
 
   return (
     <main className="page room-page">
@@ -173,9 +188,7 @@ export function RoomView({ session, myId, onExit }: { session: RoomSession; myId
       <div className="room-notices">
         {snap.offline && <Notice tone="info" title="Reconnecting…" detail="The connection to the community is down. The room comes back when it does." />}
         {snap.hostMuted && <Notice tone="info" title="The host muted you. You can unmute when you are ready." />}
-        {snap.unreachable.map((id) => (
-          <Notice key={id} tone="error" title={`Could not connect to ${nameOf(id)}. Your network may block calls.`} />
-        ))}
+        {unreachable.length > 0 && <Notice tone="error" title={`Could not connect to ${namesList(unreachable)}. Your network may block calls.`} />}
         {readError}
         {error && <Notice tone="error" title={error} />}
       </div>

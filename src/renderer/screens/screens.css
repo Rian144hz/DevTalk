@@ -331,7 +331,8 @@
 .report-context .chat-bubble { align-self: flex-start; max-width: 68ch; }
 
 /* Rooms: the live list, and the create and join sheets with the microphone meter */
-.rooms-page > .notice, .rooms-page > .empty, .rooms-page > .room-sheet { max-width: 760px; margin-bottom: var(--s5); }
+.rooms-page > .page-head, .rooms-page > .notice, .rooms-page > .empty, .rooms-page > .room-sheet { max-width: 760px; }
+.rooms-page > .notice, .rooms-page > .empty, .rooms-page > .room-sheet { margin-bottom: var(--s5); }
 .room-sheet { display: flex; flex-direction: column; gap: var(--s4); padding: var(--s5) var(--s6); border: 1px solid var(--rule); border-radius: var(--r-sheet); background: var(--sheet); }
 .room-sheet h2 { font-size: var(--text-lg); overflow-wrap: anywhere; }
 .room-sheet .lede { margin-top: calc(-1 * var(--s2)); }
@@ -354,7 +355,7 @@
 .room-page { min-height: 100vh; display: flex; flex-direction: column; padding-bottom: 0; }
 .room-page > .page-head { margin-bottom: var(--s5); }
 .room-page h1 { overflow-wrap: anywhere; }
-.room-notices { display: flex; flex-direction: column; gap: var(--s2); max-width: 1100px; }
+.room-notices { display: flex; flex-direction: column; gap: var(--s2); max-width: 760px; }
 .room-notices:empty { display: none; }
 .room-activity { min-height: 1.6em; margin: var(--s2) 0 var(--s3); font-size: var(--text-sm); color: var(--ink-2); }
 .room { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--s10); align-items: start; max-width: 1100px; }
@@ -371,14 +372,16 @@
 .room-person-muted { display: inline-flex; grid-column: 3; color: var(--ink-2); }
 .room-person-row > .btn { grid-column: 4; }
 .room-person audio { display: none; }
-.room-options, .room-confirm { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s3); margin: 0 var(--s2) var(--s3); padding: var(--s3) var(--s4); border: 1px solid var(--rule-strong); border-radius: var(--r-sheet); background: var(--sheet); scroll-margin-bottom: calc(var(--s14) + var(--s8)); }
+.room-options, .room-confirm { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s3); margin: 0 var(--s2) var(--s3); padding: var(--s3) var(--s4); border: 1px solid var(--rule-strong); border-radius: var(--r-sheet); background: var(--sheet); }
 .room-options .block-confirm { padding: 0; border: 0; background: transparent; }
+.room-options .row-actions .block-confirm { flex-basis: 100%; }
+.room-options-room { align-self: stretch; padding-top: var(--s3); border-top: 1px solid var(--rule); }
 .room-confirm p, .room-said { color: var(--ink-2); max-width: var(--measure); }
 .room-said { font-size: var(--text-sm); }
 .room-side { display: flex; flex-direction: column; gap: var(--s5); }
 .room-card, .room-timer { display: flex; flex-direction: column; gap: var(--s3); padding: var(--s4) var(--s5); border: 1px solid var(--rule); border-radius: var(--r-sheet); background: var(--sheet); }
-.room-card h2, .room-timer h2 { font-size: var(--text-md); font-weight: 600; color: var(--ink-2); }
-.room-card-text { font-size: var(--text-lg); line-height: 1.5; overflow-wrap: anywhere; }
+.room-card h2, .room-timer h2 { font-size: var(--text-lg); font-weight: 600; color: var(--ink); }
+.room-card-text { font-size: var(--text-lg); font-weight: 400; line-height: 1.5; overflow-wrap: anywhere; }
 .room-timer-left { font-size: var(--text-lg); font-weight: 600; }
 .room-timer-n { font: 600 var(--text-xl) var(--font-mono); }
 .room-timer-idle { font-size: var(--text-sm); color: var(--ink-2); }
@@ -386,8 +389,16 @@
 .room-bar .room-confirm { flex-direction: row; flex-wrap: wrap; align-items: center; margin: 0; }
 
 @media (max-width: 1040px) {
-  .room { grid-template-columns: minmax(0, 1fr); gap: var(--s6); }
+  .room { grid-template-columns: minmax(0, 1fr); gap: var(--s5); }
+  /* Card and timer first, side by side: the people list can be long and would push them out of a short window. */
+  .room-side { order: -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s4); align-items: start; }
 }
+@media (max-height: 720px) {
+  .room-page > .page-head { margin-bottom: var(--s4); }
+  .room-bar { margin-top: var(--s5); padding-block: var(--s4); }
+}
+/* The bar under the room is sticky: whatever scrolls into view (a panel, a focused control) stops above it. */
+html:has(.room-page) { scroll-padding-bottom: calc(var(--s14) + var(--s8)); }
 
 /* Moderation: the room of a room report */
 .room-context { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--rule); }

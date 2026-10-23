@@ -71,7 +71,10 @@ function useReveal() {
   return useCallback((el: HTMLElement | null) => el?.scrollIntoView?.({ block: 'nearest' }), []);
 }
 
-/** A person's options: for yourself (mute for me, report, block) and, by your role, for the room. */
+/** True when focus has fallen to the page, as it does when the button that had it is removed. */
+const focusLost = () => document.activeElement === null || document.activeElement === document.body;
+
+/** A person's options: for yourself (mute for me, report, block) and, by your role, for the room (its own row). */
 function PersonOptions({ p, id, myRole, mutedForMe, onMuteForMe, actions, onDone }: {
   p: RoomPerson;
   id: string;
@@ -82,12 +85,22 @@ function PersonOptions({ p, id, myRole, mutedForMe, onMuteForMe, actions, onDone
   onDone(): void;
 }) {
   const can = roomActions(myRole, p.role);
+  const anyRoomAction = Object.values(can).some(Boolean);
   const name = p.displayName;
   const [confirm, setConfirm] = useState<'remove' | 'host' | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
   const reveal = useReveal();
+  const hostButton = useRef<HTMLButtonElement>(null);
+  const removeButton = useRef<HTMLButtonElement>(null);
+  const asked = useRef<'remove' | 'host' | null>(null);
+
+  // A confirmation that closes (Cancel, Escape) hands focus back to the button that opened it.
+  useEffect(() => {
+    if (confirm === null && asked.current && focusLost()) (asked.current === 'host' ? hostButton : removeButton).current?.focus();
+    asked.current = confirm;
+  }, [confirm]);
 
   async function run(kind: string, act: () => Promise<string | null>, done?: string) {
     setBusy(kind);
@@ -102,7 +115,12 @@ function PersonOptions({ p, id, myRole, mutedForMe, onMuteForMe, actions, onDone
   if (confirm) {
     const remove = confirm === 'remove';
     return (
-      <div id={id} ref={reveal} className="room-confirm" role="group" aria-label={remove ? `Remove ${name}` : `Make ${name} the host`}>
+      <div id={id} ref={reveal} className="room-confirm" role="group" aria-label={remove ? `Remove ${name}` : `Make ${name} the host`}
+        onKeyDown={(e) => {
+          if (e.key !== 'Escape' || busy !== null) return;
+          e.stopPropagation();
+          setConfirm(null);
+        }}>
         <p>{remove ? `Remove ${name} from this room? ${name} cannot come back to this room.` : `Make ${name} the host? You stop being the host.`}</p>
         {error && <p className="field-error" role="alert">{error}</p>}
         <div className="row-actions">
@@ -117,23 +135,32 @@ function PersonOptions({ p, id, myRole, mutedForMe, onMuteForMe, actions, onDone
   }
 
   return (
-    <div id={id} ref={reveal} className="room-options" role="group" aria-label={`Options for ${name}`}>
+    <div id={id} ref={reveal} className="room-options" role="group" aria-label={`Options for ${name}`}
+      onKeyDown={(e) => {
+        if (e.key !== 'Escape') return;
+        e.stopPropagation();
+        onDone();
+      }}>
       <div className="row-actions">
         <Button variant="quiet" onClick={onMuteForMe}>{mutedForMe ? 'Unmute for me' : 'Mute for me'}</Button>
-        {can.mute && (
-          <Button variant="secondary" busy={busy === 'mute'} onClick={() => void run('mute', () => actions.mute(p), `You muted ${name}. ${name} can unmute when ready.`)}>
-            Mute
-          </Button>
-        )}
-        {can.makeModerator && <Button variant="secondary" busy={busy === 'mod'} onClick={() => void run('mod', () => actions.makeModerator(p))}>Make moderator</Button>}
-        {can.removeModerator && (
-          <Button variant="secondary" busy={busy === 'mod'} onClick={() => void run('mod', () => actions.removeModerator(p))}>Remove moderator role</Button>
-        )}
-        {can.makeHost && <Button variant="secondary" onClick={() => setConfirm('host')}>Make host</Button>}
-        {can.remove && <Button variant="secondary" onClick={() => setConfirm('remove')}>Remove</Button>}
         <Button variant="quiet" onClick={() => actions.report(p)}>Report</Button>
+        <BlockButton name={name} onBlock={() => actions.block(p)} />
       </div>
-      <BlockButton name={name} onBlock={() => actions.block(p)} />
+      {anyRoomAction && (
+        <div className="row-actions room-options-room">
+          {can.mute && (
+            <Button variant="secondary" busy={busy === 'mute'} onClick={() => void run('mute', () => actions.mute(p), `You muted ${name}. ${name} can unmute when ready.`)}>
+              Mute for everyone
+            </Button>
+          )}
+          {can.makeModerator && <Button variant="secondary" busy={busy === 'mod'} onClick={() => void run('mod', () => actions.makeModerator(p))}>Make moderator</Button>}
+          {can.removeModerator && (
+            <Button variant="secondary" busy={busy === 'mod'} onClick={() => void run('mod', () => actions.removeModerator(p))}>Remove moderator role</Button>
+          )}
+          {can.makeHost && <Button ref={hostButton} variant="secondary" onClick={() => setConfirm('host')}>Make host</Button>}
+          {can.remove && <Button ref={removeButton} variant="secondary" onClick={() => setConfirm('remove')}>Remove</Button>}
+        </div>
+      )}
       {said && <p className="room-said" role="status">{said}</p>}
       {error && <p className="field-error" role="alert">{error}</p>}
     </div>
@@ -155,6 +182,8 @@ function PersonRow({ p, me, peer, myRole, muted, micStream, avatar, mutedForMe, 
   onToggle(): void;
 }) {
   const panelId = useId();
+  const optionsButton = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
   const voice = useVoice(me ? null : (peer?.stream ?? null), mutedForMe);
   const mine = useSpeaking(me ? micStream : null, me && !muted);
   const speaking = me ? mine : voice.speaking;
@@ -164,8 +193,18 @@ function PersonRow({ p, me, peer, myRole, muted, micStream, avatar, mutedForMe, 
     ? (muted ? 'Muted' : null)
     : [p.muted ? 'Muted' : null, mutedForMe ? 'Muted for you' : null, statusOf(peer)].filter(Boolean).join(', ') || null;
   const quiet = me ? muted : p.muted || mutedForMe;
+
+  // Closing the options (Escape, or an action that is done) hands focus back to Options, unless it already moved on.
+  useEffect(() => {
+    if (wasOpen.current && !open && focusLost()) optionsButton.current?.focus();
+    wasOpen.current = open;
+  }, [open]);
+
   return (
-    <li className="room-person">
+    <li className="room-person" onKeyDown={(e) => {
+      // Escape with focus on Options closes the panel too (inside the panel it is handled there).
+      if (e.key === 'Escape' && open) onToggle();
+    }}>
       <div className="room-person-row">
         <span className={`room-face${speaking ? ' is-speaking' : ''}`}>
           <Avatar src={avatar} name={p.displayName} userId={p.id} mascot={p.mascot} size={40} />
@@ -177,7 +216,7 @@ function PersonRow({ p, me, peer, myRole, muted, micStream, avatar, mutedForMe, 
         {speaking && <span className="visually-hidden">Speaking</span>}
         {quiet && <span className="room-person-muted"><Icon name="micOff" /></span>}
         {!me && (
-          <Button variant="quiet" aria-expanded={open} aria-controls={open ? panelId : undefined} aria-label={`Options for ${p.displayName}`} onClick={onToggle}>
+          <Button ref={optionsButton} variant="quiet" aria-expanded={open} aria-controls={open ? panelId : undefined} aria-label={`Options for ${p.displayName}`} onClick={onToggle}>
             Options
           </Button>
         )}

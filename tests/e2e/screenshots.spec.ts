@@ -452,8 +452,7 @@ test.describe('rooms', () => {
       await page.getByRole('button', { name: 'Join room' }).click();
       await asMember(app, idOf(dataDir, 'Bia'), 'muteMember', [roomOf(dataDir, 'Stand-up practice'), idOf(dataDir, 'Rian')]);
       await expect(page.getByText('The host muted you. You can unmute when you are ready.')).toBeVisible();
-      await expect(page.getByText('Could not connect to Bia. Your network may block calls.')).toBeVisible();
-      await expect(page.getByText('Could not connect to Caio. Your network may block calls.')).toBeVisible();
+      await expect(page.getByText('Could not connect to Bia and Caio. Your network may block calls.')).toBeVisible();
       await shootThemes(page, 'room-notices');
     });
   });

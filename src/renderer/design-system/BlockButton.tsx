@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 
 /** Blocks a person after an inline confirmation. `onBlock` resolves to an error message, or null. */
@@ -7,9 +7,18 @@ export function BlockButton({ name, onBlock }: { name: string; onBlock(): Promis
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const asked = useRef(false);
+
+  // Cancel takes the confirmation away: focus goes back to the button that opened it, not to the page.
+  useEffect(() => {
+    const lost = document.activeElement === null || document.activeElement === document.body;
+    if (asked.current && !confirming && lost) trigger.current?.focus();
+    asked.current = confirming;
+  }, [confirming]);
 
   if (done) return <p className="block-done" role="status">You blocked {name}. You will not see each other in DevTalk.</p>;
-  if (!confirming) return <Button variant="secondary" onClick={() => setConfirming(true)}>Block {name}</Button>;
+  if (!confirming) return <Button ref={trigger} variant="secondary" onClick={() => setConfirming(true)}>Block {name}</Button>;
 
   async function block() {
     setBusy(true);

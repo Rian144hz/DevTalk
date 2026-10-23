@@ -15,6 +15,12 @@ export function roleLabel(role: RoomRole): string | null {
   return role === 'host' ? 'Host' : role === 'moderator' ? 'Room moderator' : null;
 }
 
+/** "Bia", "Bia and Caio", "Bia, Caio and Dani". */
+export function namesList(names: readonly string[]): string {
+  if (names.length < 2) return names.join('');
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
 /**
  * The room powers you have over another live person, mirroring the database rules. Everyone can also mute someone
  * for themselves, report and block. The host mutes and removes anyone, gives and takes the moderator role and passes

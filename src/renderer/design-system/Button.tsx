@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes, Ref } from 'react';
 import { Kbd } from './Kbd';
 
 export function Button({
@@ -10,7 +10,7 @@ export function Button({
   className,
   type = 'button',
   ...rest
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant: 'primary' | 'secondary' | 'quiet'; shortcut?: string; busy?: boolean }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & { variant: 'primary' | 'secondary' | 'quiet'; shortcut?: string; busy?: boolean; ref?: Ref<HTMLButtonElement> }) {
   return (
     <button {...rest} type={type} className={`btn btn-${variant}${className ? ` ${className}` : ''}`}
       disabled={disabled || busy} aria-busy={busy || undefined}>

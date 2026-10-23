@@ -1,4 +1,4 @@
-import { micProblem, OUTCOME_TEXT, roleLabel, roomActions, roomMeta, seatsText, speakingNow } from '../../src/renderer/lib/rooms';
+import { micProblem, namesList, OUTCOME_TEXT, roleLabel, roomActions, roomMeta, seatsText, speakingNow } from '../../src/renderer/lib/rooms';
 
 const domError = (name: string) => Object.assign(new Error(name), { name });
 
@@ -62,4 +62,11 @@ test('speaking turns on above a louder level and off below a quieter one, so the
   expect(speakingNow(0.4, false)).toBe(false);
   expect(speakingNow(0.2, true)).toBe(false);
   expect(speakingNow(Number.NaN, true)).toBe(false);
+});
+
+test('names read as a list: Bia, Bia and Caio, Bia, Caio and Dani', () => {
+  expect(namesList([])).toBe('');
+  expect(namesList(['Bia'])).toBe('Bia');
+  expect(namesList(['Bia', 'Caio'])).toBe('Bia and Caio');
+  expect(namesList(['Bia', 'Caio', 'Dani'])).toBe('Bia, Caio and Dani');
 });
