@@ -310,6 +310,40 @@ components:
     textColor: "{colors.ink-secondary}"
     rounded: "{rounded.sheet}"
     padding: "12px"
+  room-sheet:
+    backgroundColor: "{colors.galley-sheet}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.sheet}"
+    padding: "20px 24px"
+  room-row:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
+    padding: "12px 8px"
+  mic-meter:
+    backgroundColor: "{colors.graphite-ground}"
+    rounded: "{rounded.chip}"
+    height: "8px"
+    width: "480px"
+  mic-meter-fill:
+    backgroundColor: "{colors.ink-secondary}"
+  room-person:
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
+    padding: "12px 8px"
+  room-card:
+    backgroundColor: "{colors.galley-sheet}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.sheet}"
+    padding: "16px 20px"
+    width: "320px"
+  room-options:
+    backgroundColor: "{colors.galley-sheet}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.sheet}"
+    padding: "12px 16px"
+  room-bar:
+    backgroundColor: "{colors.graphite-ground}"
+    padding: "16px 0 20px"
 ---
 
 # Design System: DevTalk
@@ -379,10 +413,10 @@ A graphite (or pale cool-grey) document palette with one blue pencil and a pair 
 - **Title** (600, 14px, 1.4): sub-headings inside a sheet (h3) and field labels.
 - **Body** (400, 15px, 1.6): all running text; ledes and briefs capped at the 68ch measure. The fluent rewrite is set larger (17px, 1.75).
 - **Label** (500, 13px): margin notes, coach progress, hints, metadata, notice details, track lines.
-- **Caption** (500, 12px): type badges, rail footer, "Later" tags.
+- **Caption** (500, 12px): type badges, rail footer.
 - **Galley** (mono 400, 15px, 1.85): the learner's text in a galley and in the answer textarea. The open leading leaves room for strike-throughs and carets.
 - **Expression** (mono 500, 17px; 20px on the review card): the phrase on an expression card.
-- **Mono small** (mono, 12–13px): chips, `kbd` keys, nav counts, the model id.
+- **Mono small** (mono, 12–13px): chips, `kbd` keys, nav counts, the model id, the seat count "n / 6" in the room list. The room timer's number is the one larger mono count: 20px, weight 600.
 
 ### Named Rules
 **The Two Materials Rule.** Monospace is reserved for the learner's own words, reusable expressions, keys and numbers; everything else is Public Sans. Never set interface chrome in mono or the galley in sans.
@@ -401,6 +435,8 @@ People opens with its tabs across the 760px column, 24px apart over a 1px rule, 
 
 Messages is the one full-height page: the page fills the window (100vh) and its body is a 300px conversation list beside the open conversation with a 32px gap, capped at 1100px; below 1040px the list drops to 240px and the gap to 20px. Notices and empty states above it keep the 760px column. The list scrolls on its own. Inside the conversation pane the thread takes the remaining height, scrolls, and never shrinks below 140px; the composer area under it scrolls instead when the coach check is open. Below 1040px the pane's inner padding drops from 20px to 16px sides, and on windows under 720px tall the page's bottom padding and head spacing tighten (20px, 16px).
 
+Rooms keeps the 760px column on its list page: the head, notices, empty states, the create and join sheets and the room list are capped at 760px, with 20px below each block. A room is a full-height page (at least 100vh, no bottom padding): a fluid people column beside a 320px side column holding the idea card over the timer 20px apart, with a 40px gap, capped at 1100px; its notices keep the 760px cap. At 1040px and below the side column moves above the people as two equal columns with a 16px gap, and the people follow 20px below, so a long list never pushes the card and timer out of a short window. The control bar is sticky at the bottom of the page, capped at 1100px, 32px below the room; while a room is open the document's bottom scroll padding is 88px (56px + 32px), so a focused control or a panel that scrolls into view stops above the bar instead of under it. On windows 720px tall or less the room head's spacing drops to 16px and the bar's top margin to 20px, with 16px padding top and bottom.
+
 ## Elevation & Depth
 
 The system is flat and tonal. Depth comes from three steps of surface (rail darker than ground, ground darker than sheet) and from 1px rules. Inputs sit on the ground colour so they read as recessed into a sheet. Shadow is used for exactly one thing: layers that float above the page.
@@ -408,7 +444,7 @@ The system is flat and tonal. Depth comes from three steps of surface (rail dark
 ### Shadow Vocabulary
 - **Float** (`box-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.35)`; light theme uses `rgb(20 24 32 / 0.22)` and `/ 0.12`): the command palette, the report dialog and other floating menus, over a 35% black backdrop.
 - **Inset ring** (`box-shadow: inset 0 0 0 1px` strong rule): a selection outline, not elevation, on the checked segment, the selected palette row, the selected moderation report, the current conversation row and the reported message in a moderation copy.
-- **Separation ring** (`box-shadow: 0 0 0 2px` ground, `0 0 0 4px` ink): a selection outline, not elevation, on the checked mascot in the picker. The profile avatar's 5px ring over the banner is ground-coloured padding, not a shadow.
+- **Separation ring** (`box-shadow: 0 0 0 2px` ground, `0 0 0 4px` ink): a selection outline, not elevation, on the checked mascot in the picker; the same ring, always in ink, marks who is speaking in a voice room, easing in and out over 180ms. The profile avatar's 5px ring over the banner is ground-coloured padding, not a shadow.
 
 ### Named Rules
 **The Float-Only Rule.** Sheets, cards and buttons cast no shadow. If it is not floating over the page, it has no shadow.
@@ -448,9 +484,10 @@ Calm and compact; the press is the only movement.
 
 ### Navigation
 - **Rail:** darker rail tone, 1px right rule, brand row with a pencil-blue mark, a "Search or jump to..." button with `Ctrl K`, then nav rows.
-- **Rows:** 14px secondary ink with a 1.6-stroke line icon, 7px by 12px padding, 6px radius. Hover and current page both take the sheet fill with ink text; current adds weight 600. Counts sit right-aligned in mono; unreleased items carry a tertiary "Later".
+- **Rows:** 14px secondary ink with a 1.6-stroke line icon, 7px by 12px padding, 6px radius. Hover and current page both take the sheet fill with ink text; current adds weight 600. Counts sit right-aligned in mono.
 - **Command palette:** a 560px sheet at 14vh with the float shadow, a 17px borderless search input over a rule, rows with 6px radius; the selected row gets sheet-hover and an inset ring. It opens and closes without animation.
 - **Messages row:** after People, with the chat line icon (a speech bubble) and the unread count, requests included, in the same right-aligned mono count as Review's due count; the palette's "Go to Messages" is `Ctrl 5`.
+- **Rooms row:** after Messages, with the rooms line icon (a microphone); the palette's "Go to Rooms" is `Ctrl 6`. While you are in a room, the row, the palette entry and `Ctrl 6` lead back to that room (`#/rooms/<id>`) instead of the list.
 - **Moderation row:** shown only to moderators, last in the rail, with the shield line icon.
 
 ### Galley (signature)
@@ -496,6 +533,7 @@ Blocking, deleting an account and moderation decisions confirm inline, never in 
 ### Moderation queue
 Open reports as a ruled list: avatar, name in weight 600, reason and place in 13px secondary ink, date in tertiary ink. Hover takes the sheet fill; the selected row takes sheet-hover and an inset ring, like the palette selection. Each decision (dismiss, warn, suspend) is a section under a 1px top rule.
 A message report adds "The conversation" as one more such section: the copied messages as a list (12px gaps), each with the sender in weight 600 and the date and time in 13px secondary ink, then the message in the chat bubble (theirs style, left, up to 68ch). The reported message takes the sheet fill and the inset ring with the control radius and a "Reported" flag in weight 600; nothing turns red. When no copy was kept, a muted line says so.
+A room report ("Voice room" as its place) adds "The room" the same way: the room's title, theme, host and opening time as a profile fact sheet, then who was in it as a ruled list (8px vertical padding, 14px): the name in weight 600 on the left and, right-aligned in secondary ink, when they joined and left ("23 October 2026, 17:13 to 17:13", or "…, still in the room"). A deleted account reads "Deleted account"; when no copy was kept, a muted line says so.
 
 ### Join steps
 Join runs one step at a time in one column, like onboarding. The step count lives in the lede ("Step 2 of 4. Check your e-mail for a code."), never as a label above the heading. Consents are ruled rows with the document link right-aligned.
@@ -539,6 +577,23 @@ The composer is the mono chat textarea (min 64px, max 200px, no resize) over a r
 ### Request card and first message
 An incoming request replaces the composer with a card under a rule: "<name> wants to practise with you." in ink weight 600, then "Accept to reply. If you decline, <name> is not told." in secondary ink; Accept (primary), Decline (secondary). Declining is silent: nothing tells the sender. While your request waits, the composer is replaced by "Waiting for <name>. You can write more when they accept." in secondary ink. Send message on a profile opens `#/messages/to/<id>`: the pane with the member's head, "Message <name>" at 17px, a lede that the first message is a request, a four-row mono textarea, the counter and Send request (primary), capped at 640px.
 
+### Room list
+Rooms opens with the page head ("Talk in English by voice, up to 6 people. Your voice goes straight to the others and is never recorded.") and Create a room on the right as the page's one primary. Live rooms are ruled rows under a 1px top rule, 12px by 8px with 16px gaps: the title in weight 600 over a 13px secondary-ink line with the theme, the level and the host ("Code review, B2. Host: Lia"); then the people's faces as 24px avatars or mascots 4px apart (their names given to screen readers); the seats "n / 6" in 13px secondary mono; then Join (a secondary link named "Join <title>") or, with six in, "Full" in 13px tertiary ink, no control. A row is not a link and takes no hover fill. With no rooms, the empty state says "No rooms right now." and "Create one and others can join." Without the community the screen is an empty state ("Join the community to talk in rooms", with Join the community as the primary); a room that ended or filled is "This room is not open." with a secondary "Back to Rooms". Leaving a room comes back here with an info notice saying why ("You ended the room.").
+
+### Create a room and microphone check
+Both are sheets at the top of the 760px column (sheet fill, 1px rule, sheet radius, 20px by 24px, 16px between parts) under a 17px heading: "Create a room", or "Join <title>" with the lede "Stand-up, B1, 2 / 6. Check your microphone first." Create asks for a Title (with the hint "3 to 60 characters. Everyone sees it in the list."), the Theme as a segmented control (Stand-up, Code review, Interview, Free talk) and a Suggested level select (Any level, A1 to C2); fields cap at 480px. Then the microphone check, also 480px: the label "Your microphone", an 8px meter (ground fill, strong-rule border, chip radius) whose secondary-ink fill grows from the left with the voice level, and the hint "Say something. The bar moves when DevTalk hears you. Nothing is recorded." A refused or missing microphone replaces the meter with an error notice and Try again (secondary). Join room or Create is the sheet's primary, disabled until the microphone is open; Cancel is quiet. While the create sheet is open the head's Create a room is hidden, so the view keeps one primary.
+
+### Room view
+The head is the room's title (h1) with the lede "Interview, B2, 4 / 6. Host: Rian". Under it the notices, then an arrivals line ("Hugo joined.") in 13px secondary ink that clears after ten seconds and keeps its height so nothing jumps.
+- **People:** a "People" heading over ruled rows, 12px by 8px: the 40px avatar or mascot, the name in weight 600 (yours followed by "(You)" in secondary ink, weight 400), and a 13px secondary-ink line joining the level, the role label (Host or Room moderator, nothing for a member) and the call status (Muted, Muted for you, Connecting…, Could not connect). A muted person shows the 16px mic-off line icon in secondary ink; everyone else's row ends with Options (quiet). Whoever is speaking gets the separation ring around their face, in ink, plus a hidden "Speaking"; it is the only speaking signal.
+- **Idea card:** a sheet in the side column (16px by 20px): "Idea card", the prompt at 17px weight 400 with 1.5 leading, and Next card (secondary). Anyone in the room can turn it; everyone sees the same card.
+- **Timer:** the same sheet: "Timer", then while idle "A guide for everyone in the room. Start one when someone speaks." in 13px secondary ink; while running "<n> s left" at 17px weight 600 with only the number in mono (20px); then "Time is up." 60 s and 90 s are secondary; Stop (quiet) shows while it runs. The timer is shared.
+- **Notices:** info notices for "Reconnecting…" and "The host muted you. You can unmute when you are ready."; everyone the call could not reach is named in one error notice ("Could not connect to Bia and Caio. Your network may block calls."), never one per person. They stack 8px apart, capped at 760px.
+- **Bottom bar:** sticky on the ground colour under a 1px top rule, 12px gaps: Mute or Unmute (secondary, with the mic or mic-off icon and the `Ctrl M` hint; Ctrl+M works anywhere in the room), Leave (secondary) and, for the host, End room (quiet). The bar is there even while the room loads or cannot be read, because the microphone is live. End room confirms inline in the bar as a neutral panel in a row: "End the room for everyone? The call stops for all.", End room (secondary), Cancel (quiet); Escape cancels and focus returns to End room. There is no pencil primary inside a room, on purpose: speaking is the main act, not a button.
+
+### Person options
+Options opens an inline neutral panel under the person's row (sheet fill, strong rule, sheet radius, 12px by 16px, inset 8px), labelled "Options for <name>", scrolled into view above the bar. The first group is for you: Mute for me (Unmute for me once set) and Report as quiet buttons, then Block <name> as a secondary button that confirms inline like any block; blocking someone in a room makes you leave it. When your role allows, a second group follows under a 1px rule with 12px above it, all secondary: Mute for everyone, Make moderator (or Remove moderator role), Make host, Remove. Make host and Remove swap the panel for an inline neutral confirmation ("Make Hugo the host? You stop being the host.", "Remove Hugo from this room? Hugo cannot come back to this room."): the confirming action secondary, Cancel quiet. A done action reports in 13px secondary ink ("You muted Hugo. Hugo can unmute when ready."); a failure shows as an amber field error. Escape closes the panel or cancels the confirmation, and focus returns to the button that opened it (Options, Make host or Remove).
+
 ## Do's and Don'ts
 
 ### Do:
@@ -557,6 +612,10 @@ An incoming request replaces the composer with a card under a rule: "<name> want
 - **Do** set chat messages, drafts and corrections in the chat mono, as plain text with their line breaks kept.
 - **Do** show a peer correction or a coach check as a word diff in the galley's rose and sage marks, the marks covering words only.
 - **Do** keep message actions quiet and under the message, reachable by keyboard and touch, and return focus to the message after an inline panel closes.
+- **Do** mark who is speaking with the separation ring in ink around their face, and only while they speak.
+- **Do** keep Mute/Unmute (with `Ctrl M`) and Leave in the room's sticky bottom bar at all times, and keep focused controls and opened panels scrolled above it.
+- **Do** name the two mutes apart: "Mute for me" silences someone only for you; "Mute for everyone" is a room action in its own ruled group.
+- **Do** say a room is never recorded where the microphone is asked for, and show the microphone level in secondary ink.
 
 ### Don't:
 - **Don't** build a dashboard of stat cards or metric tiles; progress is facts, ruled lists and tallies.
@@ -574,3 +633,7 @@ An incoming request replaces the composer with a card under a rule: "<name> want
 - **Don't** mark a correction with anything but the diff marks: no rose or sage outside them, no "wrong" or "correct", no score.
 - **Don't** colour unread: the count is plain mono ink, in the rail and the conversation list, and unread rows are not bolded or tinted.
 - **Don't** tell a sender their request was declined; a decline is silent.
+- **Don't** colour the speaking ring, the microphone meter or the muted icon; speaking is ink, never pencil, sage or a status colour.
+- **Don't** put a pencil primary inside a room; speaking is the main act, so the bar and the person options use secondary and quiet buttons only.
+- **Don't** show recording affordances in a room: no record button, recording dot, saved audio or playback; a voice is never recorded.
+- **Don't** list one "could not connect" notice per person; name everyone unreachable in one notice.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-20T12:00:00+00:00",
+  "generatedAt": "2026-10-23T12:00:00+00:00",
   "title": "Design System: DevTalk",
   "extensions": {
     "colorMeta": {
@@ -825,7 +825,7 @@
       },
       "caption": {
         "displayName": "Caption",
-        "purpose": "Type badges, rail footer, Later tags."
+        "purpose": "Type badges, rail footer."
       },
       "galley": {
         "displayName": "Galley Mono",
@@ -837,7 +837,7 @@
       },
       "mono-small": {
         "displayName": "Mono Small",
-        "purpose": "Chips, kbd keys, nav counts, model id."
+        "purpose": "Chips, kbd keys, nav counts, model id, the room list's \"n / 6\"; the room timer's number is mono 600 at 20px."
       },
       "chat": {
         "displayName": "Chat",
@@ -863,7 +863,7 @@
       {
         "name": "separation-ring",
         "value": "0 0 0 2px var(--bg), 0 0 0 4px var(--ink)",
-        "purpose": "Selection outline (not elevation) on the checked mascot in the picker."
+        "purpose": "Selection outline (not elevation) on the checked mascot in the picker; the same ring, always in ink, marks who is speaking in a voice room."
       }
     ],
     "motion": [
@@ -907,7 +907,7 @@
       {
         "name": "compact",
         "value": "1040px",
-        "purpose": "Page side padding 32px, galley margin column 200px, history grid drops track. Profile fact sheet term column 140px. Messages: conversation list 240px, gap 20px, bubbles up to 90%, pane padding 16px sides."
+        "purpose": "Page side padding 32px, galley margin column 200px, history grid drops track. Profile fact sheet term column 140px. Messages: conversation list 240px, gap 20px, bubbles up to 90%, pane padding 16px sides. Rooms: the idea card and timer move above the people as two equal columns (16px gap)."
       },
       {
         "name": "graph-narrow",
@@ -917,7 +917,7 @@
       {
         "name": "short-window",
         "value": "720px (height)",
-        "purpose": "Messages tightens its bottom padding to 20px and its head spacing to 16px."
+        "purpose": "Messages tightens its bottom padding to 20px and its head spacing to 16px. A room tightens its head spacing to 16px and its bar to a 20px top margin with 16px padding."
       }
     ],
     "layout": {
@@ -943,7 +943,12 @@
       "conversationList": "300px (240px below 1040px), gap 32px (20px below 1040px), capped at 1100px",
       "chatThreadMin": "140px; the thread scrolls, the composer area scrolls when the coach check is open",
       "chatBubbleMax": "min(75%, 68ch) (90% below 1040px)",
-      "chatTextMax": 2000
+      "chatTextMax": 2000,
+      "roomsColumn": "760px (head, notices, empty states, create and join sheets, room list)",
+      "roomPage": "at least 100vh; people column + 320px side column (idea card over timer, 20px apart), 40px gap, capped at 1100px; side column above the people as two equal columns at 1040px and below",
+      "roomBar": "sticky bottom, ground fill, 1px top rule, 32px above, 16px 0 20px, capped at 1100px; document scroll-padding-bottom 88px while a room is open",
+      "roomMax": 6,
+      "roomTimers": "60 s, 90 s"
     }
   },
   "components": [
@@ -1137,6 +1142,22 @@
       "description": "The mono chat textarea over a row: 'n / 2000' in 12px tertiary mono (amber past the limit), Check with the coach (secondary), Send (primary, the one primary). The check panel sits on the ground with the strong rule: 'The coach on your draft', the draft diff, notes led by the edit in pencil mono, 'A more natural way:', Use this version (secondary) and Keep mine (quiet).",
       "html": "<div class=\"ds-compose\"><section class=\"ds-check\"><span class=\"ds-who\">The coach on your draft</span><p class=\"ds-diff\">Yesterday I <del>have</del> fixed the bug.</p><ul><li><span class=\"ds-edit\">have fixed → fixed</span> With \"yesterday\" use the simple past.</li></ul><div class=\"ds-row\"><button class=\"ds-sec\">Use this version</button><button class=\"ds-q\">Keep mine</button></div></section><textarea class=\"ds-chat-input\" rows=\"2\">Yesterday I have fixed the bug.</textarea><div class=\"ds-row\"><span class=\"ds-counter\">31 / 2000</span><button class=\"ds-sec\">Check with the coach</button><button class=\"ds-pri\">Send</button></div></div>",
       "css": ".ds-compose{display:flex;flex-direction:column;gap:8px;padding:12px 20px 16px;background:var(--sheet,#20232b);border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1)}.ds-check{padding:12px;border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-sheet,10px);background:var(--bg,#16181d);display:flex;flex-direction:column;gap:8px}.ds-check ul{list-style:none;padding:0;margin:0;font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-edit{font-family:var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--pencil,#7fb2e5)}.ds-who{font-size:var(--text-xs,0.75rem);color:var(--ink-2,#b4b9c5)}.ds-diff{margin:0;font:var(--text-md,0.875rem)/1.6 var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-diff del{color:var(--del,#d99aa8);text-decoration:line-through;background:var(--del-wash,rgb(217 154 168 / 0.12));border-radius:2px}.ds-chat-input{min-height:64px;resize:none;padding:8px 12px;border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-control,6px);background:var(--bg,#16181d);color:var(--ink,#e8e6e1);font:var(--text-md,0.875rem)/1.6 var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-chat-input:focus{outline:none;border-color:var(--focus,#9cc6f0)}.ds-row{display:flex;align-items:center;justify-content:flex-end;gap:12px}.ds-counter{margin-right:auto;font:var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ink-3,#8c93a3)}.ds-sec,.ds-pri,.ds-q{font:500 var(--text-base,0.9375rem) var(--font-ui,'Public Sans',system-ui,sans-serif);padding:9px 16px;border-radius:var(--r-control,6px);cursor:pointer}.ds-sec{background:transparent;border:1px solid var(--rule-strong,#3a3f4b);color:var(--ink,#e8e6e1)}.ds-sec:hover{background:var(--sheet-hover,#262a33)}.ds-pri{background:var(--pencil,#7fb2e5);border:1px solid transparent;color:var(--pencil-ink,#0d1622)}.ds-q{background:transparent;border:0;color:var(--ink-2,#b4b9c5)}"
+    },
+    {
+      "name": "Room List",
+      "kind": "custom",
+      "refersTo": "room-row",
+      "description": "Live voice rooms as ruled rows: title (600) over a 13px secondary line with theme, level and host; 24px faces; the seats 'n / 6' in 13px secondary mono; Join (secondary link) or 'Full' in tertiary ink. Create a room is the page's one primary; no rooms is the empty state 'No rooms right now.'",
+      "html": "<ul class=\"ds-rooms\" aria-label=\"Live rooms\"><li><span class=\"ds-r-main\"><b>Free talk Friday</b><small>Free talk, any level. Host: Max</small></span><span class=\"ds-r-faces\"><span>M</span><span>A</span><span>B</span><span>C</span><span>D</span><span>E</span></span><span class=\"ds-r-seats\">6 / 6</span><span class=\"ds-r-full\">Full</span></li><li><span class=\"ds-r-main\"><b>Stand-up practice</b><small>Stand-up, B1. Host: Bia</small></span><span class=\"ds-r-faces\"><span>B</span><span>C</span></span><span class=\"ds-r-seats\">2 / 6</span><a class=\"ds-r-join\" href=\"#\" aria-label=\"Join Stand-up practice\">Join</a></li></ul>",
+      "css": ".ds-rooms{list-style:none;padding:0;margin:0;max-width:760px;border-top:1px solid var(--rule,#2b2f39);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1)}.ds-rooms li{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:16px;align-items:center;padding:12px 8px;border-bottom:1px solid var(--rule,#2b2f39)}.ds-r-main{display:flex;flex-direction:column;min-width:0}.ds-r-main b{font-weight:600}.ds-r-main small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-r-faces{display:flex;gap:4px}.ds-r-faces span{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font-size:11px;font-weight:600}.ds-r-seats{font:400 var(--text-sm,0.8125rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ink-2,#b4b9c5);white-space:nowrap}.ds-r-full{font-size:var(--text-sm,0.8125rem);color:var(--ink-3,#8c93a3);padding-inline:16px}.ds-r-join{display:inline-flex;align-items:center;padding:9px 16px;border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-control,6px);color:var(--ink,#e8e6e1);font-weight:500;text-decoration:none;transition:background-color 180ms ease,transform 120ms cubic-bezier(0.23,1,0.32,1)}.ds-r-join:hover{background:var(--sheet-hover,#262a33)}.ds-r-join:active{transform:scale(0.97)}.ds-r-join:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}"
+    },
+    {
+      "name": "Room View",
+      "kind": "custom",
+      "refersTo": "room-person",
+      "description": "People as ruled rows (40px face, name, level/role/status line, mic-off icon, quiet Options); the speaking ring is the ink separation ring; person options open inline with a ruled second group for room actions; the timer shows only its number in mono; the sticky bar holds Mute (Ctrl M), Leave and, for the host, End room (quiet). No pencil primary in a room.",
+      "html": "<div class=\"ds-room\"><ul class=\"ds-people\"><li><div class=\"ds-p-row\"><span class=\"ds-face is-speaking\">R</span><span class=\"ds-p-main\"><b>Rian <i>(You)</i></b><small>B1, Host</small></span></div></li><li><div class=\"ds-p-row\"><span class=\"ds-face\">D</span><span class=\"ds-p-main\"><b>Dani</b><small>C1, Room moderator, Muted</small></span><span class=\"ds-muted\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M10 6.5V4a2 2 0 0 0-4 0v3.5M6.6 8.6A2 2 0 0 0 10 7.5\"/><path d=\"M3.5 8a4.5 4.5 0 0 0 7.4 3.4M12.4 9a4.5 4.5 0 0 0 .1-1M8 12.5V14M2.5 2.5l11 11\"/></svg></span><button class=\"ds-q\" aria-expanded=\"true\">Options</button></div><div class=\"ds-opts\" role=\"group\" aria-label=\"Options for Dani\"><div class=\"ds-row\"><button class=\"ds-q\">Mute for me</button><button class=\"ds-q\">Report</button><button class=\"ds-sec\">Block Dani</button></div><div class=\"ds-row ds-opts-room\"><button class=\"ds-sec\">Mute for everyone</button><button class=\"ds-sec\">Make host</button><button class=\"ds-sec\">Remove</button></div></div></li></ul><section class=\"ds-card\"><h2>Timer</h2><p class=\"ds-left\"><span>58</span> s left</p><div class=\"ds-row\"><button class=\"ds-sec\">60 s</button><button class=\"ds-sec\">90 s</button><button class=\"ds-q\">Stop</button></div></section><footer class=\"ds-bar\" role=\"group\" aria-label=\"Room controls\"><button class=\"ds-sec\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"6\" y=\"2\" width=\"4\" height=\"7\" rx=\"2\"/><path d=\"M3.5 8a4.5 4.5 0 0 0 9 0M8 12.5V14\"/></svg>Mute <kbd>Ctrl M</kbd></button><button class=\"ds-sec\">Leave</button><button class=\"ds-q\">End room</button></footer></div>",
+      "css": ".ds-room{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:24px 40px;align-items:start;font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1);background:var(--bg,#16181d)}.ds-people{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule,#2b2f39)}.ds-people li{border-bottom:1px solid var(--rule,#2b2f39)}.ds-p-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:12px 8px}.ds-face{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font-weight:600;transition:box-shadow 180ms cubic-bezier(0.23,1,0.32,1)}.ds-face.is-speaking{box-shadow:0 0 0 2px var(--bg,#16181d),0 0 0 4px var(--ink,#e8e6e1)}.ds-p-main{display:flex;flex-direction:column;min-width:0}.ds-p-main b{font-weight:600}.ds-p-main i{font-style:normal;font-weight:400;color:var(--ink-2,#b4b9c5)}.ds-p-main small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-muted{display:inline-flex;grid-column:3;color:var(--ink-2,#b4b9c5)}.ds-p-row>.ds-q{grid-column:4}.ds-opts{display:flex;flex-direction:column;align-items:flex-start;gap:12px;margin:0 8px 12px;padding:12px 16px;border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-sheet,10px);background:var(--sheet,#20232b)}.ds-opts-room{align-self:stretch;padding-top:12px;border-top:1px solid var(--rule,#2b2f39)}.ds-row{display:flex;flex-wrap:wrap;gap:8px}.ds-card{display:flex;flex-direction:column;gap:12px;padding:16px 20px;border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);background:var(--sheet,#20232b)}.ds-card h2{margin:0;font-size:var(--text-lg,1.0625rem);font-weight:600}.ds-left{margin:0;font-size:var(--text-lg,1.0625rem);font-weight:600}.ds-left span{font:600 var(--text-xl,1.25rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-bar{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:16px 0 20px;border-top:1px solid var(--rule,#2b2f39);background:var(--bg,#16181d)}.ds-room button{display:inline-flex;align-items:center;gap:8px;font:inherit;font-weight:500;border-radius:var(--r-control,6px);cursor:pointer;transition:background-color 180ms ease,color 180ms ease,transform 120ms cubic-bezier(0.23,1,0.32,1)}.ds-room button:active{transform:scale(0.97)}.ds-room button:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}.ds-sec{padding:9px 16px;background:transparent;color:var(--ink,#e8e6e1);border:1px solid var(--rule-strong,#3a3f4b)}.ds-sec:hover{background:var(--sheet-hover,#262a33)}.ds-q{padding:9px 12px;background:transparent;color:var(--ink-2,#b4b9c5);border:0}.ds-q:hover{background:var(--sheet,#20232b);color:var(--ink,#e8e6e1)}.ds-room kbd{font:400 var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);padding:0 5px;border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-chip,4px);color:var(--ink-2,#b4b9c5)}"
     }
   ],
   "narrative": {
@@ -1197,7 +1218,11 @@
       "**Do** set follower, following and like counts in tabular figures as plain text beside their controls.",
       "**Do** set chat messages, drafts and corrections in the chat mono, as plain text with their line breaks kept.",
       "**Do** show a peer correction or a coach check as a word diff in the galley's rose and sage marks, the marks covering words only.",
-      "**Do** keep message actions quiet and under the message, reachable by keyboard and touch, and return focus to the message after an inline panel closes."
+      "**Do** keep message actions quiet and under the message, reachable by keyboard and touch, and return focus to the message after an inline panel closes.",
+      "**Do** mark who is speaking with the separation ring in ink around their face, and only while they speak.",
+      "**Do** keep Mute/Unmute (with `Ctrl M`) and Leave in the room's sticky bottom bar at all times, and keep focused controls and opened panels scrolled above it.",
+      "**Do** name the two mutes apart: \"Mute for me\" silences someone only for you; \"Mute for everyone\" is a room action in its own ruled group.",
+      "**Do** say a room is never recorded where the microphone is asked for, and show the microphone level in secondary ink."
     ],
     "donts": [
       "**Don't** build a dashboard of stat cards or metric tiles; progress is facts, ruled lists and tallies.",
@@ -1214,7 +1239,11 @@
       "**Don't** render chat text as HTML or markdown, or link-ify it; it is always plain text.",
       "**Don't** mark a correction with anything but the diff marks: no rose or sage outside them, no \"wrong\" or \"correct\", no score.",
       "**Don't** colour unread: the count is plain mono ink, in the rail and the conversation list, and unread rows are not bolded or tinted.",
-      "**Don't** tell a sender their request was declined; a decline is silent."
+      "**Don't** tell a sender their request was declined; a decline is silent.",
+      "**Don't** colour the speaking ring, the microphone meter or the muted icon; speaking is ink, never pencil, sage or a status colour.",
+      "**Don't** put a pencil primary inside a room; speaking is the main act, so the bar and the person options use secondary and quiet buttons only.",
+      "**Don't** show recording affordances in a room: no record button, recording dot, saved audio or playback; a voice is never recorded.",
+      "**Don't** list one \"could not connect\" notice per person; name everyone unreachable in one notice."
     ]
   }
 }
