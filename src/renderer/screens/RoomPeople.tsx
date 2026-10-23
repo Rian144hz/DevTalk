@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { RoomPerson, RoomRole } from '../../core/social/rooms';
 import { Icon } from '../app/icons';
 import { Avatar, BlockButton, Button } from '../design-system';
@@ -66,6 +66,11 @@ function statusOf(peer: PeerView | undefined): string | null {
   return peer.state === 'failed' ? 'Could not connect' : null;
 }
 
+/** Brings a panel that just opened into view: the bar under the room is sticky and would cover its lower half. */
+function useReveal() {
+  return useCallback((el: HTMLElement | null) => el?.scrollIntoView?.({ block: 'nearest' }), []);
+}
+
 /** A person's options: for yourself (mute for me, report, block) and, by your role, for the room. */
 function PersonOptions({ p, id, myRole, mutedForMe, onMuteForMe, actions, onDone }: {
   p: RoomPerson;
@@ -82,6 +87,7 @@ function PersonOptions({ p, id, myRole, mutedForMe, onMuteForMe, actions, onDone
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [said, setSaid] = useState<string | null>(null);
+  const reveal = useReveal();
 
   async function run(kind: string, act: () => Promise<string | null>, done?: string) {
     setBusy(kind);
@@ -96,7 +102,7 @@ function PersonOptions({ p, id, myRole, mutedForMe, onMuteForMe, actions, onDone
   if (confirm) {
     const remove = confirm === 'remove';
     return (
-      <div id={id} className="room-confirm" role="group" aria-label={remove ? `Remove ${name}` : `Make ${name} the host`}>
+      <div id={id} ref={reveal} className="room-confirm" role="group" aria-label={remove ? `Remove ${name}` : `Make ${name} the host`}>
         <p>{remove ? `Remove ${name} from this room? ${name} cannot come back to this room.` : `Make ${name} the host? You stop being the host.`}</p>
         {error && <p className="field-error" role="alert">{error}</p>}
         <div className="row-actions">
@@ -111,7 +117,7 @@ function PersonOptions({ p, id, myRole, mutedForMe, onMuteForMe, actions, onDone
   }
 
   return (
-    <div id={id} className="room-options" role="group" aria-label={`Options for ${name}`}>
+    <div id={id} ref={reveal} className="room-options" role="group" aria-label={`Options for ${name}`}>
       <div className="row-actions">
         <Button variant="quiet" onClick={onMuteForMe}>{mutedForMe ? 'Unmute for me' : 'Mute for me'}</Button>
         {can.mute && (

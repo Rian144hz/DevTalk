@@ -206,7 +206,7 @@ export function RoomView({ session, myId, onExit }: { session: RoomSession; myId
             {left === null ? (
               <p className="room-timer-idle">A guide for everyone in the room. Start one when someone speaks.</p>
             ) : left > 0 ? (
-              <p className="room-timer-left"><span className="room-timer-n num">{left} s</span> left</p>
+              <p className="room-timer-left"><span className="room-timer-n num">{left}</span> s left</p>
             ) : (
               <p className="room-timer-left">Time is up.</p>
             )}

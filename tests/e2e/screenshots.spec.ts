@@ -2,6 +2,7 @@
 import type { Page } from '@playwright/test';
 import { join } from 'node:path';
 import { answerOnce, expect, joinCommunity, onboard, SAMPLE_ANSWER, test } from './fixtures';
+import { asMember, idOf, makeModerator, meterMoves, options, people, personRow, ringLit, roomOf, roomRow } from './room-helpers';
 
 const OUT = '.impeccable/review';
 const SIZES = [[1440, 900], [960, 640]] as const;
@@ -69,7 +70,7 @@ test('screens', async ({ page }) => {
     await go(page, '#/settings', 'Settings');
     await shoot(page, 'settings', theme);
     await go(page, '#/rooms', 'Rooms');
-    await shoot(page, 'rooms', theme);
+    await shoot(page, 'rooms-not-set-up', theme);
     await page.keyboard.press('Control+k');
     await shoot(page, 'palette', theme);
     await page.keyboard.press('Escape');
@@ -304,5 +305,156 @@ test.describe('messages', () => {
       await page.getByRole('heading', { level: 3, name: 'Message Caio' }).waitFor();
       await shoot(page, 'chat-new', theme);
     }
+  });
+});
+
+test.describe('rooms', () => {
+  // Chromium's fake microphone, and seeded people who never answer a call: their rows say "Connecting…" for the whole run.
+  test.use({ social: 'people', fakeMedia: true, roomTimeoutMs: '600000' });
+
+  /** Two animation frames: layout has settled after a resize or a theme change. */
+  const settled = (page: Page) => page.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
+
+  /**
+   * The state the page is in now, in both themes and both sizes, with a check that nothing runs off the side of the
+   * window. `ready` runs before each capture, for states that come and go on their own.
+   */
+  async function shootThemes(page: Page, name: string, ready?: () => Promise<unknown>) {
+    for (const theme of THEMES) {
+      await page.evaluate((t) => { document.documentElement.dataset['theme'] = t; }, theme);
+      for (const [w, h] of SIZES) {
+        await page.setViewportSize({ width: w, height: h });
+        await settled(page);
+        const overflow = await page.evaluate(() => Math.max(
+          document.documentElement.scrollWidth - window.innerWidth,
+          ...[...document.querySelectorAll('main')].map((m) => m.scrollWidth - m.clientWidth),
+        ));
+        expect(overflow, `${name} ${theme} ${w}: horizontal overflow`).toBeLessThanOrEqual(0);
+        await ready?.();
+        await page.screenshot({ path: `${OUT}/${name}-${theme}-${w}.png` });
+      }
+    }
+  }
+
+  /**
+   * The microphone check with sound on the meter: the fake microphone beeps for a moment each second, far shorter
+   * than a capture takes, so the bar is held at a level for the picture. The real meter is tested in rooms.spec.ts.
+   */
+  const heardMic = async (page: Page) => {
+    await meterMoves(page);
+    await page.evaluate(() => {
+      if (document.querySelector('style[data-shot]')) return;
+      const style = document.createElement('style');
+      style.dataset['shot'] = '1';
+      style.textContent = '.mic-meter-fill { transform: scaleX(0.55) !important; transition: none !important; }';
+      document.head.append(style);
+    });
+  };
+  const unfreeze = (page: Page) => page.evaluate(() => document.querySelectorAll('style[data-shot]').forEach((el) => el.remove()));
+  const toTop = (page: Page) => page.evaluate(() => {
+    document.querySelectorAll('main').forEach((m) => m.scrollTo(0, 0));
+    document.scrollingElement?.scrollTo(0, 0);
+  });
+
+  test('the list, the create form, the microphone check, a room I host and its options', async ({ page, app, dataDir }) => {
+    test.setTimeout(240_000);
+    await onboard(page);
+    const member = (name: string) => idOf(dataDir, name);
+    // A fuller list: Lia's code review, and Max's Free talk Friday, which is full.
+    await asMember(app, member('Lia'), 'createRoom', [{ title: 'Pull request review, kindly', theme: 'code_review', level: 'B2' }]);
+    await asMember(app, member('Max'), 'createRoom', [{ title: 'Free talk Friday', theme: 'free', level: null }]);
+    const friday = roomOf(dataDir, 'Free talk Friday');
+    for (const name of ['Edu', 'Iris', 'João', 'Hugo', 'Dani']) await asMember(app, member(name), 'joinRoom', [friday]);
+
+    await go(page, '#/rooms', 'Rooms');
+    await expect(page.getByRole('list', { name: 'Live rooms' }).getByRole('listitem')).toHaveCount(3);
+    await expect(roomRow(page, 'Free talk Friday')).toContainText('Full');
+    await shootThemes(page, 'rooms');
+
+    await roomRow(page, 'Stand-up practice').getByRole('link', { name: 'Join Stand-up practice' }).click();
+    await expect(page.getByRole('heading', { name: 'Join Stand-up practice' })).toBeVisible();
+    await shootThemes(page, 'room-join', () => heardMic(page));
+    await unfreeze(page);
+    await page.getByRole('button', { name: 'Cancel' }).click();
+
+    await page.getByRole('button', { name: 'Create a room' }).click();
+    const form = page.getByRole('region', { name: 'Create a room' });
+    await form.getByLabel('Title').fill('Mock interview: backend role');
+    await form.getByRole('radio', { name: 'Interview' }).click();
+    await form.getByLabel('Suggested level').selectOption('B2');
+    await shootThemes(page, 'room-create', () => heardMic(page));
+    await unfreeze(page);
+    await form.getByRole('button', { name: 'Create', exact: true }).click();
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Mock interview: backend role' })).toBeVisible();
+    const room = roomOf(dataDir, 'Mock interview: backend role');
+    for (const name of ['Ana', 'Dani', 'Hugo']) {
+      await asMember(app, member(name), 'joinRoom', [room]);
+      await expect(personRow(page, name)).toBeVisible();
+    }
+    await asMember(app, member('Dani'), 'setRoomMuted', [room, true]);
+    await expect(personRow(page, 'Dani')).toContainText('Muted');
+    await (await options(page, 'Ana')).getByRole('button', { name: 'Make moderator' }).click();
+    await expect(personRow(page, 'Ana')).toContainText('Room moderator');
+    const card = page.getByRole('region', { name: 'Idea card' });
+    await card.getByRole('button', { name: 'Next card' }).click();
+    await expect(card).not.toContainText('Tell me about yourself');
+    const timer = page.getByRole('region', { name: 'Timer' });
+    await timer.getByRole('button', { name: 'Start a 60 s timer' }).click();
+    await expect(timer.getByText(/^\d+ s left$/)).toBeVisible();
+    // Your own fake microphone beeps: the speaking ring comes and goes, so each capture waits for it.
+    await shootThemes(page, 'room', () => ringLit(page));
+    // The card and timer are below the people in a narrow window: the same room, scrolled to them.
+    await shootThemes(page, 'room-lower', () => card.evaluate((el) => el.scrollIntoView({ block: 'start' })));
+    await toTop(page);
+
+    const hugo = await options(page, 'Hugo');
+    await expect(hugo).toBeVisible();
+    await shootThemes(page, 'room-options', () => hugo.evaluate((el) => el.scrollIntoView({ block: 'nearest' })));
+    await people(page).getByRole('button', { name: 'Options for Hugo' }).click();
+
+    await page.getByRole('button', { name: 'End room' }).click();
+    await expect(page.getByRole('group', { name: 'End the room' })).toBeVisible();
+    await shootThemes(page, 'room-end');
+  });
+
+  test('a room report, as a moderator sees it', async ({ page, app, dataDir }) => {
+    test.setTimeout(240_000);
+    await onboard(page);
+    await go(page, '#/rooms', 'Rooms');
+    await roomRow(page, 'Stand-up practice').getByRole('link', { name: 'Join Stand-up practice' }).click();
+    await page.getByRole('button', { name: 'Join room' }).click();
+    await expect(personRow(page, 'Bia')).toBeVisible();
+    await (await options(page, 'Bia')).getByRole('button', { name: 'Report' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Report Bia' });
+    await dialog.getByLabel('Harassment or bullying').check();
+    await dialog.getByRole('button', { name: 'Send report' }).click();
+    await page.getByRole('dialog', { name: 'Report sent' }).getByRole('button', { name: 'Close' }).click();
+    await page.getByRole('button', { name: 'Leave', exact: true }).click();
+    await expect(page).toHaveURL(/#\/rooms$/);
+
+    await makeModerator(app, idOf(dataDir, 'Rian'));
+    await go(page, '#/moderation', 'Moderation');
+    await page.getByRole('list', { name: 'Open reports' }).getByRole('listitem').filter({ hasText: 'Bia' }).getByRole('button').click();
+    const context = page.getByRole('region', { name: 'The room' });
+    await expect(context.getByRole('list', { name: 'Who was in the room' }).getByRole('listitem')).toHaveCount(3);
+    await context.scrollIntoViewIfNeeded();
+    await shootThemes(page, 'room-moderation');
+  });
+
+  test.describe('a call that cannot connect', () => {
+    test.use({ roomTimeoutMs: '3000' });
+
+    test('the notices above a room', async ({ page, app, dataDir }) => {
+      await onboard(page);
+      await go(page, '#/rooms', 'Rooms');
+      await roomRow(page, 'Stand-up practice').getByRole('link', { name: 'Join Stand-up practice' }).click();
+      await page.getByRole('button', { name: 'Join room' }).click();
+      await asMember(app, idOf(dataDir, 'Bia'), 'muteMember', [roomOf(dataDir, 'Stand-up practice'), idOf(dataDir, 'Rian')]);
+      await expect(page.getByText('The host muted you. You can unmute when you are ready.')).toBeVisible();
+      await expect(page.getByText('Could not connect to Bia. Your network may block calls.')).toBeVisible();
+      await expect(page.getByText('Could not connect to Caio. Your network may block calls.')).toBeVisible();
+      await shootThemes(page, 'room-notices');
+    });
   });
 });

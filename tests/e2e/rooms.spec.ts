@@ -1,46 +1,9 @@
 // Phase 2C — voice rooms against the seeded fake community (signed in as Rian) with Chromium's fake microphone.
 // Bia hosts "Stand-up practice" with Caio inside; seeded people never answer WebRTC signals, so they end up as
 // "Could not connect" after the shortened timeout. Other members act through the fake community in the main process.
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import type { ElectronApplication, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { expect, onboard, test } from './fixtures';
-
-interface FakeState {
-  profiles: Record<string, { id: string; displayName: string }>;
-  rooms: { id: string; title: string }[];
-}
-const fakeState = (dataDir: string) => JSON.parse(readFileSync(join(dataDir, 'fake-social.json'), 'utf8')) as FakeState;
-const idOf = (dataDir: string, name: string) => Object.values(fakeState(dataDir).profiles).find((p) => p.displayName === name)!.id;
-const roomOf = (dataDir: string, title: string) => fakeState(dataDir).rooms.find((r) => r.title === title)!.id;
-
-type Act = 'muteMember' | 'removeFromRoom' | 'joinRoom' | 'createRoom' | 'roomState' | 'setRoomMuted';
-/** Dev and e2e builds only: another member calls the fake community, as if from their own app. */
-const asMember = (app: ElectronApplication, userId: string, act: Act, args: unknown[]) =>
-  app.evaluate(async (_electron, [who, method, a]) => {
-    type Backend = Record<string, (...x: unknown[]) => Promise<unknown>>;
-    const fake = (globalThis as unknown as Record<string, { actAsForTest(id: string, run: (b: Backend) => Promise<unknown>): Promise<unknown> }>)['__devtalkFakeSocial']!;
-    return fake.actAsForTest(who, (b) => b[method]!(...a));
-  }, [userId, act, args] as const);
-const makeModerator = (app: ElectronApplication, userId: string) =>
-  app.evaluate((_electron, id) => {
-    const fake = (globalThis as unknown as Record<string, { addModeratorForTest(id: string): void }>)['__devtalkFakeSocial']!;
-    fake.addModeratorForTest(id);
-  }, userId);
-
-const go = (page: Page, hash: string) => page.evaluate((h) => { location.hash = h; }, hash);
-const roomRow = (page: Page, title: string) => page.getByRole('list', { name: 'Live rooms' }).getByRole('listitem').filter({ hasText: title });
-const people = (page: Page) => page.getByRole('list', { name: 'People in the room' });
-const personRow = (page: Page, name: string) => people(page).getByRole('listitem').filter({ hasText: name });
-/** The bar under the room: Mute or Unmute, Leave, and End room for the host. */
-const controls = (page: Page) => page.getByRole('group', { name: 'Room controls' });
-const muteButton = (page: Page) => controls(page).getByRole('button', { name: 'Mute', exact: true });
-const unmuteButton = (page: Page) => controls(page).getByRole('button', { name: 'Unmute', exact: true });
-/** Opens a person's options in the room. */
-const options = async (page: Page, name: string) => {
-  await people(page).getByRole('button', { name: `Options for ${name}` }).click();
-  return page.getByRole('group', { name: `Options for ${name}` });
-};
+import { asMember, controls, go, idOf, makeModerator, meterMoves, muteButton, options, personRow, roomOf, roomRow, unmuteButton } from './room-helpers';
 
 async function joinStandup(page: Page): Promise<void> {
   await go(page, '#/rooms');
@@ -66,7 +29,7 @@ test('the list, the microphone check and the room: people, card, timer, mute, a 
   await row.getByRole('link', { name: 'Join Stand-up practice' }).click();
   await expect(page.getByRole('heading', { name: 'Join Stand-up practice' })).toBeVisible();
   // Chromium's fake microphone beeps: the meter moves.
-  await expect(page.getByRole('meter', { name: 'Microphone level' })).toHaveAttribute('aria-valuenow', /^[1-9]\d*$/);
+  await meterMoves(page);
   await page.getByRole('button', { name: 'Join room' }).click();
 
   const room = roomOf(dataDir, 'Stand-up practice');
@@ -89,7 +52,8 @@ test('the list, the microphone check and the room: people, card, timer, mute, a 
   await expect(personRow(page, 'Caio')).toBeVisible();
   expect(((await asMember(app, idOf(dataDir, 'Bia'), 'roomState', [room])) as { people: unknown[] }).people).toHaveLength(3);
   // The fake microphone beeps: your speaking ring lights up.
-  await expect(personRow(page, 'Rian').getByText('Speaking', { exact: true })).toBeAttached();
+  // (Polled fast: it is lit for a moment once a second, as often as a default wait looks.)
+  await expect.poll(() => personRow(page, 'Rian').getByText('Speaking', { exact: true }).count(), { intervals: [30], timeout: 10_000 }).toBeGreaterThan(0);
 
   const card = page.getByRole('region', { name: 'Idea card' });
   await expect(card).toContainText('What did you finish yesterday?');
@@ -130,6 +94,19 @@ test('the list, the microphone check and the room: people, card, timer, mute, a 
   await expect(roomRow(page, 'Stand-up practice')).toContainText('2 / 6');
   // Outside a room Ctrl+M does nothing here.
   await expect(muteButton(page)).toHaveCount(0);
+});
+
+test('a person\'s options open above the bar, even in a small window', async ({ page }) => {
+  await onboard(page);
+  await page.setViewportSize({ width: 960, height: 520 });
+  await joinStandup(page);
+  const panel = await options(page, 'Caio');
+  await expect(panel.getByRole('button', { name: 'Report' })).toBeVisible();
+  // The bar is sticky: the options scroll into view above it instead of hiding under it.
+  await expect.poll(async () => {
+    const [box, bar] = await Promise.all([panel.boundingBox(), controls(page).boundingBox()]);
+    return box !== null && bar !== null && box.y >= 0 && box.y + box.height <= bar.y + 1;
+  }).toBe(true);
 });
 
 test('the host mutes Rian, who can unmute; then she removes him and he is back on the list', async ({ page, app, dataDir }) => {

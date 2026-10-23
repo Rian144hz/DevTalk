@@ -368,9 +368,10 @@
 .room-person-name { font-weight: 600; overflow-wrap: anywhere; }
 .room-person-you { font-weight: 400; color: var(--ink-2); }
 .room-person-meta { font-size: var(--text-sm); color: var(--ink-2); }
-.room-person-muted { display: inline-flex; color: var(--ink-2); }
+.room-person-muted { display: inline-flex; grid-column: 3; color: var(--ink-2); }
+.room-person-row > .btn { grid-column: 4; }
 .room-person audio { display: none; }
-.room-options, .room-confirm { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s3); margin: 0 var(--s2) var(--s3); padding: var(--s3) var(--s4); border: 1px solid var(--rule-strong); border-radius: var(--r-sheet); background: var(--sheet); }
+.room-options, .room-confirm { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s3); margin: 0 var(--s2) var(--s3); padding: var(--s3) var(--s4); border: 1px solid var(--rule-strong); border-radius: var(--r-sheet); background: var(--sheet); scroll-margin-bottom: calc(var(--s14) + var(--s8)); }
 .room-options .block-confirm { padding: 0; border: 0; background: transparent; }
 .room-confirm p, .room-said { color: var(--ink-2); max-width: var(--measure); }
 .room-said { font-size: var(--text-sm); }
