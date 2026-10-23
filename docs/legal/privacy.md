@@ -25,6 +25,7 @@ Version 2026-10-20. This is a plain-language draft for Brazil's data protection 
 - **Corrections count**: how many corrections you gave each day, for your practice graph.
 - **Voice rooms**: the rooms you open (title, theme, suggested level, who created it, who hosts it, when it opened and ended) and each time you are in a room: when you joined and left, your room role, whether you were removed, whether your microphone is muted and whether the host or a room moderator asked you to mute. We keep this for reports, for badges and for your data export.
 - **Connection messages** that the computers in a room send each other to start a call. They contain network addresses (IP addresses). Only the person a message is addressed to can read it.
+- **Limit counts**: to limit abuse, the community server also keeps the times of your room actions for about a minute, and how many connection messages you sent in each hour for about a day, without what they contained.
 - **Blocks** you make and **reports** you send.
 - **Moderation notices** sent to you, and moderation actions about your account.
 
