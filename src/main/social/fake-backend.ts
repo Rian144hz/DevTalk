@@ -72,6 +72,10 @@ interface State {
   roomSeen: Record<number, string>;
   /** Only who sent what, when: a signal is delivered live and not kept (the limit counts these). */
   roomSignals: { id: number; roomId: string; sender: string; recipient: string; createdAt: string }[];
+  /** Room actions in the last minute (room_actions in the database), for the limit of 30 a minute. */
+  roomActions: { userId: string; at: string }[];
+  /** Signals sent per person per hour, UTC (room_signal_counts), for the limit of 5 000 a day. */
+  roomSignalCounts: { sender: string; hour: string; n: number }[];
 }
 
 interface StoredRoom {
@@ -188,11 +192,17 @@ const emptyState = (): State => ({
   roomSessions: [],
   roomSeen: {},
   roomSignals: [],
+  roomActions: [],
+  roomSignalCounts: [],
 });
 
 const LEVEL_ORDER = ['A2', 'B1', 'B2', 'C1', 'C2'];
 /** A seat in a room is live while its person was heard from in the last 90 seconds. */
 const SEAT_MS = 90_000;
+const HOUR_MS = 3_600_000;
+const ROOM_ACTIONS_PER_MINUTE = 30;
+const ROOM_SIGNALS_PER_MINUTE = 600;
+const ROOM_SIGNALS_PER_DAY = 5000;
 const ROOM_SIGNAL_KINDS: readonly string[] = ['offer', 'answer', 'candidate', 'bye'];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const FOUNDING_CUTOFF = Date.parse('2027-01-01T03:00:00Z'); // 2027-01-01 00:00 in São Paulo
@@ -601,6 +611,38 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
     for (const s of sessionsIn(roomId)) if (s.userId === userId && s.leftAt === null && s.role !== role) s.role = role;
   };
   const endOf = (s: StoredRoomSession) => Date.parse(s.leftAt ?? seenAt(s));
+  const roomEnded = () => new SocialError('unknown', 'room has ended');
+  /**
+   * Mirrors count_room_action(): at most 30 room actions per person in any minute. Called once the action is allowed
+   * and will change something, before it does (the database undoes the count when the action fails).
+   */
+  const countRoomAction = (userId: string) => {
+    state.roomActions = state.roomActions.filter((a) => Date.parse(a.at) > now() - 60_000);
+    if (state.roomActions.filter((a) => a.userId === userId).length >= ROOM_ACTIONS_PER_MINUTE) {
+      throw new SocialError('rate_limited', 'room action limit reached');
+    }
+    state.roomActions.push({ userId, at: iso() });
+  };
+  /**
+   * Mirrors limit_room_signals(): 600 a minute (counted from the signals) and 5 000 a day, counted per hour (UTC) apart
+   * from the signals, so their clean-up does not reset it. An hour counts while any of it is in the last 24 hours.
+   */
+  const checkSignalLimits = (sender: string) => {
+    if (state.roomSignals.filter((g) => g.sender === sender && Date.parse(g.createdAt) > now() - 60_000).length >= ROOM_SIGNALS_PER_MINUTE) {
+      throw new SocialError('rate_limited', 'signal limit reached');
+    }
+    const dayStart = Math.floor((now() - DAY_MS) / HOUR_MS) * HOUR_MS;
+    state.roomSignalCounts = state.roomSignalCounts.filter((c) => Date.parse(c.hour) >= dayStart);
+    if (state.roomSignalCounts.filter((c) => c.sender === sender).reduce((sum, c) => sum + c.n, 0) >= ROOM_SIGNALS_PER_DAY) {
+      throw new SocialError('rate_limited', 'signal limit reached');
+    }
+  };
+  const countSignal = (sender: string) => {
+    const hour = iso(Math.floor(now() / HOUR_MS) * HOUR_MS);
+    const bucket = state.roomSignalCounts.find((c) => c.sender === sender && c.hour === hour);
+    if (bucket) bucket.n += 1;
+    else state.roomSignalCounts.push({ sender, hour, n: 1 });
+  };
 
   const backend: FakeSocialBackend = {
     configured: true,
@@ -895,6 +937,8 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       state.rooms = state.rooms.filter((r) => !goneRooms.has(r.id));
       state.roomSessions = state.roomSessions.filter((s) => !goneRooms.has(s.roomId));
       state.roomSignals = state.roomSignals.filter((g) => !goneRooms.has(g.roomId) && g.sender !== userId && g.recipient !== userId);
+      state.roomActions = state.roomActions.filter((a) => a.userId !== userId);
+      state.roomSignalCounts = state.roomSignalCounts.filter((c) => c.sender !== userId);
       for (const r of state.rooms) if (r.host === userId) r.host = null;
       for (const roomId of new Set(state.roomSessions.filter((s) => s.userId === userId).map((s) => s.roomId))) {
         touch(roomId, () => {
@@ -1368,11 +1412,13 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       const viewer = me().userId;
       if (!isViewerMember(viewer) || !(viewer in state.profiles)) throw notAllowed();
       const r = roomById(roomId);
-      if (!r || r.endedAt !== null) throw notAllowed();
+      // Mirrors join_room(): ended, gone or with nobody live says 'room has ended'; the other refusals 'not allowed'.
+      if (!r || r.endedAt !== null) throw roomEnded();
       if (isLiveIn(roomId, viewer)) return;
       if (sessionsIn(roomId).some((s) => s.userId === viewer && s.removed)) throw notAllowed();
       const seats = liveIn(roomId);
-      if (seats.length === 0 || seats.some((s) => blockedBetween(viewer, s.userId))) throw notAllowed();
+      if (seats.length === 0) throw roomEnded();
+      if (seats.some((s) => blockedBetween(viewer, s.userId))) throw notAllowed();
       if (seats.length >= ROOM_MAX) throw new SocialError('unknown', 'room is full');
       closeOthers(viewer, roomId);
       touch(roomId, () => {
@@ -1402,8 +1448,11 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
         settle(roomId);
         return mine.length > 0;
       });
-      // Signals older than 5 minutes go, in every room.
+      // Signals older than 5 minutes go, in every room, and so do the counts nobody needs any more.
       state.roomSignals = state.roomSignals.filter((g) => Date.parse(g.createdAt) >= now() - 5 * 60_000);
+      state.roomActions = state.roomActions.filter((a) => Date.parse(a.at) > now() - 60_000);
+      const dayStart = Math.floor((now() - DAY_MS) / HOUR_MS) * HOUR_MS;
+      state.roomSignalCounts = state.roomSignalCounts.filter((c) => Date.parse(c.hour) >= dayStart);
       save();
       return still;
     },
@@ -1447,9 +1496,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
     async sendRoomSignal(roomId, to, signal, payload) {
       failIf('sendRoomSignal');
       const viewer = me().userId;
-      if (state.roomSignals.filter((g) => g.sender === viewer && Date.parse(g.createdAt) > now() - 60_000).length >= 600) {
-        throw new SocialError('rate_limited', 'signal limit reached');
-      }
+      checkSignalLimits(viewer);
       // Mirrors can_signal(): both live in the room, not the same person, no block between them.
       if (viewer === to || !viewerIn(roomId, viewer) || !isLiveIn(roomId, to) || blockedBetween(viewer, to)) throw rlsDenied();
       if (!ROOM_SIGNAL_KINDS.includes(signal)) throw new SocialError('unknown', 'new row for relation "room_signals" violates check constraint "room_signals_kind_check"');
@@ -1457,6 +1504,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
         throw new SocialError('unknown', 'new row for relation "room_signals" violates check constraint "room_signals_payload_check"');
       }
       state.roomSignals.push({ id: nextId(), roomId, sender: viewer, recipient: to, createdAt: iso() });
+      countSignal(viewer);
       // Only the recipient reads a signal.
       for (const l of [...roomListeners]) {
         if (l.roomId === roomId && l.viewer === to && isViewerMember(to)) l.onEvent({ kind: 'signal', from: viewer, signal, payload });
@@ -1467,6 +1515,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
     async makeRoomModerator(roomId, userId) {
       failIf('makeRoomModerator');
       hostActsOn(roomId, me().userId, userId);
+      countRoomAction(me().userId);
       touch(roomId, () => setRole(roomId, userId, 'moderator'));
       save();
     },
@@ -1474,6 +1523,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
     async removeRoomModerator(roomId, userId) {
       failIf('removeRoomModerator');
       hostActsOn(roomId, me().userId, userId);
+      countRoomAction(me().userId);
       touch(roomId, () => setRole(roomId, userId, 'member'));
       save();
     },
@@ -1481,6 +1531,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
     async passHost(roomId, userId) {
       failIf('passHost');
       const r = hostActsOn(roomId, me().userId, userId);
+      countRoomAction(me().userId);
       touch(roomId, () => {
         r.host = userId;
       });
@@ -1495,6 +1546,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       if (!host || !isViewerMember(viewer) || !myRole || userId === viewer || userId === host || !(viewer === host || myRole === 'moderator') || !isLiveIn(roomId, userId)) {
         throw notAllowed();
       }
+      countRoomAction(viewer);
       touch(roomId, () => {
         for (const s of sessionsIn(roomId)) if (s.userId === userId && s.leftAt === null) s.muteRequestedAt = iso();
       });
@@ -1504,8 +1556,10 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
     async setRoomMuted(roomId, muted) {
       failIf('setRoomMuted');
       const viewer = me().userId;
-      // Mirrors set_room_muted(): only your own live session; the same state again changes nothing and tells nobody.
+      // Mirrors set_room_muted(): only your own live session; the same state again changes nothing, tells nobody and is
+      // not a room action.
       if (!viewerIn(roomId, viewer)) throw notAllowed();
+      if (sessionsIn(roomId).some((s) => s.userId === viewer && s.leftAt === null && s.muted !== muted)) countRoomAction(viewer);
       touch(roomId, () => {
         for (const s of sessionsIn(roomId)) if (s.userId === viewer && s.leftAt === null && s.muted !== muted) s.muted = muted;
       });
@@ -1521,6 +1575,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       if (!host || !isViewerMember(viewer) || !myRole || !theirRole || userId === viewer || userId === host || !(viewer === host || (myRole === 'moderator' && theirRole === 'member'))) {
         throw notAllowed();
       }
+      countRoomAction(viewer);
       touch(roomId, () => {
         for (const s of sessionsIn(roomId)) {
           if (s.userId === userId && s.leftAt === null) {
@@ -1553,6 +1608,8 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       if (!viewerIn(roomId, viewer)) throw notAllowed();
       const r = roomById(roomId);
       if (seconds !== null && seconds !== 60 && seconds !== 90) throw new SocialError('unknown', 'timer is not valid');
+      // Mirrors start_timer() and stop_timer(): a room action once the room changes (stopping no timer is free).
+      if (r && r.endedAt === null && (seconds !== null || r.timerStartedAt !== null)) countRoomAction(viewer);
       touch(roomId, () => {
         if (!r || r.endedAt !== null) return;
         if (seconds === null) {
@@ -1571,6 +1628,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       const viewer = me().userId;
       if (!viewerIn(roomId, viewer)) throw notAllowed();
       const r = roomById(roomId);
+      if (r && r.endedAt === null) countRoomAction(viewer);
       touch(roomId, () => {
         if (r && r.endedAt === null) r.card += 1;
       });

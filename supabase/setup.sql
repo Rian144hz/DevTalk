@@ -1558,8 +1558,8 @@ $$;
 
 -- DevTalk 0009 — voice rooms: rooms opened now by any member, up to 6 live people, room roles, a shared timer and
 -- idea card, connection signals between live members, the room list and state, report context for moderators,
--- "Export my data", and the Room host and Active speaker badges. Voice never reaches the database: only who was in
--- which room and when, and the short-lived signals that let two computers connect.
+-- "Export my data", the limits on room actions and signals, and the Room host and Active speaker badges. Voice never
+-- reaches the database: only who was in which room and when, and the short-lived signals that let two computers connect.
 -- Paste this file alone in the SQL Editor on a project that already ran 0001–0008.
 
 -- A room. The host can change; the room ends when nobody is live in it. The host is null only when the host's
@@ -1627,6 +1627,29 @@ create index room_signals_sender on public.room_signals (sender, created_at);
 create index room_signals_recipient on public.room_signals (recipient);
 create index room_signals_created on public.room_signals (created_at);
 
+-- Room actions the others see at once (the microphone state, the card, the timer, roles, mute requests, removals):
+-- at most 30 per person in any minute, so one person cannot flood a room's live updates. For the functions only
+-- (row-level security on, no grants, no policies). A person's rows older than a minute go when they act again, and
+-- heartbeats sweep the rest.
+create table public.room_actions (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  at timestamptz not null default now()
+);
+create index room_actions_user on public.room_actions (user_id, at);
+create index room_actions_at on public.room_actions (at);
+
+-- How many signals each person sent in each hour (UTC), for the limit of 5 000 a day. Only counts, never what was
+-- sent. Kept apart from the signals, which go after 5 minutes or when the room ends, so neither resets the count.
+-- For the functions only (row-level security on, no grants, no policies); hours older than a day go.
+create table public.room_signal_counts (
+  sender uuid not null references auth.users (id) on delete cascade,
+  hour timestamptz not null,
+  n int not null check (n > 0),
+  primary key (sender, hour)
+);
+create index room_signal_counts_hour on public.room_signal_counts (hour);
+
 -- Internal helpers. They take any ids or change any room, so nobody calls them through the API.
 
 -- When session `entry` was last heard from.
@@ -1667,7 +1690,7 @@ declare
   current_host uuid;
   heir uuid;
 begin
-  select r.host into current_host from public.rooms r where r.id = room and r.ended_at is null for update;
+  select r.host into current_host from public.rooms r where r.id = room and r.ended_at is null for no key update;
   if not found then
     return;
   end if;
@@ -1693,7 +1716,7 @@ $$;
 create or replace function public.room_close_session(room uuid, member uuid) returns void
 language plpgsql volatile security definer set search_path = public as $$
 begin
-  perform 1 from public.rooms r where r.id = room for update;
+  perform 1 from public.rooms r where r.id = room for no key update;
   update public.room_sessions s set left_at = public.room_left_at(s.id)
     where s.room_id = room and s.user_id = member and s.left_at is null;
   perform public.room_settle(room);
@@ -1715,9 +1738,24 @@ begin
 end
 $$;
 
+-- Counts one room action of the caller; the 31st in a minute fails. Each action calls it once it is allowed, so a
+-- refused call counts nothing (its error undoes the count).
+create or replace function public.count_room_action() returns void
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me uuid := auth.uid();
+begin
+  delete from public.room_actions a where a.user_id = me and a.at <= now() - interval '1 minute';
+  if (select count(*) from public.room_actions a where a.user_id = me) >= 30 then
+    raise exception 'room action limit reached' using hint = 'Wait a moment.';
+  end if;
+  insert into public.room_actions (user_id) values (me);
+end
+$$;
+
 revoke execute on function public.room_seen(bigint), public.room_session_live(bigint), public.room_left_at(bigint),
   public.room_is_live(uuid, uuid), public.room_settle(uuid), public.room_close_session(uuid, uuid),
-  public.room_close_others(uuid, uuid)
+  public.room_close_others(uuid, uuid), public.count_room_action()
   from public, anon, authenticated;
 
 -- Caller-only helpers for the policies: each answers about the signed-in person.
@@ -1744,9 +1782,24 @@ language sql stable security definer set search_path = public as $$
     and not public.is_blocked_between(auth.uid(), recipient)
 $$;
 
-revoke execute on function public.viewer_in_room(uuid), public.viewer_was_in_room(uuid), public.can_signal(uuid, uuid)
+-- The caller may read the sessions `member` had in `room`: their own, or, while the caller is live there, those of
+-- anyone with no block with the caller either way (past sessions included). It answers only what a select shows:
+-- about someone who was never in the room it says false, blocked or not.
+create or replace function public.can_see_room_session(room uuid, member uuid) returns boolean
+language sql stable security definer set search_path = public as $$
+  select public.viewer_is_member() and (
+    member = auth.uid()
+    or (public.viewer_in_room(room)
+      and exists (select 1 from public.room_sessions s where s.room_id = room and s.user_id = member)
+      and not public.is_blocked_between(auth.uid(), member))
+  )
+$$;
+
+revoke execute on function public.viewer_in_room(uuid), public.viewer_was_in_room(uuid), public.can_signal(uuid, uuid),
+  public.can_see_room_session(uuid, uuid)
   from public, anon;
-grant execute on function public.viewer_in_room(uuid), public.viewer_was_in_room(uuid), public.can_signal(uuid, uuid)
+grant execute on function public.viewer_in_room(uuid), public.viewer_was_in_room(uuid), public.can_signal(uuid, uuid),
+  public.can_see_room_session(uuid, uuid)
   to authenticated;
 
 -- Every session starts as heard from when it opened.
@@ -1772,13 +1825,24 @@ $$;
 create trigger room_sessions_settle after delete on public.room_sessions
   for each row execute function public.settle_room_after_session();
 
--- At most 600 signals per person in any minute.
+-- At most 600 signals per person in any minute, and 5 000 in any 24 hours. The day is counted per hour in
+-- room_signal_counts (an hour counts while any of it is in the last 24 hours), so deleting signals does not reset it.
+-- A signal refused later (by its policy or a check) undoes its count with it.
 create or replace function public.limit_room_signals() returns trigger
 language plpgsql security definer set search_path = public as $$
+declare
+  bucket timestamptz := date_trunc('hour', new.created_at, 'UTC');
+  day_start timestamptz := date_trunc('hour', now() - interval '24 hours', 'UTC');
 begin
   if (select count(*) from public.room_signals g
       where g.sender = new.sender and g.created_at > now() - interval '1 minute') >= 600 then
     raise exception 'signal limit reached' using hint = 'Wait a minute and try again.';
+  end if;
+  insert into public.room_signal_counts as c (sender, hour, n) values (new.sender, bucket, 1)
+    on conflict (sender, hour) do update set n = c.n + 1;
+  delete from public.room_signal_counts c where c.sender = new.sender and c.hour < day_start;
+  if (select sum(c.n) from public.room_signal_counts c where c.sender = new.sender and c.hour >= day_start) > 5000 then
+    raise exception 'signal limit reached' using hint = 'Try again tomorrow.';
   end if;
   return new;
 end
@@ -1843,6 +1907,7 @@ $$;
 
 -- Enter a room: a member with a profile, a room with someone live in it and a free seat, never removed from it,
 -- and no block with anyone live inside. Leaves the room you were in. Joining the room you are live in does nothing.
+-- A room that has ended (or is gone, or has nobody live) says 'room has ended'; the other refusals say 'not allowed'.
 create or replace function public.join_room(room uuid) returns void
 language plpgsql volatile security definer set search_path = public as $$
 declare
@@ -1853,14 +1918,16 @@ begin
     raise exception 'not allowed' using errcode = '42501', hint = 'You cannot join this room.';
   end if;
   -- Lock this room and the one you are leaving, always in the same order, so joins wait for each other and the
-  -- seats are counted one join at a time.
+  -- seats are counted one join at a time. Room rows are locked for no key update everywhere: their key never
+  -- changes, so the session and signal inserts that reference a room do not wait on these locks.
   perform 1 from public.rooms r
     where r.id = room
       or r.id in (select s.room_id from public.room_sessions s where s.user_id = me and s.left_at is null)
     order by r.id
-    for update;
+    for no key update;
+  -- Ended, or gone with its creator's account: the same answer either way.
   if not exists (select 1 from public.rooms r where r.id = room and r.ended_at is null) then
-    raise exception 'not allowed' using errcode = '42501', hint = 'This room has ended.';
+    raise exception 'room has ended' using hint = 'This room has ended.';
   end if;
   if public.room_is_live(room, me) then
     return;
@@ -1870,8 +1937,9 @@ begin
   end if;
   select count(*) into seats from public.room_sessions s
     where s.room_id = room and s.left_at is null and public.room_session_live(s.id);
+  -- Nobody is live in it any more: it has ended for whoever comes (the next heartbeat or leave records the end).
   if seats = 0 then
-    raise exception 'not allowed' using errcode = '42501', hint = 'This room has ended.';
+    raise exception 'room has ended' using hint = 'This room has ended.';
   end if;
   if exists (
     select 1 from public.room_sessions s
@@ -1906,7 +1974,8 @@ $$;
 -- "I am still here", every 30 seconds. It writes only to room_presence, so it sends nothing through Realtime unless
 -- something changes for people. False when you are no longer live in the room (silent too long, removed, left, the
 -- room ended, or you are no longer a member). Also settles the room and deletes every signal older than 5 minutes,
--- in any room (also rooms nobody sends heartbeats to any more), skipping rows another heartbeat is deleting.
+-- in any room (also rooms nobody sends heartbeats to any more), and the room-action and signal counts nobody needs
+-- any more, skipping rows another heartbeat is deleting.
 create or replace function public.room_heartbeat(room uuid) returns boolean
 language plpgsql volatile security definer set search_path = public as $$
 declare
@@ -1919,7 +1988,7 @@ begin
   if not exists (select 1 from public.room_sessions s where s.room_id = room and s.user_id = me) then
     return false;
   end if;
-  perform 1 from public.rooms r where r.id = room for update;
+  perform 1 from public.rooms r where r.id = room for no key update;
   update public.room_presence p set last_seen = now()
     where p.session_id in (
       select s.id from public.room_sessions s
@@ -1934,20 +2003,29 @@ begin
   delete from public.room_signals g where g.id in (
     select o.id from public.room_signals o where o.created_at < now() - interval '5 minutes' for update skip locked
   );
+  delete from public.room_actions a where a.id in (
+    select o.id from public.room_actions o where o.at <= now() - interval '1 minute' for update skip locked
+  );
+  delete from public.room_signal_counts c where (c.sender, c.hour) in (
+    select o.sender, o.hour from public.room_signal_counts o
+    where o.hour < date_trunc('hour', now() - interval '24 hours', 'UTC') for update skip locked
+  );
   return still;
 end
 $$;
 
 -- Room roles. Only the host, live in the room, gives or takes Room moderator, and passes the host role, to someone
--- else live in it.
+-- else live in it. Each of these, and every other action the room sees at once (mute requests, removals, the
+-- microphone state, the timer, the card), counts towards the 30 a minute (count_room_action).
 create or replace function public.make_room_moderator(room uuid, member uuid) returns void
 language plpgsql volatile security definer set search_path = public as $$
 begin
-  perform 1 from public.rooms r where r.id = room and r.ended_at is null and r.host = auth.uid() for update;
+  perform 1 from public.rooms r where r.id = room and r.ended_at is null and r.host = auth.uid() for no key update;
   if not found or not public.viewer_in_room(room) or member is null or member = auth.uid()
     or not public.room_is_live(room, member) then
     raise exception 'not allowed' using errcode = '42501';
   end if;
+  perform public.count_room_action();
   update public.room_sessions s set role = 'moderator'
     where s.room_id = room and s.user_id = member and s.left_at is null and s.role <> 'moderator';
 end
@@ -1956,11 +2034,12 @@ $$;
 create or replace function public.remove_room_moderator(room uuid, member uuid) returns void
 language plpgsql volatile security definer set search_path = public as $$
 begin
-  perform 1 from public.rooms r where r.id = room and r.ended_at is null and r.host = auth.uid() for update;
+  perform 1 from public.rooms r where r.id = room and r.ended_at is null and r.host = auth.uid() for no key update;
   if not found or not public.viewer_in_room(room) or member is null or member = auth.uid()
     or not public.room_is_live(room, member) then
     raise exception 'not allowed' using errcode = '42501';
   end if;
+  perform public.count_room_action();
   update public.room_sessions s set role = 'member'
     where s.room_id = room and s.user_id = member and s.left_at is null and s.role <> 'member';
 end
@@ -1969,11 +2048,12 @@ $$;
 create or replace function public.pass_host(room uuid, member uuid) returns void
 language plpgsql volatile security definer set search_path = public as $$
 begin
-  perform 1 from public.rooms r where r.id = room and r.ended_at is null and r.host = auth.uid() for update;
+  perform 1 from public.rooms r where r.id = room and r.ended_at is null and r.host = auth.uid() for no key update;
   if not found or not public.viewer_in_room(room) or member is null or member = auth.uid()
     or not public.room_is_live(room, member) then
     raise exception 'not allowed' using errcode = '42501';
   end if;
+  perform public.count_room_action();
   update public.rooms r set host = member where r.id = room;
 end
 $$;
@@ -1986,20 +2066,21 @@ declare
   host_id uuid;
   my_role text;
 begin
-  select r.host into host_id from public.rooms r where r.id = room and r.ended_at is null for update;
+  select r.host into host_id from public.rooms r where r.id = room and r.ended_at is null for no key update;
   select s.role into my_role from public.room_sessions s
     where s.room_id = room and s.user_id = me and s.left_at is null and public.room_session_live(s.id);
   if host_id is null or not public.viewer_is_member() or my_role is null or member is null or member = me
     or member = host_id or not (me = host_id or my_role = 'moderator') or not public.room_is_live(room, member) then
     raise exception 'not allowed' using errcode = '42501';
   end if;
+  perform public.count_room_action();
   update public.room_sessions s set mute_requested_at = now()
     where s.room_id = room and s.user_id = member and s.left_at is null;
 end
 $$;
 
 -- Your own microphone went off or on, so the others can show it. Only your own live session; setting the state it
--- already has changes no row, so Realtime sends nothing.
+-- already has changes no row, so Realtime sends nothing and it does not count as a room action.
 create or replace function public.set_room_muted(room uuid, muted boolean) returns void
 language plpgsql volatile security definer set search_path = public as $$
 begin
@@ -2011,6 +2092,9 @@ begin
   end if;
   update public.room_sessions s set muted = set_room_muted.muted
     where s.room_id = room and s.user_id = auth.uid() and s.left_at is null and s.muted is distinct from set_room_muted.muted;
+  if found then
+    perform public.count_room_action();
+  end if;
 end
 $$;
 
@@ -2023,7 +2107,7 @@ declare
   my_role text;
   their_role text;
 begin
-  select r.host into host_id from public.rooms r where r.id = room and r.ended_at is null for update;
+  select r.host into host_id from public.rooms r where r.id = room and r.ended_at is null for no key update;
   select s.role into my_role from public.room_sessions s
     where s.room_id = room and s.user_id = me and s.left_at is null and public.room_session_live(s.id);
   select s.role into their_role from public.room_sessions s
@@ -2032,6 +2116,7 @@ begin
     or member = host_id or not (me = host_id or (my_role = 'moderator' and their_role = 'member')) then
     raise exception 'not allowed' using errcode = '42501';
   end if;
+  perform public.count_room_action();
   update public.room_sessions s set removed = true, left_at = public.room_left_at(s.id)
     where s.room_id = room and s.user_id = member and s.left_at is null;
 end
@@ -2041,7 +2126,7 @@ $$;
 create or replace function public.end_room(room uuid) returns void
 language plpgsql volatile security definer set search_path = public as $$
 begin
-  perform 1 from public.rooms r where r.id = room and r.ended_at is null and r.host = auth.uid() for update;
+  perform 1 from public.rooms r where r.id = room and r.ended_at is null and r.host = auth.uid() for no key update;
   if not found or not public.viewer_in_room(room) then
     raise exception 'not allowed' using errcode = '42501';
   end if;
@@ -2052,7 +2137,8 @@ begin
 end
 $$;
 
--- The shared speaking timer (60 or 90 seconds) and idea card: anyone live in the room.
+-- The shared speaking timer (60 or 90 seconds) and idea card: anyone live in the room. Each counts as a room action
+-- once the room row changed (stopping a timer that is not running changes nothing and is free).
 create or replace function public.start_timer(room uuid, seconds int) returns void
 language plpgsql volatile security definer set search_path = public as $$
 begin
@@ -2063,6 +2149,9 @@ begin
     raise exception 'timer is not valid' using errcode = '22023', hint = 'Use 60 or 90 seconds.';
   end if;
   update public.rooms r set timer_started_at = now(), timer_seconds = seconds where r.id = room and r.ended_at is null;
+  if found then
+    perform public.count_room_action();
+  end if;
 end
 $$;
 
@@ -2074,6 +2163,9 @@ begin
   end if;
   update public.rooms r set timer_started_at = null, timer_seconds = null
     where r.id = room and r.ended_at is null and r.timer_started_at is not null;
+  if found then
+    perform public.count_room_action();
+  end if;
 end
 $$;
 
@@ -2084,6 +2176,9 @@ begin
     raise exception 'not allowed' using errcode = '42501';
   end if;
   update public.rooms r set card = r.card + 1 where r.id = room and r.ended_at is null;
+  if found then
+    perform public.count_room_action();
+  end if;
 end
 $$;
 
@@ -2320,13 +2415,16 @@ revoke execute on function public.profile_badges(uuid) from public, anon;
 grant execute on function public.profile_badges(uuid) to authenticated;
 
 -- Grants and policies. Rooms and sessions change only through the functions above; signals are inserted directly;
--- presence is for the functions only (row-level security on, no grants, no policies).
+-- presence and the counts for the limits are for the functions only (row-level security on, no grants, no policies).
 alter table public.rooms enable row level security;
 alter table public.room_sessions enable row level security;
 alter table public.room_presence enable row level security;
 alter table public.room_signals enable row level security;
+alter table public.room_actions enable row level security;
+alter table public.room_signal_counts enable row level security;
 
-revoke all on public.rooms, public.room_sessions, public.room_presence, public.room_signals from anon, authenticated;
+revoke all on public.rooms, public.room_sessions, public.room_presence, public.room_signals, public.room_actions,
+  public.room_signal_counts from anon, authenticated;
 grant select on public.rooms, public.room_sessions, public.room_signals to authenticated;
 grant insert (room_id, sender, recipient, kind, payload) on public.room_signals to authenticated;
 
@@ -2334,16 +2432,19 @@ grant insert (room_id, sender, recipient, kind, payload) on public.room_signals 
 create policy rooms_select on public.rooms for select to authenticated
   using (public.viewer_was_in_room(id));
 
--- Your own sessions, and every session of the room you are live in (so a removal or a mute reaches the person).
+-- Your own sessions, and the sessions of the room you are live in (so a removal or a mute reaches the person), except
+-- those of anyone blocked with you either way, past ones included.
 create policy room_sessions_select on public.room_sessions for select to authenticated
-  using ((select public.viewer_is_member()) and (user_id = (select auth.uid()) or public.viewer_in_room(room_id)));
+  using ((select public.viewer_is_member())
+    and (user_id = (select auth.uid()) or public.can_see_room_session(room_id, user_id)));
 
 create policy room_signals_select on public.room_signals for select to authenticated
   using (recipient = (select auth.uid()) and (select public.viewer_is_member()));
 create policy room_signals_insert on public.room_signals for insert to authenticated
   with check (sender = (select auth.uid()) and public.can_signal(room_id, recipient));
 
--- Live updates for the app (Supabase Realtime applies the policies above to every event). room_presence stays out.
+-- Live updates for the app (Supabase Realtime applies the policies above to every event). room_presence and the
+-- counts stay out.
 do $$
 begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then

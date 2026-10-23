@@ -277,14 +277,18 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
       return null;
     }),
     'rooms:list': handle('rooms:list', () => backend.liveRooms()),
+    // The bridge follows the room once the call answers, unless the seat was given up meanwhile (the window reloaded
+    // or closed, or the person signed out): then it leaves the room instead.
     'rooms:create': handle('rooms:create', async ({ title, theme, level }) => {
-      const roomId = await backend.createRoom({ title, theme, level });
-      deps.roomLive?.enter(roomId);
-      return roomId;
+      const create = () => backend.createRoom({ title, theme, level });
+      return deps.roomLive ? deps.roomLive.entering(create) : create();
     }),
     'rooms:join': handle('rooms:join', async ({ roomId }) => {
-      await backend.joinRoom(roomId);
-      deps.roomLive?.enter(roomId);
+      const join = async () => {
+        await backend.joinRoom(roomId);
+        return roomId;
+      };
+      await (deps.roomLive ? deps.roomLive.entering(join) : join());
       return null;
     }),
     'rooms:leave': handle('rooms:leave', async ({ roomId }) => {

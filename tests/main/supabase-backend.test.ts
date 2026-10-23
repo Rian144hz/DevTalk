@@ -278,13 +278,14 @@ describe('mapSupabaseError', () => {
   test('the report limit is rate_limited', () => {
     expect(mapSupabaseError({ code: 'P0001', message: 'report limit reached' }, 400).kind).toBe('rate_limited');
   });
-  test('the room and signal limits are rate_limited', () => {
-    for (const message of ['room limit reached', 'signal limit reached']) {
-      expect(mapSupabaseError({ code: 'P0001', message }, 400).kind).toBe('rate_limited');
+  test('the room, room action and signal limits are rate_limited', () => {
+    for (const message of ['room limit reached', 'room action limit reached', 'signal limit reached']) {
+      expect(mapSupabaseError({ code: 'P0001', message }, 400)).toMatchObject({ kind: 'rate_limited', message });
     }
   });
   test('other room errors keep their message for the window to explain', () => {
     expect(mapSupabaseError({ code: 'P0001', message: 'room is full' }, 400)).toMatchObject({ kind: 'unknown', message: 'room is full' });
+    expect(mapSupabaseError({ code: 'P0001', message: 'room has ended' }, 400)).toMatchObject({ kind: 'unknown', message: 'room has ended' });
     expect(mapSupabaseError({ code: '22023', message: 'timer is not valid' }, 400)).toMatchObject({ kind: 'unknown', message: 'timer is not valid' });
     expect(mapSupabaseError({ code: '42501', message: 'not allowed' }, 403)).toMatchObject({ kind: 'forbidden', message: 'not allowed' });
   });

@@ -474,6 +474,11 @@ describe('room channels', () => {
       exited: () => exited,
       live: {
         enter: (id: string) => void entered.push(id),
+        entering: async (call: () => Promise<string>) => {
+          const id = await call();
+          entered.push(id);
+          return id;
+        },
         exit: async () => void exited++,
         current: () => current,
         leaving: () => false,
@@ -503,8 +508,47 @@ describe('room channels', () => {
     expect(await ok(h['rooms:state']({ roomId: mine }))).toMatchObject({ title: 'Code review night', hostId: ids['Rian'], me: { live: true, role: 'host' } });
     await ok(h['rooms:join']({ roomId: biaRoom }));
     expect(entered).toEqual([mine, biaRoom]);
-    expect(kindOf(await h['rooms:join']({ roomId: 'no-such-room' }))).toBe('forbidden');
+    expect(await h['rooms:join']({ roomId: 'no-such-room' })).toEqual({ ok: false, error: { kind: 'validation', message: 'This room has ended.' } });
     expect(entered).toHaveLength(2);
+  });
+
+  test('signing out while a create or join is on its way: the room is left when the call answers, not followed', async () => {
+    const backend = createFakeSocialBackend({ seed: 'people' });
+    const live = createRoomLive({ backend, emit: () => {} });
+    const { h } = setup({}, { backend, roomLive: live });
+    const biaRoom = (await ok(h['rooms:list']({}))).find((r) => r.hostName === 'Bia')!.id;
+    // The server is slow to answer the join; the window is closed (or reloaded) meanwhile.
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => void (release = resolve));
+    const join = backend.joinRoom.bind(backend);
+    vi.spyOn(backend, 'joinRoom').mockImplementation(async (id) => {
+      await gate;
+      return join(id);
+    });
+    const joining = h['rooms:join']({ roomId: biaRoom });
+    const exited = live.exit();
+    release();
+    await joining;
+    await exited;
+    expect(live.current()).toBeNull();
+    expect((await backend.roomState(biaRoom))?.me.live).toBe(false);
+
+    // The same for a create on its way when the person signs out.
+    const create = backend.createRoom.bind(backend);
+    let open!: () => void;
+    const slow = new Promise<void>((resolve) => void (open = resolve));
+    vi.spyOn(backend, 'createRoom').mockImplementation(async (draft) => {
+      await slow;
+      return create(draft);
+    });
+    const creating = h['rooms:create']({ title: 'Late night talk', theme: 'free', level: null });
+    const signingOut = h['social:signOut']({});
+    open();
+    const mine = await ok(creating);
+    await ok(signingOut);
+    expect(live.current()).toBeNull();
+    const rooms = await backend.actAsForTest((await backend.peopleForTest()).find((p) => p.displayName === 'Bia')!.id, (x) => x.liveRooms());
+    expect((rooms as { id: string }[]).map((r) => r.id)).not.toContain(mine);
   });
 
   test('a refused create or join (offline, say) does not make the bridge follow', async () => {
@@ -683,7 +727,11 @@ describe('room channels', () => {
     expect(toAppError(new SocialError('rate_limited', 'signal limit reached'))).toEqual({
       kind: 'rate_limited', message: 'Too many connection messages. Wait a moment.',
     });
+    expect(toAppError(new SocialError('rate_limited', 'room action limit reached'))).toEqual({
+      kind: 'rate_limited', message: 'Too many room actions. Wait a moment.',
+    });
     expect(toAppError(new SocialError('unknown', 'room is full'))).toEqual({ kind: 'validation', message: 'This room is full.' });
+    expect(toAppError(new SocialError('unknown', 'room has ended'))).toEqual({ kind: 'validation', message: 'This room has ended.' });
     expect(toAppError(new SocialError('unknown', 'duplicate key value violates unique constraint "room_sessions_one_open"'))).toEqual({
       kind: 'validation', message: 'You are already joining a room.',
     });
@@ -691,6 +739,22 @@ describe('room channels', () => {
     const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(toAppError(new SocialError('unknown', 'duplicate key value violates unique constraint')).kind).toBe('internal');
     logged.mockRestore();
+  });
+
+  test('the 31st room action in a minute and a room that has ended get the plain messages', async () => {
+    const { h, as, ids } = await rooms();
+    const mine = await ok(h['rooms:create'](create));
+    await as('Ana', (x) => x.joinRoom(mine));
+    for (let i = 0; i < 30; i++) await ok(h['rooms:nextCard']({ roomId: mine }));
+    const limited = { ok: false, error: { kind: 'rate_limited', message: 'Too many room actions. Wait a moment.' } };
+    expect(await h['rooms:nextCard']({ roomId: mine })).toEqual(limited);
+    expect(await h['rooms:mute']({ roomId: mine, userId: ids['Ana']! })).toEqual(limited);
+    expect(await h['rooms:setMuted']({ roomId: mine, muted: true })).toEqual(limited);
+    // Your own state again (nothing changes) is not a room action.
+    await ok(h['rooms:setMuted']({ roomId: mine, muted: false }));
+    await ok(h['rooms:end']({ roomId: mine }));
+    expect(await h['rooms:join']({ roomId: mine })).toEqual({ ok: false, error: { kind: 'validation', message: 'This room has ended.' } });
+    expect(await as('Ana', (x) => x.joinRoom(mine).then(() => 'joined', (e: SocialError) => e.message))).toBe('room has ended');
   });
 
   test('the 11th room of the day and the 7th person get the plain messages', async () => {
@@ -725,7 +789,7 @@ describe('room channels', () => {
     let sessionAtExit: unknown = 'exit was not called';
     const { h } = setup({}, {
       backend,
-      roomLive: { enter: () => {}, current: () => 'r1', leaving: () => false, exit: async () => void (sessionAtExit = await backend.session()) },
+      roomLive: { enter: () => {}, entering: (call) => call(), current: () => 'r1', leaving: () => false, exit: async () => void (sessionAtExit = await backend.session()) },
     });
     await ok(h['social:signOut']({}));
     expect(sessionAtExit).toMatchObject({ email: 'rian@example.com' });
@@ -738,7 +802,7 @@ describe('room channels', () => {
       const backend = createFakeSocialBackend({ seed: 'people' });
       const { h } = setup({}, {
         backend,
-        roomLive: { enter: () => {}, current: () => 'r1', leaving: () => true, exit: () => new Promise<void>(() => {}) },
+        roomLive: { enter: () => {}, entering: (call) => call(), current: () => 'r1', leaving: () => true, exit: () => new Promise<void>(() => {}) },
       });
       let done: unknown = null;
       void h['social:signOut']({}).then((r) => void (done = r));
@@ -757,7 +821,7 @@ describe('room channels', () => {
     vi.useFakeTimers();
     try {
       const backend = createFakeSocialBackend({ seed: 'people' });
-      const { h } = setup({}, { backend, roomLive: { enter: () => {}, current: () => 'r1', leaving: () => false, exit: async () => {} } });
+      const { h } = setup({}, { backend, roomLive: { enter: () => {}, entering: (call) => call(), current: () => 'r1', leaving: () => false, exit: async () => {} } });
       expect(await ok(h['social:signOut']({}))).toMatchObject({ signedIn: false });
       // The cap timer is cleared once the leave is done: nothing is left waiting.
       expect(vi.getTimerCount()).toBe(0);

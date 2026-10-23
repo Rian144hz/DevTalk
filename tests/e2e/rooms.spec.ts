@@ -354,6 +354,31 @@ test('a report made in the room shows the room to a moderator', async ({ page, a
   await expect(who).toContainText('Rian');
 });
 
+test('a report from a room that is gone (deleted with its creator\'s account) says the room details are not available', async ({ page, app, dataDir }) => {
+  await onboard(page);
+  await joinStandup(page);
+  const caio = await options(page, 'Caio');
+  await caio.getByRole('button', { name: 'Report' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Report Caio' });
+  await dialog.getByLabel('Harassment or bullying').check();
+  await dialog.getByRole('button', { name: 'Send report' }).click();
+  await page.getByRole('dialog', { name: 'Report sent' }).getByRole('button', { name: 'Close' }).click();
+  await page.getByRole('button', { name: 'Leave', exact: true }).click();
+  await expect(page).toHaveURL(/#\/rooms$/);
+
+  // Bia opened the room; she deletes her account and the room goes with it.
+  const bia = idOf(dataDir, 'Bia');
+  await asMember(app, bia, 'deleteAccount', []);
+  await makeModerator(app, idOf(dataDir, 'Rian'));
+  await go(page, '#/moderation');
+  await page.getByRole('list', { name: 'Open reports' }).getByRole('listitem').filter({ hasText: 'Caio' }).getByRole('button').click();
+  const context = page.getByRole('region', { name: 'The room' });
+  await expect(context).toContainText(
+    'The room details are not available. The room may have been deleted, or the reporter or the reported person was not in it.',
+  );
+  await expect(context.getByRole('list', { name: 'Who was in the room' })).toHaveCount(0);
+});
+
 test.describe('when the room cannot be read', () => {
   test.use({ socialFail: 'roomState' });
 

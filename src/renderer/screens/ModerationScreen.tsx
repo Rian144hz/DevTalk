@@ -34,7 +34,10 @@ function RoomContext({ room }: { room: RoomReportContext | null | undefined }) {
       {room === undefined ? (
         <Skeleton width="50%" />
       ) : room === null ? (
-        <p className="muted">No copy of the room was kept. The reporter or the reported person was not in it.</p>
+        <p className="muted">
+          The room details are not available. The room may have been deleted, or the reporter or the reported person was
+          not in it.
+        </p>
       ) : (
         <>
           <dl className="profile-facts">

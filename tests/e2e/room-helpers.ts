@@ -12,7 +12,7 @@ export const idOf = (dataDir: string, name: string) => Object.values(fakeState(d
 /** The newest room with this title (a title can be used again once its room has ended). */
 export const roomOf = (dataDir: string, title: string) => fakeState(dataDir).rooms.filter((r) => r.title === title).at(-1)!.id;
 
-export type Act = 'muteMember' | 'removeFromRoom' | 'joinRoom' | 'createRoom' | 'roomState' | 'setRoomMuted';
+export type Act = 'muteMember' | 'removeFromRoom' | 'joinRoom' | 'createRoom' | 'roomState' | 'setRoomMuted' | 'deleteAccount';
 /** Dev and e2e builds only: another member calls the fake community, as if from their own app. */
 export const asMember = (app: ElectronApplication, userId: string, act: Act, args: unknown[]) =>
   app.evaluate(async (_electron, [who, method, a]) => {

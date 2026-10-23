@@ -63,7 +63,8 @@ relé TURN; poderes de moderadores do app dentro das salas; escolha de dispositi
 - **Criar** — `create_room(title, theme, level)`: membro ativo com perfil; no máximo 10 salas criadas por dia; quem já
   está viva em outra sala sai dela; cria e já entra como anfitrião.
 - **Entrar** — `join_room(room)`: membro ativo com perfil; sala não terminada; menos de 6 sessões vivas; não removido
-  daquela sala; sem bloqueio com ninguém vivo dentro; uma sala por vez (sai da anterior).
+  daquela sala; sem bloqueio com ninguém vivo dentro; uma sala por vez (sai da anterior). Sala terminada, sem ninguém
+  vivo ou que não existe mais responde `room has ended` ("This room has ended."); as outras recusas, `not allowed`.
 - **Sair** — `leave_room(room)`: fecha a sessão. Se era o anfitrião e há gente viva, o cargo passa a um moderador da sala
   (o mais antigo), senão a quem entrou primeiro. Sala sem ninguém vivo termina (`ended_at`).
 - **Sinal de vida** — `room_heartbeat(room)` a cada 30 s: atualiza `last_seen`; aplica a herança do anfitrião se ele
@@ -75,11 +76,17 @@ relé TURN; poderes de moderadores do app dentro das salas; escolha de dispositi
 - **Mutado** — `set_room_muted(room, muted)`: cada um informa o próprio estado; todos veem o ícone de mutado.
 - **Timer e cartão** — `start_timer(room, seconds)` (60 ou 90) e `stop_timer(room)`, `next_card(room)`: qualquer pessoa
   viva na sala.
+- **Limite de ações** — `set_room_muted` (só quando muda), `next_card`, `start_timer`, `stop_timer` (só quando muda),
+  `mute_member`, `make_room_moderator`, `remove_room_moderator`, `pass_host` e `remove_from_room`: no máximo 30 por pessoa
+  por minuto, contadas em `room_actions` (fora do Realtime, sem acesso de clientes); acima disso `room action limit
+  reached` ("Too many room actions. Wait a moment.").
 - **Ler** — `live_rooms()`: salas não terminadas com pelo menos uma sessão viva, sem bloqueio entre quem pede e quem está
   dentro, e sem as salas de onde quem pede foi removido; título, tema, nível, anfitrião e as pessoas vivas (id, nome, foto?, mascote). Tabelas: `rooms` e
-  `room_sessions` legíveis por quem está vivo na sala (para o Realtime); `room_signals` só pelo destinatário.
+  `room_sessions` legíveis por quem está vivo na sala (para o Realtime), sem as sessões, também as antigas, de quem tem
+  bloqueio com quem lê; `room_signals` só pelo destinatário.
 - **Sinais** — insert direto: `sender` = eu; eu e o destinatário vivos na mesma sala; sem bloqueio entre os dois; no
-  máximo 600 sinais por minuto por pessoa.
+  máximo 600 sinais por minuto e 5 000 em 24 h por pessoa (`signal limit reached`). O dia é contado por hora em
+  `room_signal_counts` (só números), fora da tabela de sinais, para a limpeza de 5 min e o fim da sala não zerarem.
 - **Denúncia** — `reports` com `context_type = 'room'` e `context_id` = id da sala.
   `room_report_context(report_id)` só para moderadores: título, tema, anfitrião, quem esteve e os horários.
 - **Selos** — `profile_badges` passa a incluir `room_host` (5+ salas criadas em que outra pessoa teve sessão) e
@@ -94,10 +101,11 @@ relé TURN; poderes de moderadores do app dentro das salas; escolha de dispositi
   `roomPeople(id)`, `sendSignal(roomId, to, kind, payload)`, `makeRoomModerator`, `removeRoomModerator`, `passHost`,
   `muteMember`, `removeFromRoom`, `endRoom`, `startTimer`, `stopTimer`, `nextCard`, `roomReportContext(reportId)`,
   `subscribeRoom(roomId, onEvent)`. Backend falso com paridade e semente.
-- **Ponte da sala** (`room-live`): enquanto você está numa sala, o main envia o sinal de vida a cada 30 s, assina o
+- **Ponte da sala** (`room-live`): enquanto você está numa sala, o main envia o sinal de vida a cada 30 s (falhou: nova
+  tentativa a cada 5 s até passar; cada uma desiste após 10 s; o canal voltou: sinal de vida na hora), assina o
   Realtime da sala e manda para a janela `room:event` (pessoas, cargos, mute pedido, timer, cartão, fim, removido) e
   `room:signal` (oferta, resposta, rota, bye endereçados a você). Sai da sala ao fechar o app, ao sair da conta e quando a
-  janela pede.
+  janela pede; um create ou join ainda a caminho nessa hora sai da sala quando responde, sem segui-la.
 - **Permissões do Electron:** só `media` com áudio, só para a página do app; câmera, tela, localização, notificações e o
   resto negados.
 - Canais com zod; mensagens de limite e de erro em inglês simples.

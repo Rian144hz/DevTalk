@@ -192,7 +192,7 @@ describe('seats and sessions', () => {
     );
     const outsider = await named('Outsider');
     expect(await liveIds(outsider)).not.toContain(room);
-    await expect(joinRoom(outsider, room)).rejects.toThrow(/not allowed/);
+    await expect(joinRoom(outsider, room)).rejects.toThrow(/room has ended/);
   });
 
   test('a heartbeat keeps you live and says false once you are not', async () => {
@@ -220,6 +220,35 @@ describe('seats and sessions', () => {
     expect(await heartbeat(outsider, room)).toBe(false);
     await leaveRoom(b, room);
     expect(await heartbeat(b, room)).toBe(false);
+  });
+
+  test('joining a room that has ended says room has ended (not 42501): left by everyone, ended by the host, all silent, or gone', async () => {
+    const late = await named('Late');
+    const refusal = async (room: string) => {
+      const error = await joinRoom(late, room).then(
+        () => null,
+        (e: unknown) => e as { code?: string; message: string },
+      );
+      expect(error, room).not.toBeNull();
+      return error!;
+    };
+    const { room: left, host: a } = await roomWith(0, 'Everyone left');
+    await leaveRoom(a, left);
+    const { room: ended, host: b } = await roomWith(0, 'Ended by the host');
+    await call(b, 'end_room', ended);
+    const { room: silent, host: c } = await roomWith(0, 'Everyone dropped');
+    await silence(c, silent, 91);
+    // A room that no longer exists (it went with its creator's account).
+    const gone = '00000000-0000-4000-8000-000000000000';
+    for (const room of [left, ended, silent, gone]) {
+      const error = await refusal(room);
+      expect(error.message, room).toBe('room has ended');
+      expect(error.code, room).not.toBe('42501');
+    }
+    // Removed and blocked people still get not allowed.
+    const { room: open, host: d, others: [e] } = await roomWith(1, 'Still open');
+    await call(d, 'remove_from_room', open, e!);
+    await expect(joinRoom(e!, open)).rejects.toThrow(/not allowed/);
   });
 
   test('joining another room closes your first session', async () => {
@@ -262,6 +291,48 @@ describe('blocks', () => {
     await t.db.query('delete from blocks where blocker = $1 and blocked = $2', [b, a]);
     expect(await liveIds(b)).toContain(room);
     await joinRoom(b, room);
+  });
+
+  test("a blocked pair never read each other's sessions, not even past ones in a room one of them is live in", async () => {
+    const { room, host } = await roomWith(0, 'Shared history');
+    const a = await named('Ana');
+    const b = await named('Bia');
+    const c = await named('Caio');
+    const sessionsSeenBy = async (who: string) =>
+      (await rows<{ user_id: string }>(who, 'select user_id from room_sessions where room_id = $1', [room])).map((r) => r.user_id);
+    // Bia was here earlier and left; Ana and Caio are live now. Ana blocks Bia: Bia is not live, so Ana stays.
+    await joinRoom(b, room);
+    await leaveRoom(b, room);
+    await joinRoom(a, room);
+    await joinRoom(c, room);
+    expect(await sessionsSeenBy(a)).toContain(b);
+    await block(a, b);
+    expect((await state(a, room))!.me.live).toBe(true);
+    expect(await sessionsSeenBy(a)).not.toContain(b);
+    expect((await sessionsSeenBy(a)).sort()).toEqual([host, a, c].sort());
+    // Bia still reads her own session; Caio, with no block, still reads hers.
+    expect(await sessionsSeenBy(b)).toEqual([b]);
+    expect(await sessionsSeenBy(c)).toContain(b);
+    // The other way round: the blocked person, live in the room, does not read the blocker's past sessions.
+    const d = await named('Dani');
+    await joinRoom(d, room);
+    await leaveRoom(d, room);
+    await block(d, c);
+    expect((await state(c, room))!.me.live).toBe(true);
+    expect(await sessionsSeenBy(c)).not.toContain(d);
+    expect(await sessionsSeenBy(host)).toContain(d);
+    // The policy's helper tells the caller no more than the select does: about someone who was never in the room it
+    // says the same whether or not they blocked the caller.
+    const sees = async (who: string, member: string) =>
+      (await rows<{ ok: boolean }>(who, 'select public.can_see_room_session($1, $2) as ok', [room, member]))[0]!.ok;
+    const stranger = await named('Eva');
+    const blocker = await named('Fabi');
+    await block(blocker, c);
+    expect(await sees(c, stranger)).toBe(false);
+    expect(await sees(c, blocker)).toBe(false);
+    expect(await sees(c, d)).toBe(false);
+    expect(await sees(c, host)).toBe(true);
+    expect(await sees(c, c)).toBe(true);
   });
 
   test("a block made inside a room closes the blocker's session, not the blocked person's", async () => {
@@ -405,7 +476,7 @@ describe('roles', () => {
     await leaveRoom(b, room);
     expect((await state(b, room))!.endedAt).not.toBeNull();
     await leaveRoom(b, room);
-    await expect(joinRoom(host, room)).rejects.toThrow(/not allowed/);
+    await expect(joinRoom(host, room)).rejects.toThrow(/room has ended/);
     expect(await liveIds(await named('Outsider'))).not.toContain(room);
   });
 
@@ -419,7 +490,7 @@ describe('roles', () => {
     expect(await count('select count(*)::int as n from room_sessions where room_id = $1 and left_at is null', [room])).toBe(0);
     expect((await state(c, room))!).toMatchObject({ me: { live: false, removed: false }, people: [] });
     expect((await state(c, room))!.endedAt).not.toBeNull();
-    await expect(joinRoom(c, room)).rejects.toThrow(/not allowed/);
+    await expect(joinRoom(c, room)).rejects.toThrow(/room has ended/);
     await expect(call(host, 'next_card', room)).rejects.toThrow(/not allowed/);
   });
 });
@@ -764,6 +835,104 @@ describe('signals', () => {
   });
 });
 
+describe('limits', () => {
+  const actionsOf = (who: string) => count('select count(*)::int as n from room_actions where user_id = $1', [who]);
+  async function signal(from: string, room: string, to: string) {
+    await t.as(from);
+    await t.db.query(`insert into room_signals (room_id, sender, recipient, kind, payload) values ($1, $2, $3, 'candidate', '{}')`, [
+      room,
+      from,
+      to,
+    ]);
+  }
+
+  test('30 room actions per person in a minute, then room action limit reached; repeats that change nothing are free', async () => {
+    const { room, host, others } = await roomWith(2);
+    const [b, c] = others as [string, string];
+    await call(host, 'start_timer', room, 60);
+    await call(host, 'set_room_muted', room, true);
+    for (let i = 0; i < 28; i++) await call(host, 'next_card', room);
+    expect(await actionsOf(host)).toBe(30);
+    // Every room action is refused now, and changes nothing.
+    for (const [fn, ...args] of [
+      ['set_room_muted', room, false],
+      ['next_card', room],
+      ['start_timer', room, 90],
+      ['stop_timer', room],
+      ['mute_member', room, b],
+      ['make_room_moderator', room, b],
+      ['remove_room_moderator', room, b],
+      ['pass_host', room, b],
+      ['remove_from_room', room, c],
+    ] as [string, ...unknown[]][]) {
+      await expect(call(host, fn, ...args), fn).rejects.toThrow(/room action limit reached/);
+    }
+    const s = (await state(host, room))!;
+    expect(s).toMatchObject({ card: 28, hostId: host, timer: { seconds: 60 } });
+    expect(s.people.map((p) => [p.id, p.role, p.muted])).toEqual([
+      [host, 'host', true],
+      [b, 'member', false],
+      [c, 'member', false],
+    ]);
+    expect((await state(b, room))!.me.muteRequestedAt).toBeNull();
+    // Saying again what is already so changes no row and is not counted.
+    await call(host, 'set_room_muted', room, true);
+    // The limit is per person, and a refused call is not counted.
+    await call(b, 'next_card', room);
+    await expect(call(b, 'mute_member', room, host)).rejects.toThrow(/not allowed/);
+    expect(await actionsOf(b)).toBe(1);
+    // A minute later the host acts again; the old rows go as new ones come.
+    await owner(`update room_actions set at = now() - interval '61 seconds' where user_id = $1`, [host]);
+    await call(host, 'stop_timer', room);
+    await call(host, 'stop_timer', room);
+    expect((await state(host, room))!.timer).toBeNull();
+    expect(await actionsOf(host)).toBe(1);
+    await call(host, 'make_room_moderator', room, b);
+    expect(await actionsOf(host)).toBe(2);
+    // Nobody reads or writes the count directly.
+    await t.as(host);
+    for (const sql of [
+      'select * from room_actions',
+      `insert into room_actions (user_id) values ('${host}')`,
+      'delete from room_actions',
+      `select public.count_room_action()`,
+    ]) {
+      await expect(t.db.query(sql), sql).rejects.toThrow(/permission denied/);
+    }
+  });
+
+  test('5 000 signals per sender in 24 h, counted apart from the signals: the 5-minute clean-up and the room ending do not reset it', async () => {
+    const { room, host, others } = await roomWith(1);
+    const b = others[0]!;
+    // 4 999 signals over the last 14 hours, 6 a minute (under the minute limit).
+    await owner(
+      `insert into room_signals (room_id, sender, recipient, kind, payload, created_at)
+       select $1, $2, $3, 'candidate', '{}', now() - make_interval(secs => g * 10 + 5) from generate_series(1, 4999) g`,
+      [room, host, b],
+    );
+    // The heartbeat deletes the signals older than 5 minutes: the count stays.
+    expect(await heartbeat(b, room)).toBe(true);
+    expect(await count('select count(*)::int as n from room_signals where sender = $1', [host])).toBe(29);
+    await signal(host, room, b);
+    await expect(signal(host, room, b)).rejects.toThrow(/signal limit reached/);
+    // Per sender: the other person still sends.
+    await signal(b, room, host);
+    // A new room does not reset it either.
+    await call(host, 'end_room', room);
+    const next = await create(host, 'Next room');
+    await joinRoom(b, next);
+    await expect(signal(host, next, b)).rejects.toThrow(/signal limit reached/);
+    // Once those signals are more than 24 hours old, the sender may send again.
+    await owner(`update room_signal_counts set hour = hour - interval '25 hours' where sender = $1`, [host]);
+    await signal(host, next, b);
+    // Nobody reads or writes the count directly.
+    await t.as(host);
+    for (const sql of ['select * from room_signal_counts', `delete from room_signal_counts`]) {
+      await expect(t.db.query(sql), sql).rejects.toThrow(/permission denied/);
+    }
+  });
+});
+
 describe('account deletion', () => {
   test('account deletion removes created rooms, sessions and signals', async () => {
     const a = await named('Ana');
@@ -777,10 +946,15 @@ describe('account deletion', () => {
     await t.db.query(`insert into room_signals (room_id, sender, recipient, kind, payload) values ($1, $2, $3, 'offer', '{}')`, [own, a, b]);
     await t.as(b);
     await t.db.query(`insert into room_signals (room_id, sender, recipient, kind, payload) values ($1, $2, $3, 'answer', '{}')`, [own, b, a]);
+    await call(a, 'next_card', own);
+    expect(await count('select count(*)::int as n from room_actions where user_id = $1', [a])).toBe(1);
+    expect(await count('select count(*)::int as n from room_signal_counts where sender = $1', [a])).toBe(1);
     await owner('delete from auth.users where id = $1', [a]);
     expect(await count('select count(*)::int as n from rooms where id = $1', [own])).toBe(0);
     expect(await count('select count(*)::int as n from room_sessions where user_id = $1 or room_id = $2', [a, own])).toBe(0);
     expect(await count('select count(*)::int as n from room_signals where $1 in (sender, recipient) or room_id = $2', [a, own])).toBe(0);
+    expect(await count('select count(*)::int as n from room_actions where user_id = $1', [a])).toBe(0);
+    expect(await count('select count(*)::int as n from room_signal_counts where sender = $1', [a])).toBe(0);
     expect(await peopleIn(c, theirs)).toEqual([c]);
   });
 
@@ -874,6 +1048,13 @@ describe('badges', () => {
     );
     expect(await has()).toEqual({ id: 'active_speaker', grp: 'community', label: 'Active speaker' });
   });
+});
+
+test('room rows are locked FOR NO KEY UPDATE (their key never changes), so inserts that reference a room never wait on the lock', () => {
+  const sql = readFileSync(join(__dirname, '..', '..', 'supabase', 'migrations', '0009_rooms.sql'), 'utf8').toLowerCase();
+  // The only plain FOR UPDATE left is the clean-up's skip-locked scan of rows it deletes.
+  expect(sql.match(/for update(?! skip locked)/g)).toBeNull();
+  expect((sql.match(/for no key update/g) ?? []).length).toBeGreaterThanOrEqual(10);
 });
 
 test('0009 has no invisible or unusual space characters that a paste in the SQL Editor could change', () => {

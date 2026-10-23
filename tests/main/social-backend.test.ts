@@ -871,9 +871,10 @@ describe('fake backend: rooms', () => {
     expect(await stateOf('Ana', first)).toMatchObject({ endedAt: expect.any(String), me: { live: false } });
     expect(titles(await b.liveRooms())).toEqual(['A second room', 'Stand-up practice']);
     expect((await b.roomState(second))!.people.map((p) => p.displayName)).toEqual(['Rian', 'Ana']);
-    // Joining a room that has ended, or one that does not exist, is not allowed.
-    expect(await kindOf(as('Dani', (x) => x.joinRoom(first)))).toBe('forbidden');
-    expect(await kindOf(as('Dani', (x) => x.joinRoom('00000000-0000-4000-8000-999999999999')))).toBe('forbidden');
+    // Joining a room that has ended, or one that does not exist, says so.
+    const ended = { kind: 'unknown', message: 'room has ended' };
+    expect(await errorOf(as('Dani', (x) => x.joinRoom(first)))).toMatchObject(ended);
+    expect(await errorOf(as('Dani', (x) => x.joinRoom('00000000-0000-4000-8000-999999999999')))).toMatchObject(ended);
   });
 
   test('a dropped host is replaced when someone\'s heartbeat settles the room, and a room nobody is in leaves the list', async () => {
@@ -893,6 +894,86 @@ describe('fake backend: rooms', () => {
     expect((await as('Dani', (x) => x.liveRooms())).map((r) => r.id)).not.toContain(room);
     expect(await as('Ana', (x) => x.roomHeartbeat(room))).toBe(false);
     expect((await stateOf('Ana', room))!.endedAt).not.toBeNull();
+  });
+
+  test('a room whose people all went silent has ended for whoever comes; removed and blocked people still get not allowed', async () => {
+    const { b, ids, as, advance } = await rooms();
+    const room = await b.createRoom(draft);
+    await as('Ana', (x) => x.joinRoom(room));
+    advance(91 * SECOND);
+    expect(await errorOf(as('Dani', (x) => x.joinRoom(room)))).toMatchObject({ kind: 'unknown', message: 'room has ended' });
+    const open = await as('Dani', (x) => x.createRoom({ ...draft, title: 'Still open' }));
+    await as('Hugo', (x) => x.joinRoom(open));
+    await as('Dani', (x) => x.removeFromRoom(open, ids['Hugo']!));
+    expect(await kindOf(as('Hugo', (x) => x.joinRoom(open)))).toBe('forbidden');
+    await as('Dani', (x) => x.block(ids['Iris']!));
+    expect(await kindOf(as('Iris', (x) => x.joinRoom(open)))).toBe('forbidden');
+  });
+
+  test('30 room actions a minute per person, then room action limit reached; repeats that change nothing are free', async () => {
+    const { b, ids, as, advance, joinAll } = await rooms();
+    const room = await b.createRoom(draft);
+    await joinAll(room, ['Ana', 'Dani']);
+    await b.setRoomTimer(room, 60);
+    await b.setRoomMuted(room, true);
+    for (let i = 0; i < 28; i++) await b.nextCard(room);
+    const limited = { kind: 'rate_limited', message: 'room action limit reached' };
+    const refused = [
+      () => b.setRoomMuted(room, false),
+      () => b.nextCard(room),
+      () => b.setRoomTimer(room, 90),
+      () => b.setRoomTimer(room, null),
+      () => b.muteMember(room, ids['Ana']!),
+      () => b.makeRoomModerator(room, ids['Ana']!),
+      () => b.removeRoomModerator(room, ids['Ana']!),
+      () => b.passHost(room, ids['Ana']!),
+      () => b.removeFromRoom(room, ids['Dani']!),
+    ];
+    for (const act of refused) expect(await errorOf(act())).toMatchObject(limited);
+    const s = (await b.roomState(room))!;
+    expect(s).toMatchObject({ card: 28, hostId: ids['Rian'], timer: { seconds: 60 } });
+    expect(s.people.map((p) => [p.displayName, p.role, p.muted])).toEqual([['Rian', 'host', true], ['Ana', 'member', false], ['Dani', 'member', false]]);
+    expect((await as('Ana', (x) => x.roomState(room)))!.me.muteRequestedAt).toBeNull();
+    // Saying again what is already so is free.
+    await b.setRoomMuted(room, true);
+    // Per person, and a refused call is not counted: Ana still has 30.
+    expect(await kindOf(as('Ana', (x) => x.muteMember(room, ids['Rian']!)))).toBe('forbidden');
+    for (let i = 0; i < 30; i++) await as('Ana', (x) => x.nextCard(room));
+    expect(await errorOf(as('Ana', (x) => x.nextCard(room)))).toMatchObject(limited);
+    // A minute later Rian acts again; stopping a timer that is not running is free.
+    advance(61 * SECOND);
+    await b.setRoomTimer(room, null);
+    await b.setRoomTimer(room, null);
+    for (let i = 0; i < 29; i++) await b.nextCard(room);
+    expect(await errorOf(b.nextCard(room))).toMatchObject(limited);
+  });
+
+  test('a person sends at most 5 000 signals a day; deleting old signals or ending the room does not reset the count', async () => {
+    const { b, ids, as, advance, joinAll } = await rooms();
+    const room = await b.createRoom(draft);
+    await joinAll(room, ['Ana']);
+    // 4 999 signals in 10 minutes (under 600 a minute); heartbeats keep both seats and delete the old signals.
+    for (let minute = 0; minute < 10; minute++) {
+      for (let i = 0; i < (minute === 9 ? 499 : 500); i++) await b.sendRoomSignal(room, ids['Ana']!, 'candidate', '{}');
+      advance(61 * SECOND);
+      expect(await b.roomHeartbeat(room)).toBe(true);
+      expect(await as('Ana', (x) => x.roomHeartbeat(room))).toBe(true);
+    }
+    await b.sendRoomSignal(room, ids['Ana']!, 'candidate', '{}');
+    const limited = { kind: 'rate_limited', message: 'signal limit reached' };
+    expect(await errorOf(b.sendRoomSignal(room, ids['Ana']!, 'candidate', '{}'))).toMatchObject(limited);
+    // Per sender: Ana still sends.
+    await as('Ana', (x) => x.sendRoomSignal(room, ids['Rian']!, 'candidate', '{}'));
+    // A new room does not reset it.
+    await b.endRoom(room);
+    const next = await b.createRoom({ ...draft, title: 'Next room' });
+    await as('Ana', (x) => x.joinRoom(next));
+    expect(await errorOf(b.sendRoomSignal(next, ids['Ana']!, 'candidate', '{}'))).toMatchObject(limited);
+    // A day later (counted by the hour) Rian may send again.
+    advance(25 * 60 * MINUTE);
+    const later = await b.createRoom({ ...draft, title: 'A day later' });
+    await as('Ana', (x) => x.joinRoom(later));
+    await b.sendRoomSignal(later, ids['Ana']!, 'candidate', '{}');
   });
 
   test('a heartbeat is true while you are live, and false when you never joined, left or went silent', async () => {
@@ -1037,7 +1118,7 @@ describe('fake backend: rooms', () => {
     }
     expect(await b.roomState(room)).toMatchObject({ hostId: ids['Rian'], endedAt: expect.any(String) });
     expect(titles(await b.liveRooms())).toEqual(['Stand-up practice']);
-    expect(await kindOf(as('Hugo', (x) => x.joinRoom(room)))).toBe('forbidden');
+    expect(await errorOf(as('Hugo', (x) => x.joinRoom(room)))).toMatchObject({ kind: 'unknown', message: 'room has ended' });
     expect(await as('Ana', (x) => x.roomHeartbeat(room))).toBe(false);
     expect(await kindOf(b.endRoom(room))).toBe('forbidden');
     expect(await kindOf(b.setRoomTimer(room, 90))).toBe('forbidden');

@@ -5,6 +5,11 @@ import type { SocialBackend } from './backend';
 
 export type { RoomLiveEvent };
 
+/** After a failed heartbeat the next try comes this soon, until one gets through (a seat lasts 90 s without one). */
+export const ROOM_HEARTBEAT_RETRY_MS = 5_000;
+/** A heartbeat with no answer for this long counts as failed, so a hung request never holds up the next try. */
+export const ROOM_HEARTBEAT_TIMEOUT_MS = 10_000;
+
 export interface RoomLive {
   /**
    * Follows a room the person has just entered (created or joined): leaves any other room first, subscribes and
@@ -12,13 +17,19 @@ export interface RoomLive {
    */
   enter(roomId: string): void;
   /**
-   * Gives up the seat: stops the heartbeat, unsubscribes and tells the server. Never throws. With no room followed it
-   * resolves once any leave already on its way is done, so quitting can wait for it.
+   * Runs a create or join call and follows the room it entered (see enter). When exit() runs while the call is on its
+   * way (the window reloaded, crashed or closed, or the person signed out), that room is left as soon as the call
+   * answers, never followed. Resolves or rejects as the call does, after that leave.
+   */
+  entering(call: () => Promise<string>): Promise<string>;
+  /**
+   * Gives up the seat: stops the heartbeat, unsubscribes and tells the server. Never throws. Resolves once every leave
+   * on its way is done, including the leave of a create or join that was on its way, so quitting can wait for it.
    */
   exit(): Promise<void>;
   /** The room being followed; null when none, or after the server said the person is no longer in it. */
   current(): string | null;
-  /** True while a leave call is still on its way to the server. */
+  /** True while a leave call is still on its way to the server, or a create or join whose room may need leaving. */
   leaving(): boolean;
 }
 
@@ -27,19 +38,24 @@ export interface RoomLiveDeps {
   emit: (e: RoomLiveEvent) => void;
   /** Default 30 s. */
   heartbeatMs?: number;
+  /** Default 5 s. */
+  retryMs?: number;
+  /** Default 10 s. */
+  beatTimeoutMs?: number;
   /** Timers can be replaced in tests. */
-  setInterval?: (fn: () => void, ms: number) => unknown;
-  clearInterval?: (id: unknown) => void;
+  setTimeout?: (fn: () => void, ms: number) => unknown;
+  clearTimeout?: (id: unknown) => void;
 }
 
 /** One followed room. Everything that arrives late, from an earlier room or after exit, finds `open` false and is dropped. */
 interface Following {
   roomId: string;
   open: boolean;
+  /** The next heartbeat, or the deadline of the one on its way. */
   timer: unknown;
   off: (() => void) | null;
-  /** A heartbeat is on its way; the next tick waits for it. */
-  beating: boolean;
+  /** Numbers the heartbeats: an answer that is not for the latest one, or comes after its deadline, is ignored. */
+  beats: number;
   /** What the channel last said; null until it says anything. */
   socket: boolean | null;
   /** Whether the last heartbeat got through. */
@@ -51,11 +67,17 @@ interface Following {
 export function createRoomLive(deps: RoomLiveDeps): RoomLive {
   const { backend } = deps;
   const heartbeatMs = deps.heartbeatMs ?? ROOM_HEARTBEAT_MS;
-  const setTimer = deps.setInterval ?? ((fn, ms) => globalThis.setInterval(fn, ms));
-  const clearTimer = deps.clearInterval ?? ((id) => globalThis.clearInterval(id as ReturnType<typeof globalThis.setInterval>));
+  const retryMs = deps.retryMs ?? ROOM_HEARTBEAT_RETRY_MS;
+  const beatTimeoutMs = deps.beatTimeoutMs ?? ROOM_HEARTBEAT_TIMEOUT_MS;
+  const setTimer = deps.setTimeout ?? ((fn, ms) => globalThis.setTimeout(fn, ms));
+  const clearTimer = deps.clearTimeout ?? ((id) => globalThis.clearTimeout(id as ReturnType<typeof globalThis.setTimeout>));
   let following: Following | null = null;
   /** Leave calls on their way. */
   const leaves = new Set<Promise<void>>();
+  /** Create and join calls on their way (settled once their room is followed or left). */
+  const entries = new Set<Promise<void>>();
+  /** Moves on at every exit: a create or join that started before it must not follow its room. */
+  let generation = 0;
 
   const emit = (e: RoomLiveEvent) => {
     try {
@@ -77,6 +99,7 @@ export function createRoomLive(deps: RoomLiveDeps): RoomLive {
   const stop = (f: Following) => {
     f.open = false;
     clearTimer(f.timer);
+    f.timer = null;
     try {
       f.off?.();
     } catch {
@@ -86,84 +109,124 @@ export function createRoomLive(deps: RoomLiveDeps): RoomLive {
     if (following === f) following = null;
   };
 
-  const leave = (roomId: string): Promise<void> => {
-    const done = (async () => {
-      try {
-        await backend.leaveRoom(roomId);
-      } catch {
-        // Offline: the seat frees itself after 90 seconds without a heartbeat.
-      }
-    })();
-    leaves.add(done);
-    void done.then(() => leaves.delete(done));
-    return done;
+  const track = (set: Set<Promise<void>>, p: Promise<void>) => {
+    set.add(p);
+    void p.then(() => set.delete(p));
+    return p;
   };
 
-  const beat = async (f: Following) => {
-    if (f.beating) return;
-    f.beating = true;
-    try {
-      const still = await backend.roomHeartbeat(f.roomId);
-      if (!f.open) return;
-      if (!still) {
+  const leave = (roomId: string): Promise<void> =>
+    track(
+      leaves,
+      (async () => {
+        try {
+          await backend.leaveRoom(roomId);
+        } catch {
+          // Offline: the seat frees itself after 90 seconds without a heartbeat.
+        }
+      })(),
+    );
+
+  const schedule = (f: Following, ms: number) => {
+    clearTimer(f.timer);
+    f.timer = setTimer(() => beat(f), ms);
+  };
+
+  /**
+   * Sends a heartbeat now, in place of any one waiting or on its way. Through: the next in 30 s. Failed or no answer
+   * within the deadline: offline, and the next try in 5 s. "Not here any more": stop, and the window asks for the state.
+   */
+  const beat = (f: Following) => {
+    if (!f.open) return;
+    const id = ++f.beats;
+    const settle = (still: boolean | null) => {
+      if (!f.open || f.beats !== id) return;
+      // Whatever answers next for this heartbeat (its deadline, or a late reply) is too late.
+      f.beats++;
+      if (still === false) {
         // The seat is gone (removed, room ended, or too long offline). The window asks for the state and shows what happened.
         stop(f);
         emit({ kind: 'changed' });
         return;
       }
-      if (!f.beat) {
-        f.beat = true;
+      const through = still === true;
+      if (f.beat !== through) {
+        f.beat = through;
         publish(f);
       }
+      schedule(f, through ? heartbeatMs : retryMs);
+    };
+    clearTimer(f.timer);
+    f.timer = setTimer(() => settle(null), beatTimeoutMs);
+    new Promise<boolean>((resolve) => resolve(backend.roomHeartbeat(f.roomId))).then(
+      (still) => settle(Boolean(still)),
+      () => settle(null),
+    );
+  };
+
+  const enter = (roomId: string) => {
+    if (following?.roomId === roomId) return;
+    const previous = following;
+    if (previous) {
+      stop(previous);
+      void leave(previous.roomId);
+    }
+    const f: Following = { roomId, open: true, timer: null, off: null, beats: 0, socket: null, beat: true, shown: null };
+    following = f;
+    schedule(f, heartbeatMs);
+    try {
+      // The channel may open a little later; whatever comes back is what closes it.
+      f.off = backend.subscribeRoom(roomId, (e) => {
+        if (!f.open) return;
+        if (e.kind === 'online' || e.kind === 'offline') {
+          const wasDown = f.socket === false;
+          f.socket = e.kind === 'online';
+          publish(f);
+          // The connection is back: say "still here" at once rather than at the next beat or retry.
+          if (f.socket && wasDown) beat(f);
+        } else {
+          emit(e);
+        }
+      });
     } catch {
-      if (!f.open) return;
-      if (f.beat) {
-        f.beat = false;
-        publish(f);
-      }
-    } finally {
-      f.beating = false;
+      // No channel right now: the heartbeat still keeps the seat, and the window refreshes when it asks.
     }
   };
 
   return {
-    enter(roomId) {
-      if (following?.roomId === roomId) return;
-      const previous = following;
-      if (previous) {
-        stop(previous);
-        void leave(previous.roomId);
-      }
-      const f: Following = { roomId, open: true, timer: null, off: null, beating: false, socket: null, beat: true, shown: null };
-      following = f;
-      try {
-        // The channel may open a little later; whatever comes back is what closes it.
-        f.off = backend.subscribeRoom(roomId, (e) => {
-          if (!f.open) return;
-          if (e.kind === 'online' || e.kind === 'offline') {
-            f.socket = e.kind === 'online';
-            publish(f);
-          } else {
-            emit(e);
-          }
-        });
-      } catch {
-        // No channel right now: the heartbeat still keeps the seat, and the window refreshes when it asks.
-      }
-      f.timer = setTimer(() => void beat(f), heartbeatMs);
+    enter,
+
+    entering(call) {
+      const ticket = generation;
+      const run = (async () => {
+        const roomId = await call();
+        if (ticket === generation) enter(roomId);
+        // The seat was given up while the call was on its way. A newer entry may already follow this same room.
+        else if (following?.roomId !== roomId) await leave(roomId);
+        return roomId;
+      })();
+      track(
+        entries,
+        run.then(
+          () => {},
+          () => {},
+        ),
+      );
+      return run;
     },
 
     async exit() {
+      generation++;
       const f = following;
-      if (!f) {
-        await Promise.all([...leaves]);
-        return;
+      const waits = [...leaves, ...entries];
+      if (f) {
+        stop(f);
+        waits.push(leave(f.roomId));
       }
-      stop(f);
-      await leave(f.roomId);
+      await Promise.all(waits);
     },
 
     current: () => following?.roomId ?? null,
-    leaving: () => leaves.size > 0,
+    leaving: () => leaves.size > 0 || entries.size > 0,
   };
 }
