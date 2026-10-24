@@ -25,7 +25,14 @@ export interface SocialHandlerDeps {
   roomLive?: RoomLive;
   /** How long a room peer may take to connect (default 20 s). */
   roomConnectTimeoutMs?: number;
+  /** Opens the GitHub sign-in page in the system browser. Refuses any address that is not the community server's own. Without it nothing opens. */
+  openExternal?: (url: string) => Promise<void>;
+  /** Brings the app window back to the front once the browser has signed the person in. */
+  focusWindow?: () => void;
 }
+
+/** The photo types the window can prepare (it refuses GIF), so a GIF from GitHub is not offered. */
+const SUGGESTED_PHOTO_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
 
 /** Signing out waits at most this long for the voice-room seat to be given up; a half-open network must not hang it. */
 const LEAVE_ROOM_CAP_MS = 2000;
@@ -50,6 +57,9 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
     deps.onSessionChange?.();
     return value;
   };
+
+  /** The GitHub sign-in that is waiting for the browser, if any. One at a time: a new attempt or Cancel ends it. */
+  let signIn: AbortController | null = null;
 
   /** The room exit never throws; the cap only guards against a leave that never answers. Sign-out goes on either way. */
   async function leaveRoomFirst(): Promise<void> {
@@ -175,6 +185,33 @@ export function createSocialHandlers(deps: SocialHandlerDeps): HandlerMap<Social
       await leaveRoomFirst();
       await backend.signOut();
       return sessionChanged(await status());
+    }),
+    'social:signInWithGitHub': handle('social:signInWithGitHub', async () => {
+      signIn?.abort();
+      const attempt = new AbortController();
+      signIn = attempt;
+      try {
+        await backend.signInWithGitHub({
+          openExternal: deps.openExternal ?? (() => Promise.reject(new Error('No browser to open the sign-in page with.'))),
+          signal: attempt.signal,
+        });
+      } finally {
+        if (signIn === attempt) signIn = null;
+      }
+      // Signed in, even if Cancel came while the code was being exchanged: that sign-in is kept.
+      deps.onSessionChange?.();
+      const result = await status();
+      deps.focusWindow?.();
+      return result;
+    }),
+    'social:cancelSignIn': handle('social:cancelSignIn', () => {
+      signIn?.abort();
+      return null;
+    }),
+    'social:githubSuggestion': handle('social:githubSuggestion', async () => {
+      const { displayName, avatar, avatarType } = await backend.githubSuggestion();
+      const photo = avatar && avatarType && SUGGESTED_PHOTO_TYPES.has(avatarType) ? `data:${avatarType};base64,${Buffer.from(avatar).toString('base64')}` : null;
+      return { displayName, avatarDataUrl: photo };
     }),
     'social:export': handle('social:export', async ({ includeLocal }) => {
       const community = await backend.exportOwnData();

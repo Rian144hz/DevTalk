@@ -105,6 +105,8 @@ void app.whenReady().then(async () => {
   // Quitting from a room: give up the seat first so the others do not see a ghost for 90 seconds.
   let leftRoomOnQuit = false;
   app.on('before-quit', (event) => {
+    // A GitHub sign-in waiting for the browser ends with the app, and its port is freed.
+    ctx.cancelSignIn();
     if (leftRoomOnQuit || !ctx.inRoom()) return;
     leftRoomOnQuit = true;
     event.preventDefault();

@@ -830,3 +830,213 @@ describe('room channels', () => {
     }
   });
 });
+
+describe('GitHub sign-in channels', () => {
+  const NOT_FINISHED = 'Sign-in was not finished. Try again.';
+
+  /**
+   * The fake, but it waits for the "browser" like the real backend: the sign-in finishes when `finish()` is called, and an
+   * abort ends the wait with the not-finished error.
+   */
+  function waiting() {
+    const fake = createFakeSocialBackend();
+    const gates: (() => void)[] = [];
+    const signals: AbortSignal[] = [];
+    const opened: string[] = [];
+    const backend: SocialBackend = {
+      ...fake,
+      signInWithGitHub: async (o) => {
+        if (o.signal) signals.push(o.signal);
+        await o.openExternal('https://fake-supabase.test/auth/v1/authorize?provider=github');
+        await new Promise<void>((resolve, reject) => {
+          gates.push(resolve);
+          o.signal?.addEventListener('abort', () => reject(new SocialError('unknown', NOT_FINISHED)), { once: true });
+        });
+        return fake.signInWithGitHub({ openExternal: async () => {}, signal: o.signal });
+      },
+    };
+    return {
+      backend,
+      fake,
+      signals,
+      opened,
+      finish: (n = 0) => gates[n]!(),
+      deps: { backend, openExternal: async (url: string) => void opened.push(url) } satisfies Partial<SocialHandlerDeps>,
+    };
+  }
+
+  test('signing in through the fake returns a signed-in status, opens the browser once and tells the live chat', async () => {
+    const sessions: number[] = [];
+    const focused: number[] = [];
+    const opened: string[] = [];
+    const { h } = setup({}, {
+      openExternal: async (url) => void opened.push(url),
+      onSessionChange: () => void sessions.push(1),
+      focusWindow: () => void focused.push(1),
+    });
+    expect(await ok(h['social:signInWithGitHub']({}))).toEqual({
+      configured: true, signedIn: true, email: 'octo@example.com', needsDocuments: true, hasProfile: false, suspendedUntil: null,
+    });
+    expect(opened).toHaveLength(1);
+    expect(sessions).toHaveLength(1);
+    expect(focused).toHaveLength(1);
+  });
+
+  test('a returning GitHub member who already accepted the documents and has a profile is a full member', async () => {
+    const { h } = setup({}, { openExternal: async () => {} });
+    await ok(h['social:signInWithGitHub']({}));
+    await ok(h['social:acceptDocuments']({}));
+    await ok(h['social:saveProfile'](draft));
+    await ok(h['social:signOut']({}));
+    expect(await ok(h['social:signInWithGitHub']({}))).toMatchObject({ signedIn: true, needsDocuments: false, hasProfile: true });
+  });
+
+  test('the channels take no input', async () => {
+    const { h } = setup();
+    for (const channel of ['social:signInWithGitHub', 'social:cancelSignIn', 'social:githubSuggestion'] as const) {
+      expect(await h[channel]({ extra: 1 })).toMatchObject({ ok: false, error: { kind: 'validation' } });
+    }
+  });
+
+  test('a second sign-in aborts the first: the first gets the not-finished error, the second can finish', async () => {
+    const w = waiting();
+    const sessions: number[] = [];
+    const { h } = setup({}, { ...w.deps, onSessionChange: () => void sessions.push(1) });
+    const first = h['social:signInWithGitHub']({});
+    await vi.waitFor(() => expect(w.opened).toHaveLength(1));
+    const second = h['social:signInWithGitHub']({});
+    expect(await first).toEqual({ ok: false, error: { kind: 'internal', message: NOT_FINISHED } });
+    expect(w.signals[0]!.aborted).toBe(true);
+    expect(w.signals[1]!.aborted).toBe(false);
+    await vi.waitFor(() => expect(w.opened).toHaveLength(2));
+    w.finish(1);
+    expect(await second).toMatchObject({ ok: true, data: { signedIn: true, email: 'octo@example.com' } });
+    expect(sessions).toHaveLength(1);
+  });
+
+  test('cancel ends the waiting call with the not-finished error and answers null', async () => {
+    const w = waiting();
+    const sessions: number[] = [];
+    const focused: number[] = [];
+    const { h } = setup({}, { ...w.deps, onSessionChange: () => void sessions.push(1), focusWindow: () => void focused.push(1) });
+    const waitingCall = h['social:signInWithGitHub']({});
+    await vi.waitFor(() => expect(w.opened).toHaveLength(1));
+    expect(await h['social:cancelSignIn']({})).toEqual({ ok: true, data: null });
+    expect(await waitingCall).toEqual({ ok: false, error: { kind: 'internal', message: NOT_FINISHED } });
+    expect(w.signals[0]!.aborted).toBe(true);
+    expect(await w.backend.session()).toBeNull();
+    expect(sessions).toHaveLength(0);
+    expect(focused).toHaveLength(0);
+  });
+
+  test('cancel with nothing waiting is fine, and a new attempt works after a cancel', async () => {
+    const w = waiting();
+    const { h } = setup({}, w.deps);
+    expect(await h['social:cancelSignIn']({})).toEqual({ ok: true, data: null });
+    const cancelled = h['social:signInWithGitHub']({});
+    await vi.waitFor(() => expect(w.opened).toHaveLength(1));
+    await h['social:cancelSignIn']({});
+    expect(await cancelled).toMatchObject({ ok: false });
+    const again = h['social:signInWithGitHub']({});
+    await vi.waitFor(() => expect(w.opened).toHaveLength(2));
+    w.finish(1);
+    expect(await again).toMatchObject({ ok: true, data: { signedIn: true } });
+    // The attempt is over: a late cancel has nothing to end and signs nobody out.
+    expect(await h['social:cancelSignIn']({})).toEqual({ ok: true, data: null });
+    expect(await w.backend.session()).not.toBeNull();
+  });
+
+  test('a cancel that lands after the sign-in completed keeps the sign-in', async () => {
+    const fake = createFakeSocialBackend();
+    const backend: SocialBackend = {
+      ...fake,
+      // The browser came back and the code exchange is running when Cancel arrives; the exchange still completes.
+      signInWithGitHub: async (o) => {
+        await o.openExternal('https://fake-supabase.test/auth/v1/authorize?provider=github');
+        await Promise.resolve();
+        return fake.signInWithGitHub({ openExternal: async () => {} });
+      },
+    };
+    const { h } = setup({}, { backend, openExternal: async () => {} });
+    const call = h['social:signInWithGitHub']({});
+    await h['social:cancelSignIn']({});
+    expect(await call).toMatchObject({ ok: true, data: { signedIn: true } });
+    expect(await backend.session()).not.toBeNull();
+  });
+
+  test('the not-finished and start errors reach the window as they are, and are not logged as faults', async () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const { h } = setup({}, { openExternal: async () => { throw new Error('no browser'); } });
+      expect(await h['social:signInWithGitHub']({})).toEqual({ ok: false, error: { kind: 'internal', message: 'Could not start GitHub sign-in.' } });
+      const busy = 'Could not start GitHub sign-in. Close other apps that use ports 53682–53684 and try again.';
+      expect(toAppError(new SocialError('unknown', busy))).toEqual({ kind: 'internal', message: busy });
+      expect(toAppError(new SocialError('unknown', NOT_FINISHED))).toEqual({ kind: 'internal', message: NOT_FINISHED });
+      expect(logged).not.toHaveBeenCalled();
+      // Other unknown errors are still logged.
+      toAppError(new SocialError('unknown', 'something else broke'));
+      expect(logged).toHaveBeenCalledTimes(1);
+    } finally {
+      logged.mockRestore();
+    }
+  });
+
+  test('an offline or injected failure comes through with its own kind', async () => {
+    const { h } = setup({ fail: { signInWithGitHub: 'offline' } });
+    expect(await h['social:signInWithGitHub']({})).toMatchObject({ ok: false, error: { kind: 'offline' } });
+  });
+
+  test('without a browser opener nothing opens and the person is told it could not start', async () => {
+    const { h } = setup();
+    // No openExternal given: the fake has nothing to open with.
+    expect(await h['social:signInWithGitHub']({})).toMatchObject({ ok: false, error: { message: 'Could not start GitHub sign-in.' } });
+  });
+
+  test('an unconfigured build refuses GitHub sign-in', async () => {
+    const { h } = setup({}, { backend: createUnconfiguredBackend(), openExternal: async () => {} });
+    expect(await h['social:signInWithGitHub']({})).toMatchObject({ ok: false, error: { kind: 'not_configured' } });
+    expect(await h['social:githubSuggestion']({})).toMatchObject({ ok: false, error: { kind: 'not_configured' } });
+  });
+
+  describe('suggestion', () => {
+    test('the name passes through and the photo bytes become a data URL', async () => {
+      const { h } = setup({}, { openExternal: async () => {} });
+      await ok(h['social:signInWithGitHub']({}));
+      const suggestion = await ok(h['social:githubSuggestion']({}));
+      expect(suggestion.displayName).toBe('Octo Dev');
+      expect(suggestion.avatarDataUrl).toMatch(/^data:image\/png;base64,[A-Za-z0-9+/]+=*$/);
+      const bytes = Buffer.from(suggestion.avatarDataUrl!.split(',')[1]!, 'base64');
+      expect([...bytes.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    });
+
+    test('an e-mail member has no suggestion: both null', async () => {
+      const { h } = setup();
+      await signUp(h);
+      expect(await ok(h['social:githubSuggestion']({}))).toEqual({ displayName: null, avatarDataUrl: null });
+    });
+
+    test('signed out: not_signed_in', async () => {
+      const { h } = setup();
+      expect(await h['social:githubSuggestion']({})).toMatchObject({ ok: false, error: { kind: 'not_signed_in' } });
+    });
+
+    test('no photo bytes, no type, a GIF or an unexpected type gives no photo; the name stays', async () => {
+      const png = new Uint8Array([1, 2, 3]);
+      const cases: [Uint8Array | null, string | null, string | null][] = [
+        [null, null, null],
+        [null, 'image/png', null],
+        [png, null, null],
+        [png, 'image/gif', null],
+        [png, 'text/html', null],
+        [png, 'image/png', 'data:image/png;base64,AQID'],
+        [png, 'image/jpeg', 'data:image/jpeg;base64,AQID'],
+        [png, 'image/webp', 'data:image/webp;base64,AQID'],
+      ];
+      for (const [avatar, avatarType, expected] of cases) {
+        const backend: SocialBackend = { ...createFakeSocialBackend(), githubSuggestion: async () => ({ displayName: 'Octo', avatar, avatarType }) };
+        const { h } = setup({}, { backend });
+        expect(await ok(h['social:githubSuggestion']({}))).toEqual({ displayName: 'Octo', avatarDataUrl: expected });
+      }
+    });
+  });
+});

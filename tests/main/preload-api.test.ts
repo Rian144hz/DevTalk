@@ -93,6 +93,9 @@ test('social, safety and moderation methods map to their channels', async () => 
   await api.social.unlike('u6');
   await api.social.followers('u6', 1);
   await api.social.following('u6', 0);
+  await api.social.signInWithGitHub();
+  await api.social.cancelSignIn();
+  await api.social.githubSuggestion();
   expect(calls).toEqual([
     ['social:status', {}],
     ['social:sendCode', { email: 'a@b.co' }],
@@ -131,6 +134,9 @@ test('social, safety and moderation methods map to their channels', async () => 
     ['social:unlike', { userId: 'u6' }],
     ['social:followers', { userId: 'u6', page: 1 }],
     ['social:following', { userId: 'u6', page: 0 }],
+    ['social:signInWithGitHub', {}],
+    ['social:cancelSignIn', {}],
+    ['social:githubSuggestion', {}],
   ]);
 });
 

@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { app, dialog, safeStorage, type BrowserWindow } from 'electron';
+import { app, dialog, safeStorage, shell, type BrowserWindow } from 'electron';
 import { LLMError } from '../core/llm/errors';
 import type { ProgressStage } from '../core/llm/structured';
 import { openDatabase, type DB } from './db/open';
@@ -23,6 +23,7 @@ import { GEMINI_FALLBACK_MODEL, type ProviderId } from '../shared/providers';
 import { CHAT_EVENT, ROOM_EVENT } from '../shared/ipc-contract';
 import { createFixtureProvider } from './llm/fake-fixtures';
 import { createKeyVault, isKeyringUsable, type KeyVault, type SafeStorageLike } from './vault/key-vault';
+import { isAllowedAuthUrl } from './security';
 
 export interface AppContext {
   handlers: Handlers;
@@ -32,6 +33,8 @@ export interface AppContext {
   inRoom(): boolean;
   /** Gives up the voice-room seat, if any. Never rejects; may wait for the network, so callers set their own limit. */
   leaveRoom(): Promise<void>;
+  /** Ends a GitHub sign-in that is waiting for the browser (frees its port). Safe to call at any time. */
+  cancelSignIn(): void;
   close(): void;
 }
 
@@ -144,8 +147,9 @@ export function createAppContext(
   });
 
   const config = readSocialConfig(import.meta.env);
+  const fakeCommunity = fakeSocialBackend(userData);
   const backend =
-    fakeSocialBackend(userData) ??
+    fakeCommunity ??
     (config
       ? createSupabaseBackend({
           url: config.url,
@@ -153,6 +157,14 @@ export function createAppContext(
           storage: createSessionStore({ safeStorage: keyring, filePath: join(userData, 'social-session.bin') }),
         })
       : createUnconfiguredBackend());
+  // The system browser opens only the community server's own sign-in address. The fake community (dev and e2e, never
+  // packaged) opens nothing: tests must never start a real browser.
+  const openExternal = fakeCommunity
+    ? async () => {}
+    : async (url: string) => {
+        if (!config || !isAllowedAuthUrl(url, config.url)) throw new Error('Refused to open an unexpected sign-in address.');
+        await shell.openExternal(new URL(url).href);
+      };
 
   practiceSync = createPracticeSync({
     store,
@@ -174,6 +186,15 @@ export function createAppContext(
       void roomLive.exit();
     },
     roomLive,
+    openExternal,
+    // After the browser signed the person in, bring the app back to the front.
+    focusWindow: () => {
+      const win = getWindow();
+      if (!win || win.isDestroyed()) return;
+      if (win.isMinimized()) win.restore();
+      win.show();
+      win.focus();
+    },
     // Dev and e2e can shorten it (DEVTALK_ROOM_TIMEOUT_MS); a packaged app always waits 20 seconds.
     roomConnectTimeoutMs: roomConnectTimeoutMs(process.env, app.isPackaged),
     exportLocal: () => exportLocalData(db),
@@ -197,6 +218,8 @@ export function createAppContext(
     today: () => new Date().toISOString().slice(0, 10),
   });
 
+  const cancelSignIn = () => void socialHandlers['social:cancelSignIn']({});
+
   return {
     handlers: { ...handlers, ...socialHandlers },
     startBackground: () => {
@@ -205,7 +228,9 @@ export function createAppContext(
     },
     inRoom: () => roomLive.current() !== null || roomLive.leaving(),
     leaveRoom: () => roomLive.exit(),
+    cancelSignIn,
     close: () => {
+      cancelSignIn();
       chatLive.stop();
       void roomLive.exit();
       db.close();

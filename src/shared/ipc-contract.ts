@@ -114,6 +114,12 @@ export interface Channels {
   'social:notices': { in: Record<string, never>; out: SocialNotice[] };
   'social:readNotice': { in: { id: number }; out: null };
   'social:signOut': { in: Record<string, never>; out: SocialStatus };
+  /** Opens GitHub in the browser and resolves when the member is signed in (or fails with a message to show). One attempt at a time. */
+  'social:signInWithGitHub': { in: Record<string, never>; out: SocialStatus };
+  /** Ends the waiting GitHub sign-in (its call fails with "Sign-in was not finished."). */
+  'social:cancelSignIn': { in: Record<string, never>; out: null };
+  /** Name and photo from the GitHub identity, to fill the profile form; nothing is saved until the member saves the profile. */
+  'social:githubSuggestion': { in: Record<string, never>; out: { displayName: string | null; avatarDataUrl: string | null } };
   'social:export': { in: { includeLocal: boolean }; out: { saved: boolean; path: string | null } };
   'social:deleteAccount': { in: { confirmEmail: string; deleteLocal: boolean }; out: null };
   'social:badges': { in: { userId: string }; out: Badge[] };
@@ -194,6 +200,7 @@ export const INVOKE_CHANNELS = [
   'progress:graph', 'settings:get', 'settings:set', 'llm:check',
   'social:status', 'social:sendCode', 'social:verifyCode', 'social:acceptDocuments', 'social:getProfile', 'social:saveProfile',
   'social:setAvatar', 'social:removeAvatar', 'social:avatar', 'social:notices', 'social:readNotice', 'social:signOut',
+  'social:signInWithGitHub', 'social:cancelSignIn', 'social:githubSuggestion',
   'social:export', 'social:deleteAccount', 'social:badges', 'social:practiceGraph', 'social:setBanner', 'social:removeBanner',
   'social:banner', 'social:members', 'social:profileOf', 'social:socialStats', 'social:follow', 'social:unfollow', 'social:like',
   'social:unlike', 'social:followers', 'social:following', 'safety:block', 'safety:unblock', 'safety:report',
@@ -255,6 +262,10 @@ export interface DevtalkApi {
     notices(): R<'social:notices'>;
     readNotice(id: number): R<'social:readNotice'>;
     signOut(): R<'social:signOut'>;
+    /** Opens GitHub in the browser; resolves when signed in. A new call ends the previous one. */
+    signInWithGitHub(): R<'social:signInWithGitHub'>;
+    cancelSignIn(): R<'social:cancelSignIn'>;
+    githubSuggestion(): R<'social:githubSuggestion'>;
     /** Opens a save dialog in main; resolves after the file is written or the dialog is cancelled. */
     exportData(includeLocal: boolean): R<'social:export'>;
     deleteAccount(input: Channels['social:deleteAccount']['in']): R<'social:deleteAccount'>;

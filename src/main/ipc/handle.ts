@@ -29,6 +29,9 @@ export const MESSAGES: Record<AppErrorKind, string> = {
   forbidden: 'You are not allowed to do that.',
 };
 
+/** The GitHub sign-in's own plain-English messages (see oauth-loopback.ts and the backends): shown as they are, and no fault to log. */
+const GITHUB_SIGN_IN_NOTICE = /^(Sign-in was not finished\.|Could not start GitHub sign-in\.)/;
+
 const CODES_LIMIT = 'Too many codes were sent. Wait a few minutes and try again.';
 const REPORTS_LIMIT = 'You reached the limit of 20 reports a day. Try again tomorrow.';
 const FOLLOWS_LIMIT = 'You reached the limit of 200 follows a day. Try again tomorrow.';
@@ -82,7 +85,7 @@ function socialAppError(err: SocialError): AppError {
       if (/room is full/i.test(err.message)) return { kind: 'validation', message: ROOM_FULL };
       if (/room has ended/i.test(err.message)) return { kind: 'validation', message: ROOM_ENDED };
       if (/room_sessions_one_open/.test(err.message)) return { kind: 'validation', message: ROOM_ALREADY_JOINING };
-      console.error('[devtalk] community error:', err.message);
+      if (!GITHUB_SIGN_IN_NOTICE.test(err.message)) console.error('[devtalk] community error:', err.message);
       return { kind: 'internal', message: err.message || MESSAGES.internal };
     default:
       return { kind: err.kind, message: MESSAGES[err.kind] };
