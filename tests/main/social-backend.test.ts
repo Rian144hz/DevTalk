@@ -1,6 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { crc32, inflateSync } from 'node:zlib';
 import type { RoomDraft, RoomLiveEvent, RoomTimer } from '../../src/core/social/rooms';
 import type { ProfileDraft } from '../../src/core/social/types';
 import type { SocialErrorKind } from '../../src/main/social/errors';
@@ -8,6 +9,7 @@ import { createUnconfiguredBackend, type SocialBackend } from '../../src/main/so
 import { SocialError } from '../../src/main/social/errors';
 import { findShippedSecrets, readSocialConfig } from '../../src/main/social/config';
 import { createFakeSocialBackend } from '../../src/main/social/fake-backend';
+import { NOT_FINISHED_MESSAGE } from '../../src/main/social/oauth-loopback';
 import { createSessionStore } from '../../src/main/social/session-store';
 import type { SafeStorageLike } from '../../src/main/vault/key-vault';
 
@@ -1512,5 +1514,137 @@ describe('fake backend: rooms', () => {
     const b = createFakeSocialBackend({ seed: 'people', fail: { liveRooms: 'offline', joinRoom: 'asleep' } });
     expect(await kindOf(b.liveRooms())).toBe('offline');
     expect(await kindOf(b.joinRoom('r'))).toBe('asleep');
+  });
+});
+
+describe('fake backend: GitHub sign-in', () => {
+  const browser = () => {
+    const opened: string[] = [];
+    return { opened, openExternal: async (url: string) => void opened.push(url) };
+  };
+
+  /** Checks the PNG really is one a browser can decode: signature, chunk CRCs, IHDR size, pixel data length. */
+  function readPng(bytes: Uint8Array): { width: number; height: number } {
+    const buf = Buffer.from(bytes);
+    expect([...buf.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
+    let at = 8;
+    let width = 0;
+    let height = 0;
+    const idat: Buffer[] = [];
+    const types: string[] = [];
+    while (at < buf.length) {
+      const len = buf.readUInt32BE(at);
+      const type = buf.subarray(at + 4, at + 8).toString('latin1');
+      const data = buf.subarray(at + 8, at + 8 + len);
+      expect(buf.readUInt32BE(at + 8 + len)).toBe(crc32(buf.subarray(at + 4, at + 8 + len)));
+      types.push(type);
+      if (type === 'IHDR') {
+        width = data.readUInt32BE(0);
+        height = data.readUInt32BE(4);
+        expect([data[8], data[9]]).toEqual([8, 2]); // 8-bit RGB
+      }
+      if (type === 'IDAT') idat.push(data);
+      at += 12 + len;
+    }
+    expect(types[0]).toBe('IHDR');
+    expect(types.at(-1)).toBe('IEND');
+    expect(inflateSync(Buffer.concat(idat)).length).toBe(height * (1 + width * 3));
+    return { width, height };
+  }
+
+  test('signs in at once as the GitHub test member, after "opening" the browser once', async () => {
+    const b = createFakeSocialBackend();
+    const { opened, openExternal } = browser();
+    const s = await b.signInWithGitHub({ openExternal });
+    expect(s.email).toBe('octo@example.com');
+    expect(await b.session()).toEqual(s);
+    expect(opened).toHaveLength(1);
+    expect(opened[0]).toMatch(/^https:\/\//);
+    // A new member: the documents and the profile come next, as for e-mail.
+    expect(await b.hasAcceptedCurrentDocuments()).toBe(false);
+    expect(await b.getOwnProfile()).toBeNull();
+  });
+
+  test('signing in with GitHub again returns the same account', async () => {
+    const b = createFakeSocialBackend();
+    const first = await b.signInWithGitHub(browser());
+    await b.signOut();
+    expect((await b.signInWithGitHub(browser())).userId).toBe(first.userId);
+  });
+
+  test('the same e-mail joins the account made with an e-mail code', async () => {
+    const b = createFakeSocialBackend();
+    await b.sendCode('octo@example.com');
+    const byCode = await b.verifyCode('octo@example.com', '123456');
+    expect((await b.githubSuggestion()).displayName).toBeNull();
+    await b.signOut();
+    expect((await b.signInWithGitHub(browser())).userId).toBe(byCode.userId);
+    expect((await b.githubSuggestion()).displayName).toBe('Octo Dev');
+  });
+
+  test('the suggestion is the GitHub name and a small PNG photo', async () => {
+    const b = createFakeSocialBackend();
+    await b.signInWithGitHub(browser());
+    const g = await b.githubSuggestion();
+    expect(g.displayName).toBe('Octo Dev');
+    expect(g.avatarType).toBe('image/png');
+    expect(g.avatar).toBeInstanceOf(Uint8Array);
+    expect(g.avatar!.byteLength).toBeLessThan(2 * 1024 * 1024);
+    expect(readPng(g.avatar!)).toEqual({ width: 64, height: 64 });
+    // Nothing is saved until the member saves the profile.
+    expect(await b.getOwnProfile()).toBeNull();
+  });
+
+  test('no suggestion for a member who signed in with an e-mail code; signed out is not_signed_in', async () => {
+    const b = createFakeSocialBackend();
+    expect(await kindOf(b.githubSuggestion())).toBe('not_signed_in');
+    await b.sendCode('rian@example.com');
+    await b.verifyCode('rian@example.com', '123456');
+    expect(await b.githubSuggestion()).toEqual({ displayName: null, avatar: null, avatarType: null });
+  });
+
+  test('an injected failure stops the sign-in before the browser opens', async () => {
+    const b = createFakeSocialBackend({ fail: { signInWithGitHub: 'offline', githubSuggestion: 'asleep' } });
+    const { opened, openExternal } = browser();
+    expect(await kindOf(b.signInWithGitHub({ openExternal }))).toBe('offline');
+    expect(opened).toEqual([]);
+    expect(await b.session()).toBeNull();
+    expect(await kindOf(b.githubSuggestion())).toBe('asleep');
+  });
+
+  test('Cancel (an aborted signal) does not sign in', async () => {
+    const b = createFakeSocialBackend();
+    const ac = new AbortController();
+    ac.abort();
+    const err = await b.signInWithGitHub({ ...browser(), signal: ac.signal }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(SocialError);
+    expect((err as SocialError).kind).toBe('unknown');
+    expect((err as SocialError).message).toBe(NOT_FINISHED_MESSAGE);
+    expect(await b.session()).toBeNull();
+  });
+
+  test('a browser that cannot open stops the sign-in', async () => {
+    const b = createFakeSocialBackend();
+    const err = await b.signInWithGitHub({ openExternal: async () => { throw new Error('no browser'); } }).catch((e: unknown) => e);
+    expect((err as SocialError).kind).toBe('unknown');
+    expect((err as SocialError).message).toBe('Could not start GitHub sign-in.');
+    expect(await b.session()).toBeNull();
+  });
+
+  test('the GitHub account survives a relaunch', async () => {
+    const filePath = join(dir, 'fake-social.json');
+    const a = createFakeSocialBackend({ filePath });
+    const s = await a.signInWithGitHub(browser());
+    const b = createFakeSocialBackend({ filePath });
+    expect(await b.session()).toEqual(s);
+    expect((await b.githubSuggestion()).displayName).toBe('Octo Dev');
+  });
+
+  test('the unconfigured backend refuses GitHub sign-in and the suggestion', async () => {
+    const b = createUnconfiguredBackend();
+    const { opened, openExternal } = browser();
+    expect(await kindOf(b.signInWithGitHub({ openExternal }))).toBe('not_configured');
+    expect(opened).toEqual([]);
+    expect(await kindOf(b.githubSuggestion())).toBe('not_configured');
   });
 });

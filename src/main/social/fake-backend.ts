@@ -1,6 +1,7 @@
 // In-memory community server for e2e tests and offline UI work (DEVTALK_FAKE_SOCIAL, never in packaged builds).
 // It mirrors the database rules in supabase/migrations closely enough for the app to behave the same way.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { deflateSync } from 'node:zlib';
 import { addDays, streaks, type DayActivity } from '../../core/progress/practice';
 import { BADGE_LABELS, type ManualBadge } from '../../core/social/badges';
 import { LEGAL_DOCUMENTS, LEGAL_VERSION } from '../../core/social/types';
@@ -14,8 +15,14 @@ import type { Badge, MemberRow, ModerationReport, NoticeKind, ProfileDraft, Repo
 import type { MemberSummary, ModerationHistoryItem, Notice, PracticeGraphData, SocialBackend, SocialSession } from './backend';
 import { SocialError } from './errors';
 import type { SocialErrorKind } from './errors';
+import { NOT_FINISHED_MESSAGE } from './oauth-loopback';
 
 export const FAKE_CODE = '123456';
+/** "Continue with GitHub" in the fake signs in at once as this test member (e2e). */
+export const FAKE_GITHUB_EMAIL = 'octo@example.com';
+export const FAKE_GITHUB_NAME = 'Octo Dev';
+/** Handed to openExternal so the wiring can be checked; .test never resolves, so nothing real opens. */
+export const FAKE_GITHUB_AUTHORIZE_URL = 'https://fake-supabase.test/auth/v1/authorize?provider=github';
 const DAY_MS = 86_400_000;
 const REQUIRED = [...LEGAL_DOCUMENTS, 'age_18'];
 
@@ -41,7 +48,8 @@ interface StoredAction {
 }
 
 interface State {
-  users: { id: string; email: string }[];
+  /** github: the account has a GitHub identity (signed in with GitHub at least once). */
+  users: { id: string; email: string; github?: true }[];
   session: SocialSession | null;
   consents: { userId: string; document: string; version: string; acceptedAt: string }[];
   profiles: Record<string, Omit<SocialProfile, 'hasAvatar' | 'hasBanner'>>;
@@ -196,6 +204,44 @@ const emptyState = (): State => ({
   roomSignalCounts: [],
 });
 
+const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+const crc32 = (bytes: Uint8Array) => {
+  let c = 0xffffffff;
+  for (const b of bytes) c = CRC_TABLE[(c ^ b) & 0xff]! ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+};
+
+/** A valid size×size PNG in one colour (8-bit RGB): the fake GitHub photo. */
+export function solidPng(size: number, [r, g, b]: readonly [number, number, number]): Uint8Array {
+  const chunk = (type: string, data: Buffer) => {
+    const body = Buffer.concat([Buffer.from(type, 'latin1'), data]);
+    const out = Buffer.alloc(12 + data.length);
+    out.writeUInt32BE(data.length, 0);
+    body.copy(out, 4);
+    out.writeUInt32BE(crc32(body), 8 + data.length);
+    return out;
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(size, 0);
+  ihdr.writeUInt32BE(size, 4);
+  ihdr.set([8, 2, 0, 0, 0], 8); // 8 bits, RGB, deflate, no filter, no interlace
+  const row = Buffer.alloc(1 + size * 3);
+  for (let x = 0; x < size; x++) row.set([r, g, b], 1 + x * 3);
+  const pixels = Buffer.concat(Array.from({ length: size }, () => row));
+  return new Uint8Array(
+    Buffer.concat([
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+      chunk('IHDR', ihdr),
+      chunk('IDAT', deflateSync(pixels)),
+      chunk('IEND', Buffer.alloc(0)),
+    ]),
+  );
+}
+
 const LEVEL_ORDER = ['A2', 'B1', 'B2', 'C1', 'C2'];
 /** A seat in a room is live while its person was heard from in the last 90 seconds. */
 const SEAT_MS = 90_000;
@@ -242,7 +288,7 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
 
   const userByEmail = (email: string) => state.users.find((u) => u.email === email.toLowerCase());
   const createUser = (email: string) => {
-    const user = { id: newUuid(), email: email.toLowerCase() };
+    const user: State['users'][number] = { id: newUuid(), email: email.toLowerCase() };
     state.users.push(user);
     return user;
   };
@@ -662,6 +708,30 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
 
     async session() {
       return state.session;
+    },
+
+    async signInWithGitHub({ openExternal, signal }) {
+      failIf('signInWithGitHub');
+      if (signal?.aborted) throw new SocialError('unknown', NOT_FINISHED_MESSAGE);
+      try {
+        await openExternal(FAKE_GITHUB_AUTHORIZE_URL);
+      } catch {
+        throw new SocialError('unknown', 'Could not start GitHub sign-in.');
+      }
+      if (signal?.aborted) throw new SocialError('unknown', NOT_FINISHED_MESSAGE);
+      // Like Supabase with a verified e-mail: an account with the same e-mail gets the GitHub identity.
+      const user = userByEmail(FAKE_GITHUB_EMAIL) ?? createUser(FAKE_GITHUB_EMAIL);
+      user.github = true;
+      state.session = { userId: user.id, email: user.email };
+      save();
+      return state.session;
+    },
+
+    async githubSuggestion() {
+      failIf('githubSuggestion');
+      const { userId } = me();
+      if (!state.users.find((u) => u.id === userId)?.github) return { displayName: null, avatar: null, avatarType: null };
+      return { displayName: FAKE_GITHUB_NAME, avatar: solidPng(64, [36, 41, 47]), avatarType: 'image/png' };
     },
 
     async signOut() {

@@ -1,5 +1,5 @@
 import {
-  allowPermission, allowPermissionCheck, CONTENT_SECURITY_POLICY, devContentSecurityPolicy, fakeMediaSwitches, installPermissionHandlers, isAppUrl, secureWebPreferences,
+  allowPermission, allowPermissionCheck, CONTENT_SECURITY_POLICY, devContentSecurityPolicy, fakeMediaSwitches, installPermissionHandlers, isAllowedAuthUrl, isAppUrl, secureWebPreferences,
 } from '../../src/main/security';
 
 test('window is isolated and sandboxed', () => {
@@ -42,6 +42,46 @@ describe('isAppUrl', () => {
     expect(isAppUrl('http://localhost:5174/', 'http://localhost:5173/')).toBe(false);
     expect(isAppUrl('https://example.com/', 'http://localhost:5173/')).toBe(false);
     expect(isAppUrl('not a url', 'http://localhost:5173/')).toBe(false);
+  });
+});
+
+describe('isAllowedAuthUrl (what the app may open in the browser for GitHub sign-in)', () => {
+  const project = 'https://xjyp.supabase.co';
+
+  test('the authorize page of the configured project is allowed', () => {
+    expect(isAllowedAuthUrl('https://xjyp.supabase.co/auth/v1/authorize?provider=github&redirect_to=http%3A%2F%2F127.0.0.1%3A53682%2Fcallback', project)).toBe(true);
+    expect(isAllowedAuthUrl('https://XJYP.supabase.co/auth/v1/authorize?provider=github', project)).toBe(true);
+    expect(isAllowedAuthUrl('https://xjyp.supabase.co/auth/v1/authorize?provider=github', `${project}/`)).toBe(true);
+  });
+
+  test('http, another project, another host or port are refused', () => {
+    expect(isAllowedAuthUrl('http://xjyp.supabase.co/auth/v1/authorize?provider=github', project)).toBe(false);
+    expect(isAllowedAuthUrl('https://other.supabase.co/auth/v1/authorize?provider=github', project)).toBe(false);
+    expect(isAllowedAuthUrl('https://github.com/login/oauth/authorize', project)).toBe(false);
+    expect(isAllowedAuthUrl('https://xjyp.supabase.co:8443/auth/v1/authorize', project)).toBe(false);
+    expect(isAllowedAuthUrl('javascript:alert(1)', project)).toBe(false);
+    expect(isAllowedAuthUrl('file:///etc/passwd', project)).toBe(false);
+  });
+
+  test('look-alike hosts are refused', () => {
+    expect(isAllowedAuthUrl('https://xjyp.supabase.co.evil.example/auth/v1/authorize', project)).toBe(false);
+    expect(isAllowedAuthUrl('https://xjyp.supabase.co@evil.example/auth/v1/authorize', project)).toBe(false);
+    expect(isAllowedAuthUrl('https://user:pw@xjyp.supabase.co/auth/v1/authorize', project)).toBe(false);
+    expect(isAllowedAuthUrl('https://evil.example/?https://xjyp.supabase.co/auth/v1/authorize', project)).toBe(false);
+    expect(isAllowedAuthUrl('https://xjyp-supabase.co/auth/v1/authorize', project)).toBe(false);
+    expect(isAllowedAuthUrl('https://xjyp.supabase.co%2eevil.example/auth/v1/authorize', project)).toBe(false);
+  });
+
+  test('only the auth pages of the project, never another path on it', () => {
+    expect(isAllowedAuthUrl('https://xjyp.supabase.co/storage/v1/object/public/x.html', project)).toBe(false);
+    expect(isAllowedAuthUrl('https://xjyp.supabase.co/', project)).toBe(false);
+  });
+
+  test('a project URL that is not https, or anything malformed, allows nothing', () => {
+    expect(isAllowedAuthUrl('http://127.0.0.1:54321/auth/v1/authorize?provider=github', 'http://127.0.0.1:54321')).toBe(false);
+    expect(isAllowedAuthUrl('not a url', project)).toBe(false);
+    expect(isAllowedAuthUrl('https://xjyp.supabase.co/auth/v1/authorize', 'not a url')).toBe(false);
+    expect(isAllowedAuthUrl('', '')).toBe(false);
   });
 });
 

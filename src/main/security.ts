@@ -48,6 +48,30 @@ export function isAppUrl(url: string, appUrl: string): boolean {
 }
 
 /**
+ * GitHub sign-in: the only page the app opens in the browser for it is an auth page of the configured Supabase
+ * project — `https:`, the same origin (no other host, port or look-alike name, no user:password@), path under
+ * /auth/v1/. A project URL that is not https allows nothing.
+ */
+export function isAllowedAuthUrl(url: string, supabaseUrl: string): boolean {
+  let target: URL;
+  let project: URL;
+  try {
+    target = new URL(url);
+    project = new URL(supabaseUrl);
+  } catch {
+    return false;
+  }
+  return (
+    project.protocol === 'https:' &&
+    target.protocol === 'https:' &&
+    target.origin === project.origin &&
+    target.username === '' &&
+    target.password === '' &&
+    target.pathname.startsWith('/auth/v1/')
+  );
+}
+
+/**
  * Request handler rule: the only permission the app ever gives is the microphone (voice rooms), to its own page.
  * `media` must say what it wants and want audio only; the camera, the screen, location, notifications and the rest are denied.
  */

@@ -10,6 +10,21 @@ export interface SocialSession {
   email: string;
 }
 
+export interface GitHubSignInOptions {
+  /** Opens the sign-in page in the member's browser (shell.openExternal in the app). */
+  openExternal(url: string): Promise<void>;
+  /** Cancel: ends the wait for the browser and frees the port. */
+  signal?: AbortSignal;
+}
+
+/** What GitHub says about the member, to fill the profile form. Nothing is saved until the member saves the profile. */
+export interface GitHubSuggestion {
+  displayName: string | null;
+  /** The photo as downloaded (at most 2 MB); the window prepares it like any other photo. */
+  avatar: Uint8Array | null;
+  avatarType: string | null;
+}
+
 export interface Notice {
   id: number;
   message: string;
@@ -37,6 +52,13 @@ export interface SocialBackend {
   sendCode(email: string): Promise<void>;
   verifyCode(email: string, code: string): Promise<SocialSession>;
   session(): Promise<SocialSession | null>;
+  /**
+   * Signs in through GitHub in the browser (PKCE, a loopback listener on 127.0.0.1). Throws SocialError 'unknown' with
+   * a message to show when the ports are busy, the browser cannot open, or the sign-in was not finished.
+   */
+  signInWithGitHub(o: GitHubSignInOptions): Promise<SocialSession>;
+  /** Name and photo from the GitHub identity; all null when the signed-in member has no GitHub identity. */
+  githubSuggestion(): Promise<GitHubSuggestion>;
   signOut(): Promise<void>;
   hasAcceptedCurrentDocuments(): Promise<boolean>;
   /** Accepts every legal document and the 18+ attestation at the current version. */
@@ -142,6 +164,8 @@ export function createUnconfiguredBackend(): SocialBackend {
     sendCode: fail,
     verifyCode: fail,
     session: async () => null,
+    signInWithGitHub: fail,
+    githubSuggestion: fail,
     signOut: async () => {},
     hasAcceptedCurrentDocuments: fail,
     acceptDocuments: fail,

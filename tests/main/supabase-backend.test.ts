@@ -1,4 +1,7 @@
+import { createHash } from 'node:crypto';
+import { createServer, get, type Server } from 'node:http';
 import type { RoomLiveEvent } from '../../src/core/social/rooms';
+import { NOT_FINISHED_MESSAGE, PORTS_BUSY_MESSAGE } from '../../src/main/social/oauth-loopback';
 import { SocialError } from '../../src/main/social/errors';
 import { mapSupabaseError } from '../../src/main/social/errors';
 import { createSupabaseBackend } from '../../src/main/social/supabase-backend';
@@ -92,6 +95,8 @@ test('sendCode asks GoTrue for an e-mail code and allows new accounts', async ()
   const { b, calls } = backend({ 'POST /auth/v1/otp': json(200, {}) });
   await b.sendCode('rian@example.com');
   expect(calls[0]).toMatchObject({ method: 'POST', path: '/auth/v1/otp', body: { email: 'rian@example.com', create_user: true } });
+  // The client runs the PKCE flow (needed for GitHub); the e-mail code still works the same way.
+  expect(calls[0]!.body).toMatchObject({ code_challenge: expect.any(String), code_challenge_method: 's256' });
 });
 
 test('verifyCode verifies an e-mail code and keeps the session', async () => {
@@ -895,5 +900,305 @@ describe('rooms (Supabase)', () => {
     await flush();
     expect(channels.opened).toHaveLength(0);
     expect(events).toEqual([]);
+  });
+});
+
+describe('GitHub sign-in (Supabase)', () => {
+  const servers: Server[] = [];
+  afterEach(async () => {
+    await Promise.all(servers.splice(0).map((s) => new Promise<void>((r) => { s.closeAllConnections(); s.close(() => r()); })));
+  });
+
+  /** The browser: follows a URL to the loopback (node:http without an agent, so nothing stays open). */
+  function visit(url: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      get(url, { agent: false }, (res) => {
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', (c: string) => (body += c));
+        res.on('end', () => resolve(body));
+      }).on('error', reject);
+    });
+  }
+
+  /** A browser where the member finishes on GitHub: Supabase sends it back to redirect_to with `query`. */
+  function browser(query: string | null) {
+    const opened: string[] = [];
+    const pages: Promise<string>[] = [];
+    const openExternal = async (url: string) => {
+      opened.push(url);
+      const back = new URL(url).searchParams.get('redirect_to');
+      if (back && query !== null) pages.push(visit(`${back}?${query}`));
+    };
+    return { opened, pages, openExternal };
+  }
+
+  function githubUser(sub = 'gh-1', meta: Record<string, unknown> = {}, providers = ['github']) {
+    const body = sessionBody(sub, 'octo@example.com');
+    return {
+      ...body,
+      user: {
+        ...body.user,
+        app_metadata: { provider: providers[0], providers },
+        user_metadata: meta,
+        identities: providers.map((provider, i) => ({ id: `${i}`, identity_id: `id-${i}`, user_id: sub, provider, identity_data: {} })),
+      },
+    };
+  }
+
+  // Port 0: any free port, so these tests never meet the ones that use 53682–53684.
+  function ghBackend(routes: Record<string, Reply>, extra: { url?: string; oauthPorts?: number[]; oauthTimeoutMs?: number } = {}) {
+    const f = fakeFetch(routes);
+    const storage = memoryStorage();
+    const b = createSupabaseBackend({
+      url: extra.url ?? URL_BASE, key: 'sb_publishable_test', storage, fetch: f.fetch, autoRefreshToken: false,
+      oauthPorts: extra.oauthPorts ?? [0], oauthTimeoutMs: extra.oauthTimeoutMs,
+    });
+    return { b, calls: f.calls, storage };
+  }
+
+  test('opens the project\'s authorize page for GitHub with the loopback redirect, then exchanges the code (PKCE)', async () => {
+    const { b, calls } = ghBackend({ 'POST /auth/v1/token': json(200, githubUser()) });
+    const web = browser('code=auth-code-1');
+    const s = await b.signInWithGitHub({ openExternal: web.openExternal });
+    expect(s).toEqual({ userId: 'gh-1', email: 'octo@example.com' });
+    expect(await b.session()).toEqual(s);
+
+    expect(web.opened).toHaveLength(1);
+    const url = new URL(web.opened[0]!);
+    expect(url.origin + url.pathname).toBe('https://proj.supabase.co/auth/v1/authorize');
+    expect(url.searchParams.get('provider')).toBe('github');
+    expect(url.searchParams.get('redirect_to')).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/callback$/);
+    expect(url.searchParams.get('scopes')).toBe('read:user user:email');
+    expect(url.searchParams.get('code_challenge_method')).toBe('s256');
+    expect(await web.pages[0]).toContain('You can go back to DevTalk.');
+
+    const exchange = calls.find((c) => c.path === '/auth/v1/token')!;
+    expect(exchange.method).toBe('POST');
+    expect(exchange.query).toBe('?grant_type=pkce');
+    const body = exchange.body as { auth_code: string; code_verifier: string };
+    expect(body.auth_code).toBe('auth-code-1');
+    // The verifier kept in the session store is the one behind the challenge sent to the browser.
+    const challenge = createHash('sha256').update(body.code_verifier).digest('base64url');
+    expect(url.searchParams.get('code_challenge')).toBe(challenge);
+    // Nothing was fetched before the browser came back, except the exchange.
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual(['POST /auth/v1/token']);
+  });
+
+  test('an error from GitHub (the member said no) ends with "not finished" and no exchange', async () => {
+    const { b, calls } = ghBackend({ 'POST /auth/v1/token': json(200, githubUser()) });
+    const web = browser('error=access_denied&error_description=The+user+denied+the+request');
+    const err = await errorOf(b.signInWithGitHub({ openExternal: web.openExternal }));
+    expect(err.kind).toBe('unknown');
+    expect(err.message).toBe(NOT_FINISHED_MESSAGE);
+    expect(await web.pages[0]).toContain('The user denied the request');
+    expect(calls).toEqual([]);
+    expect(await b.session()).toBeNull();
+  });
+
+  test('a made-up code (no matching PKCE flow) does not sign in', async () => {
+    const { b } = ghBackend({
+      'POST /auth/v1/token': json(400, { code: 400, error_code: 'flow_state_not_found', msg: 'invalid flow state, no valid flow state found' }),
+    });
+    const err = await errorOf(b.signInWithGitHub(browser('code=forged')));
+    expect(err.kind).toBe('unknown');
+    expect(err.message).toBe(NOT_FINISHED_MESSAGE);
+    expect(await b.session()).toBeNull();
+  });
+
+  test('offline during the exchange says offline', async () => {
+    const { b } = ghBackend({ 'POST /auth/v1/token': new TypeError('fetch failed') });
+    expect((await errorOf(b.signInWithGitHub(browser('code=c')))).kind).toBe('offline');
+  });
+
+  test('refuses to open a URL that is not https on the project origin', async () => {
+    // A local http project: the authorize URL is http, so nothing is opened.
+    const { b } = ghBackend({}, { url: 'http://127.0.0.1:54321' });
+    const web = browser('code=c');
+    const err = await errorOf(b.signInWithGitHub({ openExternal: web.openExternal }));
+    expect(err.kind).toBe('unknown');
+    expect(err.message).toBe('Could not start GitHub sign-in.');
+    expect(web.opened).toEqual([]);
+  });
+
+  test('a browser that cannot open stops the sign-in and closes the listener', async () => {
+    let redirect = '';
+    const { b } = ghBackend({});
+    const err = await errorOf(
+      b.signInWithGitHub({
+        openExternal: async (url) => {
+          redirect = new URL(url).searchParams.get('redirect_to')!;
+          throw new Error('no browser');
+        },
+      }),
+    );
+    expect(err.message).toBe('Could not start GitHub sign-in.');
+    await expect(visit(`${redirect}?code=late`)).rejects.toMatchObject({ code: 'ECONNREFUSED' });
+  });
+
+  test('Cancel (abort) while the browser is open ends with "not finished" and frees the port', async () => {
+    const { b } = ghBackend({});
+    const ac = new AbortController();
+    let redirect = '';
+    const p = b.signInWithGitHub({
+      signal: ac.signal,
+      openExternal: async (url) => {
+        redirect = new URL(url).searchParams.get('redirect_to')!;
+        setTimeout(() => ac.abort(), 10);
+      },
+    });
+    const err = await errorOf(p);
+    expect(err.message).toBe(NOT_FINISHED_MESSAGE);
+    await expect(visit(`${redirect}?code=late`)).rejects.toMatchObject({ code: 'ECONNREFUSED' });
+    expect(await b.session()).toBeNull();
+  });
+
+  test('after Cancel, a new attempt gets the same port again', async () => {
+    const free = createServer();
+    await new Promise<void>((r) => free.listen(0, '127.0.0.1', () => r()));
+    const port = (free.address() as { port: number }).port;
+    await new Promise<void>((r) => free.close(() => r()));
+    const { b } = ghBackend({ 'POST /auth/v1/token': json(200, githubUser()) }, { oauthPorts: [port] });
+    const ac = new AbortController();
+    const first = await errorOf(b.signInWithGitHub({ signal: ac.signal, openExternal: async () => void setTimeout(() => ac.abort(), 5) }));
+    expect(first.message).toBe(NOT_FINISHED_MESSAGE);
+    const web = browser('code=c2');
+    expect(await b.signInWithGitHub({ openExternal: web.openExternal })).toEqual({ userId: 'gh-1', email: 'octo@example.com' });
+    expect(new URL(web.opened[0]!).searchParams.get('redirect_to')).toBe(`http://127.0.0.1:${port}/callback`);
+  });
+
+  test('an already cancelled sign-in never opens the browser', async () => {
+    const { b } = ghBackend({});
+    const ac = new AbortController();
+    ac.abort();
+    const web = browser('code=c');
+    expect((await errorOf(b.signInWithGitHub({ openExternal: web.openExternal, signal: ac.signal }))).message).toBe(NOT_FINISHED_MESSAGE);
+    expect(web.opened).toEqual([]);
+  });
+
+  test('an abandoned browser times out with "not finished"', async () => {
+    const { b } = ghBackend({}, { oauthTimeoutMs: 50 });
+    const err = await errorOf(b.signInWithGitHub(browser(null)));
+    expect(err.message).toBe(NOT_FINISHED_MESSAGE);
+  });
+
+  test('busy ports: the message names them', async () => {
+    const other = createServer();
+    servers.push(other);
+    await new Promise<void>((r) => other.listen(0, '127.0.0.1', () => r()));
+    const port = (other.address() as { port: number }).port;
+    const { b } = ghBackend({}, { oauthPorts: [port] });
+    const web = browser('code=c');
+    const err = await errorOf(b.signInWithGitHub({ openExternal: web.openExternal }));
+    expect(err.kind).toBe('unknown');
+    expect(err.message).toBe(PORTS_BUSY_MESSAGE);
+    expect(PORTS_BUSY_MESSAGE).toBe('Could not start GitHub sign-in. Close other apps that use ports 53682\u201353684 and try again.');
+    expect(web.opened).toEqual([]);
+  });
+
+  describe('githubSuggestion', () => {
+    const PNG = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82]);
+    const image = (bytes: Uint8Array<ArrayBuffer>, type = 'image/png', headers: Record<string, string> = {}) =>
+      () => new Response(bytes, { status: 200, headers: { 'Content-Type': type, ...headers } });
+
+    async function signedIn(meta: Record<string, unknown>, routes: Record<string, Reply> = {}, providers = ['github']) {
+      const r = ghBackend({ 'POST /auth/v1/verify': json(200, githubUser('gh-1', meta, providers)), ...routes });
+      await r.b.verifyCode('octo@example.com', '123456');
+      return r;
+    }
+
+    test('the GitHub name and photo, downloaded from avatars.githubusercontent.com', async () => {
+      const { b, calls } = await signedIn(
+        { full_name: '  Octo   Dev  ', name: 'ignored', user_name: 'octo', avatar_url: 'https://avatars.githubusercontent.com/u/583231?v=4' },
+        { 'GET /u/583231': image(PNG) },
+      );
+      const g = await b.githubSuggestion();
+      expect(g.displayName).toBe('Octo Dev');
+      expect(g.avatarType).toBe('image/png');
+      expect([...g.avatar!]).toEqual([...PNG]);
+      const photo = calls.find((c) => c.path === '/u/583231')!;
+      expect(photo.query).toBe('?v=4');
+      expect(photo.auth).toBeNull(); // the session token never goes to GitHub
+    });
+
+    test('name falls back to "name" and is cut to the display name limit', async () => {
+      const { b } = await signedIn({ name: 'A'.repeat(60) });
+      const g = await b.githubSuggestion();
+      expect(g.displayName).toBe('A'.repeat(40));
+      expect(g.avatar).toBeNull();
+      expect(g.avatarType).toBeNull();
+    });
+
+    test('a name that is empty, too short or not text is no suggestion', async () => {
+      expect((await (await signedIn({ full_name: '   ' })).b.githubSuggestion()).displayName).toBeNull();
+      expect((await (await signedIn({ full_name: 'A' })).b.githubSuggestion()).displayName).toBeNull();
+      expect((await (await signedIn({ full_name: 42, name: ['x'] })).b.githubSuggestion()).displayName).toBeNull();
+    });
+
+    test('a photo from any other host is never downloaded', async () => {
+      for (const avatar_url of [
+        'https://evil.example/u/1.png',
+        'http://avatars.githubusercontent.com/u/1',
+        'https://avatars.githubusercontent.com.evil.example/u/1',
+        'https://avatars.githubusercontent.com@evil.example/u/1',
+        'https://avatars.githubusercontent.com:8443/u/1',
+        'file:///etc/passwd',
+      ]) {
+        const { b, calls } = await signedIn({ full_name: 'Octo Dev', avatar_url }, { 'GET /u/1.png': image(PNG), 'GET /u/1': image(PNG) });
+        const g = await b.githubSuggestion();
+        expect(g).toEqual({ displayName: 'Octo Dev', avatar: null, avatarType: null });
+        expect(calls.filter((c) => c.method === 'GET' && c.path.startsWith('/u/'))).toEqual([]);
+      }
+    });
+
+    test('a photo over 2 MB is refused, by its declared size or its real size', async () => {
+      const url = 'https://avatars.githubusercontent.com/u/7';
+      const declared = await signedIn({ full_name: 'Octo Dev', avatar_url: url }, { 'GET /u/7': image(PNG, 'image/png', { 'Content-Length': String(3 * 1024 * 1024) }) });
+      expect((await declared.b.githubSuggestion()).avatar).toBeNull();
+      const big = new Uint8Array(2 * 1024 * 1024 + 1);
+      big.set(PNG);
+      const real = await signedIn({ full_name: 'Octo Dev', avatar_url: url }, { 'GET /u/7': image(big) });
+      expect((await real.b.githubSuggestion()).avatar).toBeNull();
+      const exact = new Uint8Array(2 * 1024 * 1024);
+      exact.set(PNG);
+      const ok = await signedIn({ full_name: 'Octo Dev', avatar_url: url }, { 'GET /u/7': image(exact) });
+      expect((await ok.b.githubSuggestion()).avatar?.byteLength).toBe(2 * 1024 * 1024);
+    });
+
+    test('only PNG, JPEG, WebP or GIF photos, and the bytes must be that kind of image', async () => {
+      const url = 'https://avatars.githubusercontent.com/u/8';
+      const svg = await signedIn({ full_name: 'Octo Dev', avatar_url: url }, { 'GET /u/8': image(new TextEncoder().encode('<svg/>'), 'image/svg+xml') });
+      expect((await svg.b.githubSuggestion()).avatar).toBeNull();
+      const html = await signedIn({ full_name: 'Octo Dev', avatar_url: url }, { 'GET /u/8': image(new TextEncoder().encode('<html>'), 'text/html') });
+      expect((await html.b.githubSuggestion()).avatar).toBeNull();
+      const lying = await signedIn({ full_name: 'Octo Dev', avatar_url: url }, { 'GET /u/8': image(new TextEncoder().encode('<svg/> not a png'), 'image/png') });
+      expect((await lying.b.githubSuggestion()).avatar).toBeNull();
+      const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 16]);
+      const ok = await signedIn({ full_name: 'Octo Dev', avatar_url: url }, { 'GET /u/8': image(jpeg, 'image/jpeg; charset=binary') });
+      expect(await ok.b.githubSuggestion()).toMatchObject({ avatarType: 'image/jpeg' });
+    });
+
+    test('a failed or missing photo is just no photo', async () => {
+      const url = 'https://avatars.githubusercontent.com/u/9';
+      const missing = await signedIn({ full_name: 'Octo Dev', avatar_url: url }, { 'GET /u/9': json(404, {}) });
+      expect(await missing.b.githubSuggestion()).toEqual({ displayName: 'Octo Dev', avatar: null, avatarType: null });
+      const offline = await signedIn({ full_name: 'Octo Dev', avatar_url: url }, { 'GET /u/9': new TypeError('fetch failed') });
+      expect(await offline.b.githubSuggestion()).toEqual({ displayName: 'Octo Dev', avatar: null, avatarType: null });
+    });
+
+    test('nothing for a member without a GitHub identity, even with the same metadata', async () => {
+      const { b, calls } = await signedIn(
+        { full_name: 'Octo Dev', avatar_url: 'https://avatars.githubusercontent.com/u/1' },
+        { 'GET /u/1': image(PNG) },
+        ['email'],
+      );
+      expect(await b.githubSuggestion()).toEqual({ displayName: null, avatar: null, avatarType: null });
+      expect(calls.filter((c) => c.path === '/u/1')).toEqual([]);
+    });
+
+    test('signed out is not_signed_in', async () => {
+      const { b } = ghBackend({});
+      expect((await errorOf(b.githubSuggestion())).kind).toBe('not_signed_in');
+    });
   });
 });

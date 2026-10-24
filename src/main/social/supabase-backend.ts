@@ -7,7 +7,7 @@ import {
   isAuthApiError,
   isAuthRetryableFetchError,
 } from '@supabase/supabase-js';
-import { LEGAL_DOCUMENTS, LEGAL_VERSION } from '../../core/social/types';
+import { LEGAL_DOCUMENTS, LEGAL_VERSION, PROFILE_LIMITS } from '../../core/social/types';
 import type { DayActivity } from '../../core/progress/practice';
 import { CHAT_PAGE, chatText } from '../../core/social/chat';
 import type { ChatEvent, ChatMessage, ConversationStatus, ConversationSummary, ReportedMessage } from '../../core/social/chat';
@@ -18,8 +18,10 @@ import type { Badge, BadgeGroup, MascotId, MemberRow, NoticeActor, NoticeKind } 
 import type { AvailabilitySlot, ModerationReport, ProfileDraft, SocialProfile } from '../../core/social/types';
 import type { Level } from '../../core/domain/types';
 import type { Area, ReportContext, ReportReason } from '../../core/social/types';
-import type { MemberSummary, ModerationHistoryItem, Notice, PracticeGraphData, SocialBackend, SocialSession } from './backend';
+import type { GitHubSuggestion, MemberSummary, ModerationHistoryItem, Notice, PracticeGraphData, SocialBackend, SocialSession } from './backend';
+import { isAllowedAuthUrl } from '../security';
 import { SocialError, mapSupabaseError } from './errors';
+import { NOT_FINISHED_MESSAGE, PORTS_BUSY_MESSAGE, openLoopback, type Loopback } from './oauth-loopback';
 import type { SessionStore } from './session-store';
 
 const DAY_MS = 86_400_000;
@@ -221,6 +223,101 @@ function toRoomState(r: RoomState): RoomState {
   };
 }
 
+// ---- GitHub ----
+
+const GITHUB_SCOPES = 'read:user user:email';
+const START_FAILED_MESSAGE = 'Could not start GitHub sign-in.';
+const GITHUB_AVATAR_PREFIX = 'https://avatars.githubusercontent.com/';
+const MAX_GITHUB_AVATAR_BYTES = 2 * 1024 * 1024;
+const GITHUB_AVATAR_TIMEOUT_MS = 15_000;
+const NO_SUGGESTION: GitHubSuggestion = { displayName: null, avatar: null, avatarType: null };
+
+/** The GitHub name as a display name: one line, squeezed spaces, cut to the limit; null when too short. */
+function suggestedName(meta: Record<string, unknown>): string | null {
+  for (const raw of [meta['full_name'], meta['name']]) {
+    if (typeof raw !== 'string') continue;
+    const clean = raw.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim();
+    let cut = '';
+    for (const ch of clean) {
+      if (cut.length + ch.length > PROFILE_LIMITS.displayName.max) break;
+      cut += ch;
+    }
+    cut = cut.trim();
+    if (cut.length >= PROFILE_LIMITS.displayName.min) return cut;
+  }
+  return null;
+}
+
+/** What the first bytes say the image is (only the kinds the photo step accepts). */
+function sniffImage(b: Uint8Array): string | null {
+  const ascii = (from: number, to: number) => String.fromCharCode(...b.subarray(from, to));
+  if (b.length >= 8 && b[0] === 0x89 && ascii(1, 4) === 'PNG' && b[4] === 0x0d && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a) return 'image/png';
+  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
+  if (b.length >= 6 && (ascii(0, 6) === 'GIF87a' || ascii(0, 6) === 'GIF89a')) return 'image/gif';
+  if (b.length >= 12 && ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WEBP') return 'image/webp';
+  return null;
+}
+
+/** Reads a body, giving up (null) as soon as it passes `max` bytes. */
+async function readAtMost(res: Response, max: number): Promise<Uint8Array | null> {
+  if (!res.body) return new Uint8Array(0);
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > max) {
+      // Not awaited: on a cloned (tee'd) body the cancel only settles once every branch is cancelled.
+      reader.cancel().catch(() => undefined);
+      return null;
+    }
+    chunks.push(value);
+  }
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const c of chunks) {
+    out.set(c, at);
+    at += c.byteLength;
+  }
+  return out;
+}
+
+/**
+ * The GitHub photo, only from https://avatars.githubusercontent.com/ (no redirects followed), at most 2 MB, and only
+ * a PNG, JPEG, WebP or GIF whose bytes match its type. Anything else, or any failure, is no photo.
+ */
+async function downloadGitHubAvatar(raw: unknown, fetchImpl: typeof fetch): Promise<{ bytes: Uint8Array; type: string } | null> {
+  if (typeof raw !== 'string' || !raw.startsWith(GITHUB_AVATAR_PREFIX)) return null;
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (url.origin !== 'https://avatars.githubusercontent.com' || url.username !== '' || url.password !== '') return null;
+  try {
+    const res = await fetchImpl(url.href, {
+      redirect: 'error',
+      credentials: 'omit',
+      headers: { Accept: 'image/png, image/jpeg, image/webp, image/gif' },
+      signal: AbortSignal.timeout(GITHUB_AVATAR_TIMEOUT_MS),
+    });
+    const type = (res.headers.get('Content-Type') ?? '').split(';')[0]!.trim().toLowerCase();
+    const declared = Number(res.headers.get('Content-Length') ?? '0');
+    if (!res.ok || !['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(type) || declared > MAX_GITHUB_AVATAR_BYTES) {
+      res.body?.cancel().catch(() => undefined);
+      return null;
+    }
+    const bytes = await readAtMost(res, MAX_GITHUB_AVATAR_BYTES);
+    if (!bytes || sniffImage(bytes) !== type) return null;
+    return { bytes, type };
+  } catch {
+    return null;
+  }
+}
+
 /** The trimmed text, or a SocialError before anything is sent. */
 function validText(raw: string): string {
   const text = chatText(raw);
@@ -236,11 +333,16 @@ export interface SupabaseBackendOptions {
   autoRefreshToken?: boolean;
   /** Opens a Realtime channel; defaults to the client's own (tests replace it). */
   openChannel?: (name: string) => ChatChannel;
+  /** GitHub sign-in listener ports (default 53682–53684; tests use 0, any free port). */
+  oauthPorts?: readonly number[];
+  oauthTimeoutMs?: number;
 }
 
 export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBackend {
   const client = createClient(opts.url, opts.key, {
     auth: {
+      // PKCE for GitHub: the code that comes back through the browser is useless without the verifier kept here.
+      flowType: 'pkce',
       storage: opts.storage,
       persistSession: true,
       autoRefreshToken: opts.autoRefreshToken ?? true,
@@ -327,6 +429,69 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
     },
 
     session,
+
+    async signInWithGitHub({ openExternal, signal }) {
+      let loopback: Loopback;
+      try {
+        loopback = await openLoopback({ ports: opts.oauthPorts, timeoutMs: opts.oauthTimeoutMs, signal });
+      } catch {
+        throw new SocialError('unknown', PORTS_BUSY_MESSAGE);
+      }
+      try {
+        let url: string | null = null;
+        let flowId: string | null = null;
+        try {
+          const { data, error } = await client.auth.signInWithOAuth({
+            provider: 'github',
+            options: { redirectTo: loopback.redirectTo, skipBrowserRedirect: true, scopes: GITHUB_SCOPES },
+          });
+          if (!error) {
+            url = data.url;
+            flowId = data.flowId ?? null;
+          }
+        } catch {
+          url = null;
+        }
+        if (!url || !isAllowedAuthUrl(url, opts.url)) throw new SocialError('unknown', START_FAILED_MESSAGE);
+        if (signal?.aborted) throw new SocialError('unknown', NOT_FINISHED_MESSAGE);
+        try {
+          await openExternal(url);
+        } catch {
+          throw new SocialError('unknown', START_FAILED_MESSAGE);
+        }
+        const result = await loopback.result;
+        // A GitHub error (or a made-up one: anyone can call the loopback) is never shown as the app's own words.
+        if ('error' in result) throw new SocialError('unknown', NOT_FINISHED_MESSAGE);
+        let exchanged;
+        try {
+          // The flow id picks this attempt's verifier, not one left by an earlier attempt or an e-mail code.
+          exchanged = await client.auth.exchangeCodeForSession(result.code, flowId ? { flowId } : undefined);
+        } catch (err) {
+          exchanged = { data: { user: null }, error: err };
+        }
+        const user = exchanged.data.user;
+        if (exchanged.error || !user) {
+          const mapped = exchanged.error ? mapAuthError(exchanged.error) : new SocialError('unknown', NOT_FINISHED_MESSAGE);
+          throw mapped.kind === 'unknown' ? new SocialError('unknown', NOT_FINISHED_MESSAGE) : mapped;
+        }
+        return { userId: user.id, email: user.email ?? '' };
+      } finally {
+        // Resolves once the port is free again, so a new attempt right after (Cancel, then retry) gets the same port.
+        loopback.close();
+        await loopback.result;
+      }
+    },
+
+    async githubSuggestion() {
+      const { data, error } = await client.auth.getSession();
+      if (error) throw mapAuthError(error);
+      const user = data.session?.user;
+      if (!user) throw new SocialError('not_signed_in', 'Sign in first.');
+      if (!(user.identities ?? []).some((i) => i.provider === 'github')) return NO_SUGGESTION;
+      const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+      const avatar = await downloadGitHubAvatar(meta['avatar_url'], opts.fetch ?? fetch);
+      return { displayName: suggestedName(meta), avatar: avatar?.bytes ?? null, avatarType: avatar?.type ?? null };
+    },
 
     async signOut() {
       await forgetSession();
