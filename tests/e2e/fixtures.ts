@@ -64,9 +64,18 @@ export const test = base.extend<{
   page: async ({ app }, use) => {
     const page = await app.firstWindow();
     await page.waitForLoadState('domcontentloaded');
+    await waitForStart(page);
     await use(page);
   },
 });
+
+/**
+ * Waits until the launch splash is gone and a screen is shown (the splash runs on every start and reload).
+ * The splash is the only thing in #root until it ends, so any other child means the app has started.
+ */
+export async function waitForStart(page: Page): Promise<void> {
+  await page.locator('#root > :not(.splash)').first().waitFor({ state: 'attached', timeout: 15_000 });
+}
 
 /** Emulates a window size; Wayland compositors ignore programmatic window resizes. */
 export async function setSize(page: Page, width: number, height: number): Promise<void> {
@@ -75,6 +84,7 @@ export async function setSize(page: Page, width: number, height: number): Promis
 
 /** Completes onboarding with defaults (Portuguese, B1 → B2, Gemini) and a test key. */
 export async function onboard(page: Page, key = 'test-key'): Promise<void> {
+  await waitForStart(page);
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByLabel('API key').fill(key);

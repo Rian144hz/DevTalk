@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_MODELS, type ProviderId } from '../../shared/providers';
 import { useRoute } from '../lib/useRoute';
-import { useThemeEffect } from '../lib/useTheme';
+import { startTheme, useThemeEffect } from '../lib/useTheme';
 import type { RouteName } from '../lib/router';
 import { AppDataProvider, useAppData } from './AppData';
 import { Rail } from './Rail';
+import { Splash } from './Splash';
 import { CommandPalette } from './CommandPalette';
 import type { Command } from '../lib/commands';
 import { api } from '../lib/api';
@@ -45,7 +46,8 @@ const SCREEN_TITLES: Record<RouteName, string> = {
 /** Ctrl+1…Ctrl+8 follow the sidebar order. */
 const SHORTCUT_ROUTES: RouteName[] = ['home', 'practice', 'review', 'people', 'messages', 'rooms', 'progress', 'settings'];
 
-function Shell() {
+/** `started`: the launch splash is over. The first screen also waits for the profile, whichever ends last. */
+function Shell({ started }: { started: boolean }) {
   const { profile, dueCount, refresh, unread, setUnread, room } = useAppData();
   // Inside a voice room, every way to Rooms leads back to that room; only leaving the Rooms screen (or Leave) ends it.
   const roomRef = useRef(room);
@@ -53,7 +55,9 @@ function Shell() {
   const [route, navigate] = useRoute();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [moderator, setModerator] = useState(false);
-  useThemeEffect(profile?.theme ?? 'dark');
+  // Until a profile gives its own (and on the first run), the theme of the last run, else the system's.
+  const [fallbackTheme] = useState(startTheme);
+  useThemeEffect(profile?.theme ?? fallbackTheme, profile != null);
 
   // The Messages count: on navigation and on every live chat change. No community account means 0.
   useEffect(() => {
@@ -124,7 +128,7 @@ function Shell() {
     document.title = 'DevTalk';
   }, []);
 
-  if (profile === undefined) return null;
+  if (!started || profile === undefined) return null;
   if (profile === null) return <OnboardingScreen />;
 
   const name: RouteName = route.name === 'onboarding' ? 'home' : route.name;
@@ -153,9 +157,13 @@ function Shell() {
 }
 
 export function App() {
+  // On every launch the splash goes first; the data loads underneath and never holds it up.
+  const [splash, setSplash] = useState(true);
+  const endSplash = useCallback(() => setSplash(false), []);
   return (
     <AppDataProvider>
-      <Shell />
+      <Shell started={!splash} />
+      {splash && <Splash onDone={endSplash} />}
     </AppDataProvider>
   );
 }
