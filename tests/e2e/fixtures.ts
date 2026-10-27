@@ -105,6 +105,33 @@ export async function onboard(page: Page, key = 'test-key'): Promise<void> {
   await page.getByRole('heading', { level: 1, name: 'Today' }).waitFor();
 }
 
+/**
+ * Holds the next GitHub sign-in in the main process like a browser tab that is still open. Cancel ends the wait the
+ * way the real listener does ('not-finished'), or lets a sign-in that was already exchanging finish ('signed-in').
+ * `globalThis.__releaseSignIn` ends the wait without a Cancel, like the five minutes running out.
+ */
+export async function holdSignIn(app: ElectronApplication, onCancel: 'not-finished' | 'signed-in'): Promise<void> {
+  await app.evaluate(({ ipcMain }, mode) => {
+    const handlers = (ipcMain as unknown as { _invokeHandlers: Map<string, (...args: unknown[]) => Promise<unknown>> })._invokeHandlers;
+    const real = handlers.get('social:signInWithGitHub')!;
+    let open!: (outcome: 'not-finished' | 'signed-in') => void;
+    const gate = new Promise<'not-finished' | 'signed-in'>((resolve) => { open = resolve; });
+    ipcMain.removeHandler('social:signInWithGitHub');
+    ipcMain.handle('social:signInWithGitHub', async (event, ...args) => {
+      const outcome = await gate;
+      return outcome === 'signed-in'
+        ? real(event, ...args)
+        : { ok: false, error: { kind: 'internal', message: 'Sign-in was not finished. Try again.' } };
+    });
+    ipcMain.removeHandler('social:cancelSignIn');
+    ipcMain.handle('social:cancelSignIn', () => {
+      open(mode);
+      return { ok: true, data: null };
+    });
+    (globalThis as unknown as { __releaseSignIn: typeof open }).__releaseSignIn = open;
+  }, onCancel);
+}
+
 /** An answer the fixture coach marks twice ("have fixed", "discuss about"). */
 export const SAMPLE_ANSWER =
   'Yesterday I have fixed the flaky test in the payments service. We need to discuss about the shared database row. Today I will add a fixture per test.';

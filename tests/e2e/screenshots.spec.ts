@@ -1,7 +1,7 @@
 // Captures every screen in both themes and two window sizes into .impeccable/review/ for inspection.
-import type { Page } from '@playwright/test';
+import type { ElectronApplication, Page } from '@playwright/test';
 import { join } from 'node:path';
-import { answerOnce, expect, joinCommunity, onboard, SAMPLE_ANSWER, test } from './fixtures';
+import { answerOnce, expect, holdSignIn, joinCommunity, onboard, SAMPLE_ANSWER, test } from './fixtures';
 import { asMember, idOf, makeModerator, meterMoves, options, people, personRow, ringLit, roomOf, roomRow } from './room-helpers';
 
 const OUT = '.impeccable/review';
@@ -22,16 +22,66 @@ async function setTheme(page: Page, theme: 'dark' | 'light') {
   await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
 }
 
+/** Two animation frames: layout has settled after a resize or a theme change. */
+const settled = (page: Page) => page.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
+
+/** For a page whose clock is frozen, where requestAnimationFrame never fires: just give the compositor a moment. */
+const settledFrozen = (page: Page) => page.waitForTimeout(200);
+
+/**
+ * The state the page is in now, in both themes and both sizes, with a check that nothing runs off the side of the
+ * window. `ready` runs before each capture, for states that come and go on their own; `settle` waits for the layout
+ * after a resize or a theme change. Transitions are off while it runs: a theme change would otherwise be caught
+ * half-way (a button still between the two blues) in the first capture of each theme.
+ */
+async function shootThemes(page: Page, name: string, ready?: () => Promise<unknown>, settle: (page: Page) => Promise<unknown> = settled) {
+  await page.evaluate(() => {
+    const style = document.createElement('style');
+    style.dataset['shotInstant'] = '1';
+    style.textContent = '*, *::before, *::after { transition: none !important; }';
+    document.head.append(style);
+  });
+  try {
+    for (const theme of THEMES) {
+      await page.evaluate((t) => { document.documentElement.dataset['theme'] = t; }, theme);
+      for (const [w, h] of SIZES) {
+        await page.setViewportSize({ width: w, height: h });
+        await settle(page);
+        const overflow = await page.evaluate(() => Math.max(
+          document.documentElement.scrollWidth - window.innerWidth,
+          ...[...document.querySelectorAll('main')].map((m) => m.scrollWidth - m.clientWidth),
+        ));
+        expect(overflow, `${name} ${theme} ${w}: horizontal overflow`).toBeLessThanOrEqual(0);
+        await ready?.();
+        await page.screenshot({ path: `${OUT}/${name}-${theme}-${w}.png` });
+      }
+    }
+  } finally {
+    await page.evaluate(() => document.querySelectorAll('style[data-shot-instant]').forEach((el) => el.remove()));
+  }
+}
+
 async function go(page: Page, hash: string, ready: string) {
   await page.evaluate((h) => { location.hash = h; }, hash);
   await page.getByRole('heading', { name: ready }).first().waitFor();
 }
 
-test('welcome and onboarding', async ({ page }) => {
-  for (const theme of THEMES) {
-    await page.evaluate((t) => { document.documentElement.dataset['theme'] = t; }, theme);
-    await shoot(page, 'welcome', theme);
-  }
+/** The community says this build has none, the way the main process does (the real answer depends on the developer's .env). */
+async function withoutCommunity(app: ElectronApplication): Promise<void> {
+  await app.evaluate(({ ipcMain }) => {
+    ipcMain.removeHandler('social:status');
+    ipcMain.handle('social:status', () => ({
+      ok: true,
+      data: { configured: false, signedIn: false, email: null, needsDocuments: false, hasProfile: false, suspendedUntil: null },
+    }));
+  });
+}
+
+test('welcome and onboarding', async ({ app, page }) => {
+  await withoutCommunity(app);
+  await page.reload();
+  await page.getByRole('heading', { level: 1, name: 'Practise the English you use at work.' }).waitFor();
+  await shootThemes(page, 'welcome-not-configured');
   await page.getByRole('button', { name: 'Practise without an account' }).click();
   for (const theme of THEMES) {
     await page.evaluate((t) => { document.documentElement.dataset['theme'] = t; }, theme);
@@ -42,6 +92,93 @@ test('welcome and onboarding', async ({ page }) => {
     await page.getByRole('button', { name: 'Back' }).click();
     await page.getByRole('button', { name: 'Back' }).click();
   }
+});
+
+test.describe('start', () => {
+  test.use({ social: '1' });
+
+  const splash = (page: Page) => page.getByRole('img', { name: 'DevTalk', exact: true });
+  const welcome = (page: Page) => page.getByRole('heading', { level: 1, name: 'Practise the English you use at work.' });
+
+  /** Reloads with the page's timers frozen, so the splash stays on screen until the test ends. */
+  async function reloadFrozen(page: Page): Promise<void> {
+    await page.clock.install();
+    await page.clock.pauseAt(Date.now() + 1000);
+    await page.reload();
+    await splash(page).waitFor();
+  }
+
+  /** Puts every animation on the page at `ms` after its start and holds it there, so the picture does not depend on timing. */
+  const atTime = (page: Page, ms: number) => async () => {
+    await page.evaluate((t) => {
+      for (const a of document.getAnimations()) {
+        a.pause();
+        a.currentTime = t;
+      }
+    }, ms);
+    await settledFrozen(page);
+  };
+
+  test('the splash while it writes, while it marks, and at its end', async ({ page }) => {
+    await reloadFrozen(page);
+    await shootThemes(page, 'splash-writing', atTime(page, 420), settledFrozen);
+    await shootThemes(page, 'splash-marking', atTime(page, 1050), settledFrozen);
+    await shootThemes(page, 'splash-end', atTime(page, 1450), settledFrozen);
+  });
+
+  test('the splash under reduced motion is the still name', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await reloadFrozen(page);
+    await shootThemes(page, 'splash-still', undefined, settledFrozen);
+  });
+
+  test('the welcome screen, the wait for the browser, the rules and the profile GitHub suggests', async ({ app, page }) => {
+    test.setTimeout(120_000);
+    await expect(welcome(page)).toBeVisible();
+    await shootThemes(page, 'welcome-configured');
+
+    // The browser is "open": the wait is held, then Cancel lands during the exchange, which still signs in.
+    await holdSignIn(app, 'signed-in');
+    await page.getByRole('button', { name: 'Continue with GitHub' }).click();
+    await expect(page.getByText('Finish signing in in your browser.')).toBeVisible();
+    await shootThemes(page, 'welcome-waiting', () => page.evaluate(() => document.getAnimations().forEach((a) => { a.pause(); a.currentTime = 0; })));
+    await page.getByRole('button', { name: 'Cancel' }).click();
+
+    await expect(page.getByText('Step 3 of 4')).toBeVisible();
+    await shootThemes(page, 'first-run-rules');
+    for (const label of ['I accept the Terms of use', 'I accept the Privacy policy', 'I accept the Code of conduct', 'I am 18 or older']) {
+      await page.getByRole('checkbox', { name: label }).check();
+    }
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.getByText('Step 4 of 4')).toBeVisible();
+    await expect(page.getByText('From your GitHub account')).toBeVisible();
+    await expect(page.locator('.photo-row img.avatar')).toBeVisible();
+    await shootThemes(page, 'first-run-profile');
+  });
+
+  test('the e-mail way in from the welcome screen', async ({ page }) => {
+    await page.getByRole('button', { name: 'Continue with e-mail' }).click();
+    await expect(page.getByText('Step 1 of 4')).toBeVisible();
+    await shootThemes(page, 'first-run-email');
+  });
+
+  test('People › Join step 1 offers GitHub above the e-mail field', async ({ page }) => {
+    await onboard(page);
+    await page.evaluate(() => { location.hash = '#/join'; });
+    await expect(page.getByText('Step 1 of 4')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Continue with GitHub' })).toBeVisible();
+    await shootThemes(page, 'join-github');
+  });
+
+  test.describe('a sign-in that fails', () => {
+    test.use({ socialFail: 'signInWithGitHub' });
+
+    test('the welcome screen says what went wrong', async ({ page }) => {
+      await page.getByRole('button', { name: 'Continue with GitHub' }).click();
+      await expect(page.getByRole('alert')).toContainText('You are offline.');
+      await shootThemes(page, 'welcome-error');
+    });
+  });
 });
 
 test('screens', async ({ page }) => {
@@ -316,30 +453,6 @@ test.describe('messages', () => {
 test.describe('rooms', () => {
   // Chromium's fake microphone, and seeded people who never answer a call: their rows say "Connecting…" for the whole run.
   test.use({ social: 'people', fakeMedia: true, roomTimeoutMs: '600000' });
-
-  /** Two animation frames: layout has settled after a resize or a theme change. */
-  const settled = (page: Page) => page.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
-
-  /**
-   * The state the page is in now, in both themes and both sizes, with a check that nothing runs off the side of the
-   * window. `ready` runs before each capture, for states that come and go on their own.
-   */
-  async function shootThemes(page: Page, name: string, ready?: () => Promise<unknown>) {
-    for (const theme of THEMES) {
-      await page.evaluate((t) => { document.documentElement.dataset['theme'] = t; }, theme);
-      for (const [w, h] of SIZES) {
-        await page.setViewportSize({ width: w, height: h });
-        await settled(page);
-        const overflow = await page.evaluate(() => Math.max(
-          document.documentElement.scrollWidth - window.innerWidth,
-          ...[...document.querySelectorAll('main')].map((m) => m.scrollWidth - m.clientWidth),
-        ));
-        expect(overflow, `${name} ${theme} ${w}: horizontal overflow`).toBeLessThanOrEqual(0);
-        await ready?.();
-        await page.screenshot({ path: `${OUT}/${name}-${theme}-${w}.png` });
-      }
-    }
-  }
 
   /**
    * The microphone check with sound on the meter: the fake microphone beeps for a moment each second, far shorter
