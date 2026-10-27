@@ -344,6 +344,19 @@ components:
   room-bar:
     backgroundColor: "{colors.graphite-ground}"
     padding: "16px 0 20px"
+  button-github:
+    backgroundColor: "{colors.pencil-blue}"
+    textColor: "{colors.pencil-ink}"
+    typography: "{typography.body}"
+    rounded: "{rounded.control}"
+    padding: "11px 16px"
+  welcome-actions:
+    padding: "24px 0 0"
+    width: "560px"
+  splash:
+    backgroundColor: "{colors.graphite-ground}"
+    textColor: "{colors.ink}"
+    typography: "{typography.display}"
 ---
 
 # Design System: DevTalk
@@ -436,6 +449,8 @@ People opens with its tabs across the 760px column, 24px apart over a 1px rule, 
 Messages is the one full-height page: the page fills the window (100vh) and its body is a 300px conversation list beside the open conversation with a 32px gap, capped at 1100px; below 1040px the list drops to 240px and the gap to 20px. Notices and empty states above it keep the 760px column. The list scrolls on its own. Inside the conversation pane the thread takes the remaining height, scrolls, and never shrinks below 140px; the composer area under it scrolls instead when the coach check is open. Below 1040px the pane's inner padding drops from 20px to 16px sides, and on windows under 720px tall the page's bottom padding and head spacing tighten (20px, 16px).
 
 Rooms keeps the 760px column on its list page: the head, notices, empty states, the create and join sheets and the room list are capped at 760px, with 20px below each block. A room is a full-height page (at least 100vh, no bottom padding): a fluid people column beside a 320px side column holding the idea card over the timer 20px apart, with a 40px gap, capped at 1100px; its notices keep the 760px cap. At 1040px and below the side column moves above the people as two equal columns with a 16px gap, and the people follow 20px below, so a long list never pushes the card and timer out of a short window. The control bar is sticky at the bottom of the page, capped at 1100px, 32px below the room; while a room is open the document's bottom scroll padding is 88px (56px + 32px), so a focused control or a panel that scrolls into view stops above the bar instead of under it. On windows 720px tall or less the room head's spacing drops to 16px and the bar's top margin to 20px, with 16px padding top and bottom.
+
+The first run uses the Onboarding column (560px, 640px for embedded Join steps) and adds one offset rule. The welcome page is not centred: its top padding is `clamp(56px, 18vh, 176px)` and bottom 24px, so the heading sits a little above the middle and stays put as the actions swap between states, and the error state still fits a 960 by 640 window. Under the lede a 1px rule and 24px padding open the actions (32px above the rule), stacked 12px apart at the full column width. The splash is the one full-bleed screen: fixed over everything, centred on the theme ground, with the lockup 4.58 times a `clamp(64px, 6.5vw, 112px)` unit wide.
 
 ## Elevation & Depth
 
@@ -536,7 +551,7 @@ A message report adds "The conversation" as one more such section: the copied me
 A room report ("Voice room" as its place) adds "The room" the same way: the room's title, theme, host and opening time as a profile fact sheet, then who was in it as a ruled list (8px vertical padding, 14px): the name in weight 600 on the left and, right-aligned in secondary ink, when they joined and left ("23 October 2026, 17:13 to 17:13", or "…, still in the room"). A deleted account reads "Deleted account"; when no copy was kept, a muted line says so.
 
 ### Join steps
-Join runs one step at a time in one column, like onboarding. The step count lives in the lede ("Step 2 of 4. Check your e-mail for a code."), never as a label above the heading. Consents are ruled rows with the document link right-aligned.
+Join runs one step at a time in one column, like onboarding. The step count lives in the lede ("Step 2 of 4. Check your e-mail for a code."), never as a label above the heading. Consents are ruled rows with the document link right-aligned. The count follows the path: the e-mail way is "Step n of 4" (e-mail, code, rules, profile); GitHub has no code step, so after a GitHub sign-in the rules read "Step 2 of 3" and the profile "Step 3 of 3". Embedded in the first run, Join drops the page chrome for the onboarding column, offers "Skip for now" (quiet) on the rules and profile steps, and Back (quiet) on the sign-in step returns to the welcome. When the person already chose e-mail, GitHub is not offered and "Send code" becomes the one primary (and takes focus); otherwise the GitHub button is the primary, an "or" rule (a 1px rule either side, tertiary ink) separates it, and "Send code" is secondary.
 
 ### People tabs
 Members, Following and Your profile as a row of route links in a labelled `nav`, not a segmented control. Each tab is 15px weight 500 in secondary ink with 8px vertical padding and a 2px transparent underline sitting on the 1px rule below the row; hover turns it ink. The current tab (`aria-current="page"`) is ink with a 2px ink underline, never pencil. A member's profile and their follower lists keep Members marked, since that is where they are reached from. A member list directly under the tabs drops its own top rule.
@@ -594,6 +609,25 @@ The head is the room's title (h1) with the lede "Interview, B2, 4 / 6. Host: Ria
 ### Person options
 Options opens an inline neutral panel under the person's row (sheet fill, strong rule, sheet radius, 12px by 16px, inset 8px), labelled "Options for <name>", scrolled into view above the bar. The first group is for you: Mute for me (Unmute for me once set) and Report as quiet buttons, then Block <name> as a secondary button that confirms inline like any block; blocking someone in a room makes you leave it. When your role allows, a second group follows under a 1px rule with 12px above it, all secondary: Mute for everyone, Make moderator (or Remove moderator role), Make host, Remove. Make host and Remove swap the panel for an inline neutral confirmation ("Make Hugo the host? You stop being the host.", "Remove Hugo from this room? Hugo cannot come back to this room."): the confirming action secondary, Cancel quiet. A done action reports in 13px secondary ink ("You muted Hugo. Hugo can unmute when ready."); a failure shows as an amber field error. Escape closes the panel or cancels the confirmation, and focus returns to the button that opened it (Options, Make host or Remove).
 
+### Splash
+The launch screen, shown on every launch over everything on the theme ground (the blocking `theme-boot.js` sets the theme before the first paint, so the first frame is already the right ground). A pencil writes "DevTalk" left to right in display-weight Public Sans 700 (-0.01em, ink) as a lowercase "devTalk"; then it is marked like a proof: the "d" turns dusty rose with a rose strike and wash, and a sage "D" with its wash is written above it. The pencil is the rail's pencil mark in pencil blue, 120 units, its tip on the baseline and ending 12 units past the "k". Nothing else is on screen: no tagline, no progress, no button.
+- **Timing** (from `lib/splash.ts`, the only source): shown 1500ms, then a 250ms fade on the strong ease-out, after which the next screen appears. Inside the 1500ms: pencil in 0 to 180ms, name written 80 to 780ms (700ms on the even `--ease-write`, `cubic-bezier(0.37, 0, 0.63, 1)`), "d" struck 820 to 1000ms (`--dur-ui`), "D" written 960 to 1200ms (`--dur-panel`, rising 6px), then a hold.
+- **Reduced motion:** the finished name stays still, "DevTalk" with the pencil after it, no marks and no fade: 300ms, then the next screen.
+- **Skip:** a click, Enter, Space or Escape ends it at once; the keys are caught before anything under it. It is a labelled image ("DevTalk"), not a control.
+- **Marks:** the rose and sage are the diff's own marks applied to the name, the one place they appear outside a correction; they stay the diff pair in both themes.
+
+### Welcome (first run)
+The first screen of a first run, in the coach setup's column: the pencil and "DevTalk" brand line, a 20ch heading ("Practise the English you use at work."), a lede, then the actions under a 1px rule. One primary per view: when the community is configured it is "Continue with GitHub", then "Continue with e-mail" as a secondary, then "Practise without an account" as a quiet button; when the build has no community only "Practise without an account" shows, and it becomes the primary. Buttons span the column at 11px vertical padding.
+- **Waiting:** the three buttons are replaced by a quiet 14px spinner (a rule-strong ring with a secondary-ink arc, turning 0.9s, still under reduced motion) and "Finish signing in with GitHub in your browser." with "Then come back here." under it in secondary ink, and a secondary Cancel right after the text, focused. Escape cancels. On Cancel or a failure, focus returns to the first button.
+- **Error:** an error Notice above the buttons, titled "Sign-in was not finished." with the main process' words as detail; when the answer is only "Sign-in was not finished. Try again." it stands alone as the title. A member's own Cancel shows no notice.
+- **No status:** while the community status is unknown (up to 3s) the screen waits; a slow answer is treated as no community.
+
+### GitHub button
+"Continue with GitHub" is the primary button with the GitHub mark (Simple Icons, CC0, 16px) before the label, drawn in `currentColor` so it takes the pencil-ink text colour in both themes. The mark is never brand-coloured and never alone; it sits only on this button. It is the one primary of a sign-in screen (Welcome, Join step 1) and follows every button rule above.
+
+### First-run flow and provenance hints
+Welcome, then GitHub or e-mail through the Join steps, or no account straight to the coach setup, which ends the first run. A signed-in account that already accepted the documents and has a profile skips to the coach setup. Where GitHub supplied a value, the field says so in its hint and the value is only a suggestion, saved with the form: the photo reads "From your GitHub account" in place of the upload hint, and the Display name hint reads "From your GitHub account. How other members see you." until the name is edited, then returns to the plain hint. The provenance is a hint in tertiary ink, not a badge or icon, and goes away as soon as the person changes the field.
+
 ## Do's and Don'ts
 
 ### Do:
@@ -616,6 +650,10 @@ Options opens an inline neutral panel under the person's row (sheet fill, strong
 - **Do** keep Mute/Unmute (with `Ctrl M`) and Leave in the room's sticky bottom bar at all times, and keep focused controls and opened panels scrolled above it.
 - **Do** name the two mutes apart: "Mute for me" silences someone only for you; "Mute for everyone" is a room action in its own ruled group.
 - **Do** say a room is never recorded where the microphone is asked for, and show the microphone level in secondary ink.
+- **Do** make the sign-in screen's one primary the GitHub button when the community is configured, and "Practise without an account" when it is not.
+- **Do** let the splash be skipped by click, Enter, Space or Escape, and show only the still name under reduced motion.
+- **Do** say where a prefilled value came from ("From your GitHub account") in its hint, until the person changes it.
+- **Do** count the join steps by the path taken: 3 steps after GitHub, 4 by e-mail.
 
 ### Don't:
 - **Don't** build a dashboard of stat cards or metric tiles; progress is facts, ruled lists and tallies.
@@ -637,3 +675,6 @@ Options opens an inline neutral panel under the person's row (sheet fill, strong
 - **Don't** put a pencil primary inside a room; speaking is the main act, so the bar and the person options use secondary and quiet buttons only.
 - **Don't** show recording affordances in a room: no record button, recording dot, saved audio or playback; a voice is never recorded.
 - **Don't** list one "could not connect" notice per person; name everyone unreachable in one notice.
+- **Don't** add a tagline, progress bar or button to the splash, or run it longer than 1.5s plus the fade.
+- **Don't** colour the GitHub mark or give another provider a primary; extra ways in are secondary or quiet.
+- **Don't** centre the welcome page vertically; its offset keeps the heading still between waiting, error and the buttons.

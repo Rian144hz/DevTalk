@@ -896,6 +896,21 @@
         "name": "reduced-motion",
         "value": "all durations 0ms",
         "purpose": "prefers-reduced-motion: reduce zeroes durations and stops loops."
+      },
+      {
+        "name": "ease-write",
+        "value": "cubic-bezier(0.37, 0, 0.63, 1)",
+        "purpose": "An even pace for a line being written: the splash pencil and the name reveal (700ms, from 80ms)."
+      },
+      {
+        "name": "splash-timing",
+        "value": "1500ms shown + 250ms fade; reduced motion 300ms + 0",
+        "purpose": "Launch splash (lib/splash.ts). Click, Enter, Space or Escape skips it."
+      },
+      {
+        "name": "signin-spinner",
+        "value": "0.9s linear infinite",
+        "purpose": "Waiting-for-browser spinner; still under reduced motion."
       }
     ],
     "breakpoints": [
@@ -1158,6 +1173,30 @@
       "description": "People as ruled rows (40px face, name, level/role/status line, mic-off icon, quiet Options); the speaking ring is the ink separation ring; person options open inline with a ruled second group for room actions; the timer shows only its number in mono; the sticky bar holds Mute (Ctrl M), Leave and, for the host, End room (quiet). No pencil primary in a room.",
       "html": "<div class=\"ds-room\"><ul class=\"ds-people\"><li><div class=\"ds-p-row\"><span class=\"ds-face is-speaking\">R</span><span class=\"ds-p-main\"><b>Rian <i>(You)</i></b><small>B1, Host</small></span></div></li><li><div class=\"ds-p-row\"><span class=\"ds-face\">D</span><span class=\"ds-p-main\"><b>Dani</b><small>C1, Room moderator, Muted</small></span><span class=\"ds-muted\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M10 6.5V4a2 2 0 0 0-4 0v3.5M6.6 8.6A2 2 0 0 0 10 7.5\"/><path d=\"M3.5 8a4.5 4.5 0 0 0 7.4 3.4M12.4 9a4.5 4.5 0 0 0 .1-1M8 12.5V14M2.5 2.5l11 11\"/></svg></span><button class=\"ds-q\" aria-expanded=\"true\">Options</button></div><div class=\"ds-opts\" role=\"group\" aria-label=\"Options for Dani\"><div class=\"ds-row\"><button class=\"ds-q\">Mute for me</button><button class=\"ds-q\">Report</button><button class=\"ds-sec\">Block Dani</button></div><div class=\"ds-row ds-opts-room\"><button class=\"ds-sec\">Mute for everyone</button><button class=\"ds-sec\">Make host</button><button class=\"ds-sec\">Remove</button></div></div></li></ul><section class=\"ds-card\"><h2>Timer</h2><p class=\"ds-left\"><span>58</span> s left</p><div class=\"ds-row\"><button class=\"ds-sec\">60 s</button><button class=\"ds-sec\">90 s</button><button class=\"ds-q\">Stop</button></div></section><footer class=\"ds-bar\" role=\"group\" aria-label=\"Room controls\"><button class=\"ds-sec\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"6\" y=\"2\" width=\"4\" height=\"7\" rx=\"2\"/><path d=\"M3.5 8a4.5 4.5 0 0 0 9 0M8 12.5V14\"/></svg>Mute <kbd>Ctrl M</kbd></button><button class=\"ds-sec\">Leave</button><button class=\"ds-q\">End room</button></footer></div>",
       "css": ".ds-room{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:24px 40px;align-items:start;font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1);background:var(--bg,#16181d)}.ds-people{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule,#2b2f39)}.ds-people li{border-bottom:1px solid var(--rule,#2b2f39)}.ds-p-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:12px 8px}.ds-face{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font-weight:600;transition:box-shadow 180ms cubic-bezier(0.23,1,0.32,1)}.ds-face.is-speaking{box-shadow:0 0 0 2px var(--bg,#16181d),0 0 0 4px var(--ink,#e8e6e1)}.ds-p-main{display:flex;flex-direction:column;min-width:0}.ds-p-main b{font-weight:600}.ds-p-main i{font-style:normal;font-weight:400;color:var(--ink-2,#b4b9c5)}.ds-p-main small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-muted{display:inline-flex;grid-column:3;color:var(--ink-2,#b4b9c5)}.ds-p-row>.ds-q{grid-column:4}.ds-opts{display:flex;flex-direction:column;align-items:flex-start;gap:12px;margin:0 8px 12px;padding:12px 16px;border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-sheet,10px);background:var(--sheet,#20232b)}.ds-opts-room{align-self:stretch;padding-top:12px;border-top:1px solid var(--rule,#2b2f39)}.ds-row{display:flex;flex-wrap:wrap;gap:8px}.ds-card{display:flex;flex-direction:column;gap:12px;padding:16px 20px;border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);background:var(--sheet,#20232b)}.ds-card h2{margin:0;font-size:var(--text-lg,1.0625rem);font-weight:600}.ds-left{margin:0;font-size:var(--text-lg,1.0625rem);font-weight:600}.ds-left span{font:600 var(--text-xl,1.25rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-bar{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:16px 0 20px;border-top:1px solid var(--rule,#2b2f39);background:var(--bg,#16181d)}.ds-room button{display:inline-flex;align-items:center;gap:8px;font:inherit;font-weight:500;border-radius:var(--r-control,6px);cursor:pointer;transition:background-color 180ms ease,color 180ms ease,transform 120ms cubic-bezier(0.23,1,0.32,1)}.ds-room button:active{transform:scale(0.97)}.ds-room button:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}.ds-sec{padding:9px 16px;background:transparent;color:var(--ink,#e8e6e1);border:1px solid var(--rule-strong,#3a3f4b)}.ds-sec:hover{background:var(--sheet-hover,#262a33)}.ds-q{padding:9px 12px;background:transparent;color:var(--ink-2,#b4b9c5);border:0}.ds-q:hover{background:var(--sheet,#20232b);color:var(--ink,#e8e6e1)}.ds-room kbd{font:400 var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);padding:0 5px;border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-chip,4px);color:var(--ink-2,#b4b9c5)}"
+    },
+    {
+      "name": "Splash",
+      "kind": "custom",
+      "refersTo": "splash",
+      "description": "Launch screen on the theme ground: the pencil writes \"devTalk\" in Public Sans 700, then marks it (rose-struck d, sage D above), holds and fades. 1500ms + 250ms fade; reduced motion shows the still name 300ms. Click, Enter, Space or Escape skips.",
+      "html": "<div class=\"ds-splash\"><svg viewBox=\"0 0 458 230\" width=\"360\" aria-label=\"DevTalk\"><text x=\"0\" y=\"150\" class=\"w\"><tspan class=\"d\">d</tspan>evTalk</text><rect x=\"-4\" y=\"118\" width=\"62\" height=\"6\" rx=\"3\" class=\"s\"/><text x=\"29\" y=\"52\" text-anchor=\"middle\" class=\"i\">D</text></svg></div>",
+      "css": ".ds-splash{display:grid;place-items:center;background:var(--bg,#16181d);padding:48px}.ds-splash .w{font:700 100px var(--font-ui,'Public Sans',system-ui,sans-serif);letter-spacing:-0.01em;fill:var(--ink,#e8e6e1)}.ds-splash .d,.ds-splash .s{fill:var(--del,#d99aa8)}.ds-splash .i{font:700 54px var(--font-ui,'Public Sans',system-ui,sans-serif);fill:var(--ins,#8cc5a2)}"
+    },
+    {
+      "name": "GitHub Button",
+      "kind": "button",
+      "refersTo": "button-github",
+      "description": "The primary button with the GitHub mark (Simple Icons, CC0, 16px, currentColor) before \"Continue with GitHub\". The one primary of a sign-in screen; full column width at 11px vertical padding on Welcome.",
+      "html": "<button class=\"ds-btn\"><svg class=\"ds-mark\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\" fill=\"currentColor\"/></svg>Continue with GitHub</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2,8px);border-radius:var(--r-control,6px);padding:11px var(--s4,16px);font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);border:1px solid transparent;background:var(--pencil,#7fb2e5);color:var(--pencil-ink,#0d1622);width:100%}.ds-mark{flex:none}"
+    },
+    {
+      "name": "Welcome Actions",
+      "kind": "custom",
+      "refersTo": "welcome-actions",
+      "description": "First-run sign-in: brand line, 20ch heading, lede, then under a 1px rule the GitHub primary, e-mail secondary and \"Practise without an account\" quiet (primary when the build has no community). Waiting swaps them for a spinner, \"Finish signing in with GitHub in your browser.\" / \"Then come back here.\" and a secondary Cancel; an error Notice \"Sign-in was not finished.\" sits above. Top padding clamp(56px, 18vh, 176px), not centred.",
+      "html": "<div class=\"ds-wel\"><h2>Practise the English you use at work.</h2><p>A coach marks your writing, and other developers talk with you.</p><div class=\"ds-acts\"><button class=\"ds-p\">Continue with GitHub</button><button class=\"ds-s\">Continue with e-mail</button><button class=\"ds-q\">Practise without an account</button></div></div>",
+      "css": ".ds-wel{max-width:560px;display:flex;flex-direction:column;gap:var(--s2,8px)}.ds-wel h2{max-width:20ch;margin:0;font:700 1.625rem/1.2 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-wel p{margin:0;color:var(--ink-2,#b4b9c5)}.ds-acts{margin-top:32px;padding-top:24px;border-top:1px solid var(--rule,#2b2f39);display:flex;flex-direction:column;gap:12px}.ds-acts button{width:100%;padding:11px 16px;border-radius:var(--r-control,6px);font:500 0.9375rem var(--font-ui,'Public Sans',system-ui,sans-serif);border:1px solid transparent;background:transparent;color:var(--ink-2,#b4b9c5)}.ds-acts .ds-p{background:var(--pencil,#7fb2e5);color:var(--pencil-ink,#0d1622)}.ds-acts .ds-s{border-color:var(--rule-strong,#3a3f4b);color:var(--ink,#e8e6e1)}"
     }
   ],
   "narrative": {
@@ -1222,7 +1261,11 @@
       "**Do** mark who is speaking with the separation ring in ink around their face, and only while they speak.",
       "**Do** keep Mute/Unmute (with `Ctrl M`) and Leave in the room's sticky bottom bar at all times, and keep focused controls and opened panels scrolled above it.",
       "**Do** name the two mutes apart: \"Mute for me\" silences someone only for you; \"Mute for everyone\" is a room action in its own ruled group.",
-      "**Do** say a room is never recorded where the microphone is asked for, and show the microphone level in secondary ink."
+      "**Do** say a room is never recorded where the microphone is asked for, and show the microphone level in secondary ink.",
+      "**Do** make the sign-in screen's one primary the GitHub button when the community is configured, and \"Practise without an account\" when it is not.",
+      "**Do** let the splash be skipped by click, Enter, Space or Escape, and show only the still name under reduced motion.",
+      "**Do** say where a prefilled value came from (\"From your GitHub account\") in its hint, until the person changes it.",
+      "**Do** count the join steps by the path taken: 3 steps after GitHub, 4 by e-mail."
     ],
     "donts": [
       "**Don't** build a dashboard of stat cards or metric tiles; progress is facts, ruled lists and tallies.",
@@ -1243,7 +1286,10 @@
       "**Don't** colour the speaking ring, the microphone meter or the muted icon; speaking is ink, never pencil, sage or a status colour.",
       "**Don't** put a pencil primary inside a room; speaking is the main act, so the bar and the person options use secondary and quiet buttons only.",
       "**Don't** show recording affordances in a room: no record button, recording dot, saved audio or playback; a voice is never recorded.",
-      "**Don't** list one \"could not connect\" notice per person; name everyone unreachable in one notice."
+      "**Don't** list one \"could not connect\" notice per person; name everyone unreachable in one notice.",
+      "**Don't** add a tagline, progress bar or button to the splash, or run it longer than 1.5s plus the fade.",
+      "**Don't** colour the GitHub mark or give another provider a primary; extra ways in are secondary or quiet.",
+      "**Don't** centre the welcome page vertically; its offset keeps the heading still between waiting, error and the buttons."
     ]
   }
 }
