@@ -15,7 +15,7 @@ DevTalk is a free desktop app that helps developers practise English. The practi
 ## Your account
 
 - You can sign in in two ways: with a **code we send to your e-mail**, or with your **GitHub account**. DevTalk has no password.
-- With GitHub you sign in on github.com, in your own browser. DevTalk never sees your GitHub password. GitHub shares your name, username, profile picture and e-mail with the community server. Your name and picture are only suggestions for your profile, and they are saved only if you keep them (see the [Privacy policy](#/legal/privacy)).
+- With GitHub you sign in on github.com, in your own browser. DevTalk never sees your GitHub password. GitHub shares your name, username, profile picture and e-mail with the community server. Your name and picture are only suggestions for your profile, and they are saved in your profile only if you keep them (see the [Privacy policy](#/legal/privacy)).
 - If your GitHub e-mail is the same as the e-mail of a DevTalk account, both ways sign in to the same account.
 - Keep your e-mail account and your GitHub account safe: anyone who can read your e-mail, or sign in to your GitHub account, can sign in as you.
 - You can remove DevTalk's access to your GitHub account in GitHub: Settings › Applications › Authorized OAuth Apps.

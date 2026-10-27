@@ -5,17 +5,17 @@ Version 2026-10-26. This is a plain-language draft for Brazil's data protection 
 ## The short version
 
 - Your practice (your answers, the coach's feedback, your expressions and reviews) stays **on your computer**. It is sent only to the coach (AI provider) you chose in Settings, when you ask for feedback.
-- The community keeps only what it needs: your e-mail, your profile, your private messages, which voice rooms you were in and when, and your safety actions (blocks and reports).
+- The community keeps only what it needs: your e-mail, the GitHub sign-in details if you sign in with GitHub, your profile, your private messages, which voice rooms you were in and when, and your safety actions (blocks and reports).
 - **Private messages** are stored on the community server so the two of you can read them. Only you and the other person read a conversation. Moderators see a message only when someone in the conversation reports it, together with the 10 messages before it.
 - **Voice rooms**: your voice goes directly between the computers in the room. It is **never recorded, never transcribed and never passes through the community server**. Because the connection is direct, the other people in the room can see your IP address. Moderators see a room only when someone reports it: its title, theme, host, who was there and when. They never hear it.
-- **Signing in**: you can use a code sent to your e-mail or your **GitHub account**. With GitHub you sign in on github.com, in your own browser, and DevTalk never sees your GitHub password. GitHub shares your name, username, profile picture and e-mail with the community server. Your name and picture are only suggestions for your profile: they are saved there only if you keep them.
+- **Signing in**: you can use a code sent to your e-mail or your **GitHub account**. With GitHub you sign in on github.com, in your own browser, and DevTalk never sees your GitHub password. GitHub shares your name, username, profile picture and e-mail with the community server. Your name and picture are only suggestions for your profile: they are saved in your profile only if you keep them.
 - For your practice graph and badges, the app sends **numbers only**: how many answers and reviews you did each day, and a few milestones. Never what you wrote.
 - You can see, export and delete your community data in the app at any time.
 
 ## What we collect for the community
 
 - **E-mail address**: the one you give to get sign-in codes, or the one GitHub shares when you sign in with GitHub. Other members never see it.
-- **GitHub sign-in details**, only if you sign in with GitHub: GitHub shares your name, username, profile picture and e-mail with the community server (Supabase), which keeps them with your sign-in record. DevTalk asks GitHub only to read your profile and e-mail (the permissions read:user and user:email). It cannot see your repositories or change anything on GitHub. Your name and picture are only a suggestion for your profile: they are copied there, and your picture is stored, only if you keep them.
+- **GitHub sign-in details**, only if you sign in with GitHub: GitHub shares your name, username, profile picture and e-mail with the community server (Supabase), which keeps them with your sign-in record. DevTalk asks GitHub only to read your profile and e-mail (the permissions read:user and user:email). It cannot see your private repositories or change anything on GitHub. Your name and picture are only a suggestion for your profile: they are copied there, and your picture is stored, only if you keep them.
 - **Profile**: display name, native language, English level, time zone, area, stack (and up to 2 main technologies), available times, bio, an optional photo, an optional banner and the default picture you chose.
 - **Practice counts**: for each day of the last 400 days, how many answers and how many reviews you did in the app. Only the two numbers, never the text.
 - **Milestones**: when your level goes up in the app (for example B1 to B2) and when you have saved 50 or 100 expressions.
@@ -74,7 +74,7 @@ We do not sell your data and we do not use it for advertising.
 You can, at any time:
 
 - **See and correct** your profile: People › Edit profile.
-- **Get a copy** of your data (portability): Settings › Account › Export my data. It includes your conversations, the messages you sent and the corrections you gave (not the other person's messages), the rooms you opened and your own sessions in rooms (not other people's).
+- **Get a copy** of your data (portability): Settings › Account › Export my data. It includes your conversations, the messages you sent and the corrections you gave (not the other person's messages), the rooms you opened and your own sessions in rooms (not other people's). It also includes how you sign in and, if you use GitHub, the details GitHub shared (name, username, picture and e-mail).
 - **Delete** your account and your data: Settings › Account › Delete my account.
 - **Withdraw consent**: delete your account.
 - **Remove DevTalk's access to your GitHub account**: in GitHub, Settings › Applications › Authorized OAuth Apps. Deleting your DevTalk account does not do this for you.
