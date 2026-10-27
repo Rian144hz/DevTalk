@@ -1,6 +1,6 @@
 # Terms of use
 
-Version 2026-10-20. This is a plain-language draft. It has not been reviewed by a lawyer.
+Version 2026-10-26. This is a plain-language draft. It has not been reviewed by a lawyer.
 
 ## What DevTalk is
 
@@ -9,12 +9,16 @@ DevTalk is a free desktop app that helps developers practise English. The practi
 ## Who can use the community
 
 - You must be **18 or older**.
-- You need a working e-mail address. We send a code to it each time you sign in.
+- You need a way to sign in: a working e-mail address (we send a code to it each time you sign in) or a GitHub account with an e-mail address.
 - One account per person. Do not pretend to be someone else.
 
 ## Your account
 
-- Keep your e-mail account safe: anyone who can read your e-mail can sign in as you.
+- You can sign in in two ways: with a **code we send to your e-mail**, or with your **GitHub account**. DevTalk has no password.
+- With GitHub you sign in on github.com, in your own browser. DevTalk never sees your GitHub password. GitHub shares your name, username, profile picture and e-mail with the community server. Your name and picture are only suggestions for your profile, and they are saved only if you keep them (see the [Privacy policy](#/legal/privacy)).
+- If your GitHub e-mail is the same as the e-mail of a DevTalk account, both ways sign in to the same account.
+- Keep your e-mail account and your GitHub account safe: anyone who can read your e-mail, or sign in to your GitHub account, can sign in as you.
+- You can remove DevTalk's access to your GitHub account in GitHub: Settings › Applications › Authorized OAuth Apps.
 - You can sign out, export your data and delete your account at any time in **Settings › Account**.
 
 ## What you share
@@ -45,7 +49,7 @@ In a voice room:
 
 ## No guarantees
 
-DevTalk is a small free project. The community server can be slow, asleep or unavailable, and features can change. Voice rooms connect computers directly and use no relay server, so a call can fail on some networks. We do our best to keep your data safe, but we cannot promise the service will always work.
+DevTalk is a small free project. The community server can be slow, asleep or unavailable, and features can change. Voice rooms connect computers directly and use no relay server, so a call can fail on some networks. Signing in with GitHub depends on GitHub and on your web browser, so it can fail; the e-mail code is the other way in. We do our best to keep your data safe, but we cannot promise the service will always work.
 
 ## Changes
 

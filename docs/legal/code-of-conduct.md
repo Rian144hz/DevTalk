@@ -1,6 +1,6 @@
 # Code of conduct
 
-Version 2026-10-20. This is a plain-language draft. It has not been reviewed by a lawyer.
+Version 2026-10-26. This is a plain-language draft. It has not been reviewed by a lawyer.
 
 DevTalk is a place to practise English with other developers. Everyone here is learning, and making mistakes must feel safe.
 
