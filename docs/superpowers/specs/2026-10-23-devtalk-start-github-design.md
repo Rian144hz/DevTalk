@@ -44,10 +44,13 @@ janela do app; link `devtalk://`.
 - **Primeira vez** = não há perfil local do coach (`profile:get` → null), como hoje decide o onboarding.
   - Boas-vindas (frase: "Practise the English you use at work. A coach marks your writing, and other developers talk
     with you.").
-  - **Continue with GitHub** → "Finish signing in in your browser." com **Cancel**; sucesso → passos da comunidade
-    (regras + 18+, perfil com sugestão) → configuração do coach → Home. Falha/tempo (5 min)/Cancel → volta às
-    boas-vindas com "Sign-in was not finished. Try again." (ou a mensagem do erro).
-  - **Continue with e-mail** → os passos de código por e-mail que já existem → regras → perfil → coach → Home.
+  - **Continue with GitHub** → "Finish signing in with GitHub in your browser." (e, numa segunda linha, "Then come
+    back here.") com **Cancel** logo depois do texto; Esc também cancela; sucesso → passos da comunidade (regras + 18+,
+    perfil com sugestão; "Step 2 of 3" e "Step 3 of 3", pois não há passo de código) → configuração do coach → Home.
+    Falha/tempo (5 min)/Cancel → volta às boas-vindas com "Sign-in was not finished. Try again." (ou, para outro erro,
+    o título "Sign-in was not finished." com a mensagem do erro embaixo).
+  - **Continue with e-mail** → os passos de código por e-mail que já existem ("Step n of 4"; sem botão do GitHub, e
+    "Send code" é o botão principal) → regras → perfil → coach → Home.
   - **Practise without an account** → coach → Home (como hoje).
   - Comunidade não configurada nesta build (`configured: false`): só "Practise without an account" aparece.
 - **Já configurado**: abertura → Home. Sessão com documentos pendentes continua sendo resolvida em People, como hoje.

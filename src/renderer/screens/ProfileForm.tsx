@@ -5,6 +5,7 @@ import { AREAS, MASCOTS, PROFILE_LIMITS, type Area, type AvailabilitySlot, type 
 import { ProfileDraftSchema, normalizeStackTags } from '../../core/social/validate';
 import { Icon } from '../app/icons';
 import { Avatar, Banner, Button, Notice, Segmented, Select, StackTag, TextArea, TextField } from '../design-system';
+import { displayNameHint } from '../lib/first-run';
 import { DAY_NAMES, halfHourTimes } from '../lib/format';
 import { AvatarInputError, BannerInputError, prepareAvatar, prepareBanner } from '../lib/image';
 import { browserAvatarDeps, browserBannerDeps, bytesToDataUrl } from '../lib/image-browser';
@@ -46,6 +47,7 @@ export function ProfileForm({
   userId = null,
   initialBanner,
   suggestedPhoto = null,
+  suggestedName = null,
   extraAction,
   submitLabel,
   onSubmit,
@@ -59,6 +61,8 @@ export function ProfileForm({
   initialBanner?: string | null;
   /** A photo already prepared for upload (the GitHub one): shown as the chosen photo, saved only with the form. */
   suggestedPhoto?: Uint8Array | null;
+  /** The name GitHub suggested, already in the field: the hint says so until the person changes it. */
+  suggestedName?: string | null;
   /** Another action beside the submit button (a quiet one, such as "Skip for now"). */
   extraAction?: ReactNode;
   submitLabel: string;
@@ -253,7 +257,7 @@ export function ProfileForm({
 
       <div className="form-grid">
         <TextField label="Display name" value={name} onChange={(e) => setName(e.target.value)} maxLength={PROFILE_LIMITS.displayName.max}
-          error={errors.displayName} hint="How other members see you." autoComplete="nickname" />
+          error={errors.displayName} hint={displayNameHint(name, suggestedName)} autoComplete="nickname" />
         <Select label="Native language" value={language} options={languageOptions(language)} onChange={(e) => setLanguage(e.target.value)} />
         <Segmented label="English level" value={level} options={ALL_LEVELS.map((l) => ({ value: l, label: l }))} onChange={setLevel} />
         <Select label="Area" value={area} options={AREAS.map((a) => ({ value: a, label: AREA_LABELS[a] }))}

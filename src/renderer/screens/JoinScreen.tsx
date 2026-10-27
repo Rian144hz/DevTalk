@@ -5,6 +5,7 @@ import { useAppData } from '../app/AppData';
 import { Icon } from '../app/icons';
 import { Button, EmptyState, Notice, Skeleton, TextField } from '../design-system';
 import { AppErrorException, api, unwrap } from '../lib/api';
+import { joinStepLabel, signInFailure } from '../lib/first-run';
 import { secondsUntilResend } from '../lib/resend';
 import { setReturnTo } from '../lib/returnTo';
 import { useGitHubPrefill } from '../lib/useGitHubPrefill';
@@ -20,6 +21,8 @@ const draft = {
   email: '',
   sentAt: 0,
   ticks: { terms: false, privacy: false, conduct: false, age: false },
+  /** The last sign-in was GitHub's (no code step); it survives a visit to a legal document and back. */
+  viaGitHub: false,
 };
 
 /** Saves the profile, then the photo change. Shared by Join and Edit profile. */
@@ -62,10 +65,14 @@ function JoinFrame({ embedded, busy, children }: { embedded: boolean; busy?: boo
 /**
  * The community steps: sign in (GitHub or an e-mail code), rules and 18+, profile. A route in People, or `embedded`
  * in the first run, where `onDone` replaces the move to People, `onBack` (the sign-in step) returns to the welcome
- * screen and `onSkip` (the rules and the profile) goes on to the coach setup without finishing.
+ * screen and `onSkip` (the rules and the profile) goes on to the coach setup without finishing. `offerGitHub` is
+ * false when the person already chose e-mail on the welcome screen: then GitHub is not offered and Send code is the
+ * primary action. `viaGitHub` says the person signed in with GitHub before this screen opened (the first run does).
  */
-export function JoinScreen({ embedded = false, onDone, onBack, onSkip }: {
+export function JoinScreen({ embedded = false, offerGitHub = true, viaGitHub = false, onDone, onBack, onSkip }: {
   embedded?: boolean;
+  offerGitHub?: boolean;
+  viaGitHub?: boolean;
   onDone?(): void;
   onBack?(): void;
   onSkip?(): void;
@@ -83,6 +90,7 @@ export function JoinScreen({ embedded = false, onDone, onBack, onSkip }: {
   const finished = useRef(onDone);
   finished.current = onDone;
   const github = useGitHubSignIn((next) => {
+    draft.viaGitHub = true;
     draft.sentAt = 0;
     setSentTo('');
     setError(null);
@@ -137,6 +145,7 @@ export function JoinScreen({ embedded = false, onDone, onBack, onSkip }: {
     e.preventDefault();
     void run(async () => {
       const next = unwrap(await api().social.verifyCode(sentTo, code.trim()));
+      draft.viaGitHub = false;
       draft.sentAt = 0;
       setSentTo('');
       setStatus(next);
@@ -176,7 +185,7 @@ export function JoinScreen({ embedded = false, onDone, onBack, onSkip }: {
 
   const step = !status.signedIn ? (sentTo ? 2 : 1) : status.needsDocuments ? 3 : 4;
   const LEDES = [
-    'Sign in or create an account with GitHub or your e-mail. DevTalk has no password.',
+    `Sign in or create an account with ${offerGitHub ? 'GitHub or ' : ''}your e-mail. DevTalk has no password.`,
     'Check your e-mail for a code.',
     'Read and accept the community rules.',
     'Tell other developers who you are.',
@@ -198,7 +207,7 @@ export function JoinScreen({ embedded = false, onDone, onBack, onSkip }: {
     <JoinFrame embedded={embedded}>
       <header className="join-head">
         <h1>Join the community</h1>
-        <p className="lede">Step {step} of 4. {LEDES[step - 1]}</p>
+        <p className="lede">{joinStepLabel(step, viaGitHub || draft.viaGitHub)}. {LEDES[step - 1]}</p>
       </header>
 
       {step === 1 && (github.waiting ? (
@@ -208,16 +217,16 @@ export function JoinScreen({ embedded = false, onDone, onBack, onSkip }: {
       ) : (
         <section className="join-step" aria-labelledby="join-start">
           <h2 id="join-start">Sign in</h2>
-          {github.error && <Notice tone="error" title={github.error} />}
-          <GitHubButton onClick={github.start} />
-          <p className="or-rule" aria-hidden="true">or</p>
+          {github.error && <Notice tone="error" {...signInFailure(github.error)} />}
+          {offerGitHub && <GitHubButton onClick={github.start} />}
+          {offerGitHub && <p className="or-rule" aria-hidden="true">or</p>}
           <form className="join-email" onSubmit={(e) => { e.preventDefault(); void sendCode(email.trim().toLowerCase()); }}>
             <TextField label="E-mail" type="email" value={email} onChange={(e) => { setEmail(e.target.value); draft.email = e.target.value; }}
-              autoComplete="email" spellCheck={false} hint="We send a code to this address. Other members never see it." autoFocus />
+              autoComplete="email" spellCheck={false} hint="We send a code to this address. Other members never see it." autoFocus={!offerGitHub} />
             {error && <Notice tone="error" title={error} />}
             <div className="form-actions">
               {embedded && onBack && <Button variant="quiet" onClick={onBack}>Back</Button>}
-              <Button variant="secondary" type="submit" busy={busy} disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())}>Send code</Button>
+              <Button variant={offerGitHub ? 'secondary' : 'primary'} type="submit" busy={busy} disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())}>Send code</Button>
             </div>
           </form>
         </section>
@@ -277,6 +286,7 @@ export function JoinScreen({ embedded = false, onDone, onBack, onSkip }: {
             submitLabel="Join"
             initialAvatar={null}
             suggestedPhoto={prefill.photo}
+            suggestedName={prefill.displayName}
             extraAction={skip}
             initial={{
               displayName: prefill.displayName,

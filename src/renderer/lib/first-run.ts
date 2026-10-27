@@ -42,3 +42,25 @@ export function signInNotice(error: { kind: string; message: string }, cancelled
 export function suggestedDisplayName(raw: string | null): string {
   return (raw ?? '').trim().slice(0, PROFILE_LIMITS.displayName.max).trim();
 }
+
+/**
+ * "Step n of m" for the community steps. n is the step of the e-mail way (1 e-mail, 2 code, 3 rules, 4 profile).
+ * GitHub has no code step, so once someone has signed in with it the rules are 2 of 3 and the profile 3 of 3.
+ */
+export function joinStepLabel(step: 1 | 2 | 3 | 4, viaGitHub: boolean): string {
+  return viaGitHub && step >= 3 ? `Step ${step - 1} of 3` : `Step ${step} of 4`;
+}
+
+/**
+ * How a failed GitHub sign-in reads: a title that says what failed, and the main process' words under it. The
+ * "not finished" answer already says it all, so it stands alone.
+ */
+export function signInFailure(message: string): { title: string; detail?: string } {
+  return message === SIGN_IN_NOT_FINISHED ? { title: message } : { title: 'Sign-in was not finished.', detail: message };
+}
+
+/** The hint under Display name: it says so while the field still holds the name GitHub suggested. */
+export function displayNameHint(name: string, suggested: string | null): string {
+  const plain = 'How other members see you.';
+  return suggested && name === suggested ? `From your GitHub account. ${plain}` : plain;
+}

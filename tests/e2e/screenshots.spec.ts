@@ -140,18 +140,18 @@ test.describe('start', () => {
     // The browser is "open": the wait is held, then Cancel lands during the exchange, which still signs in.
     await holdSignIn(app, 'signed-in');
     await page.getByRole('button', { name: 'Continue with GitHub' }).click();
-    await expect(page.getByText('Finish signing in in your browser.')).toBeVisible();
+    await expect(page.getByText('Finish signing in with GitHub in your browser.')).toBeVisible();
     await shootThemes(page, 'welcome-waiting', () => page.evaluate(() => document.getAnimations().forEach((a) => { a.pause(); a.currentTime = 0; })));
     await page.getByRole('button', { name: 'Cancel' }).click();
 
-    await expect(page.getByText('Step 3 of 4')).toBeVisible();
+    await expect(page.getByText('Step 2 of 3')).toBeVisible();
     await shootThemes(page, 'first-run-rules');
     for (const label of ['I accept the Terms of use', 'I accept the Privacy policy', 'I accept the Code of conduct', 'I am 18 or older']) {
       await page.getByRole('checkbox', { name: label }).check();
     }
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Step 4 of 4')).toBeVisible();
-    await expect(page.getByText('From your GitHub account')).toBeVisible();
+    await expect(page.getByText('Step 3 of 3')).toBeVisible();
+    await expect(page.getByText('From your GitHub account', { exact: true })).toBeVisible();
     await expect(page.locator('.photo-row img.avatar')).toBeVisible();
     await shootThemes(page, 'first-run-profile');
   });

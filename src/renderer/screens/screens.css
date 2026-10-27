@@ -9,10 +9,14 @@
 .welcome h1 { max-width: 20ch; }
 .welcome .lede { max-width: var(--measure); }
 .welcome-actions { margin-top: var(--s8); padding-top: var(--s6); border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: var(--s3); }
+.onboarding.welcome { padding-block: clamp(var(--s14), 18vh, 176px) var(--s6); } /* a little above the middle; not centred, so the heading stays put between states; the error state still fits 960x640 */
 .welcome-actions > .btn { width: 100%; padding-block: 11px; }
+.welcome-actions > .notice { margin-bottom: var(--s3); }
 .github-mark { flex: none; }
-.signin-wait { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); flex-wrap: wrap; }
-.signin-wait p { display: flex; align-items: center; gap: var(--s3); color: var(--ink-2); }
+.signin-wait { display: flex; align-items: center; justify-content: flex-start; gap: var(--s4); flex-wrap: wrap; }
+.signin-wait p { display: flex; align-items: flex-start; gap: var(--s3); color: var(--ink); }
+.signin-wait .spinner { margin-top: calc((1lh - 14px) / 2); }
+.signin-wait-hint { display: block; color: var(--ink-2); }
 .spinner { flex: none; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--rule-strong); border-top-color: var(--ink-2); animation: dt-spin 0.9s linear infinite; }
 @keyframes dt-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }

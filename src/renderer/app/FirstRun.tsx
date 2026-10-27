@@ -45,7 +45,7 @@ export function FirstRun() {
     // The rules open in full here too; "Back to joining" returns to the steps (the ticks are kept).
     if (route.name === 'legal') return <div className="first-run-legal"><LegalScreen doc={(route.sub ?? 'terms') as LegalDoc} /></div>;
     return (
-      <JoinScreen embedded
+      <JoinScreen embedded offerGitHub={choice !== 'email'} viaGitHub={choice === 'github'}
         onDone={() => setStatus((s) => ({ ...(s ?? UNKNOWN), configured: true, signedIn: true, needsDocuments: false, hasProfile: true }))}
         onBack={() => setChoice('none')}
         onSkip={() => setChoice('local')} />

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { SocialStatus } from '../../shared/ipc-contract';
 import { Icon } from '../app/icons';
 import { Button, Notice } from '../design-system';
+import { signInFailure } from '../lib/first-run';
 import { useGitHubSignIn } from '../lib/useGitHubSignIn';
 import { GitHubButton, GitHubWaiting } from './GitHubSignIn';
 
@@ -34,7 +35,7 @@ export function WelcomeScreen({ configured, onSignedIn, onEmail, onLocal }: {
         <p className="lede">A coach marks your writing, and other developers talk with you.</p>
 
         <div className="welcome-actions" ref={actions}>
-          {github.error && <Notice tone="error" title={github.error} />}
+          {github.error && <Notice tone="error" {...signInFailure(github.error)} />}
           {github.waiting ? (
             <GitHubWaiting onCancel={github.cancel} />
           ) : (

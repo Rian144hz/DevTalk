@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Button } from '../design-system';
 import { stackIconFor } from '../lib/stack-icons';
 
@@ -20,15 +21,32 @@ export function GitHubButton({ onClick }: { onClick(): void }) {
   );
 }
 
-/** While the browser is open: a quiet spinner (still under reduced motion), the instruction, and Cancel. */
+/**
+ * While the browser is open: a quiet spinner (still under reduced motion), what to do and what comes after, and
+ * Cancel right after the text. Escape cancels too.
+ */
 export function GitHubWaiting({ onCancel }: { onCancel(): void }) {
+  const cancel = useRef(onCancel);
+  cancel.current = onCancel;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      e.preventDefault();
+      cancel.current();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   return (
     <div className="signin-wait">
       <p role="status">
         <span className="spinner" aria-hidden="true" />
-        Finish signing in in your browser.
+        <span>
+          Finish signing in with GitHub in your browser.
+          <span className="signin-wait-hint">Then come back here.</span>
+        </span>
       </p>
-      <Button variant="quiet" onClick={onCancel} autoFocus>Cancel</Button>
+      <Button variant="secondary" onClick={onCancel} autoFocus>Cancel</Button>
     </div>
   );
 }

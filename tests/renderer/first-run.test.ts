@@ -1,6 +1,9 @@
 import {
+  displayNameHint,
   firstRunStep,
+  joinStepLabel,
   SIGN_IN_NOT_FINISHED,
+  signInFailure,
   signInNotice,
   suggestedDisplayName,
   type FirstRunState,
@@ -71,6 +74,49 @@ describe('signInNotice', () => {
     expect(signInNotice({ kind: 'internal', message: busy }, true)).toBe(busy);
     expect(signInNotice({ kind: 'offline', message: 'You are offline.' }, true)).toBe('You are offline.');
     expect(signInNotice({ kind: 'offline', message: SIGN_IN_NOT_FINISHED }, true)).toBe(SIGN_IN_NOT_FINISHED);
+  });
+});
+
+describe('joinStepLabel', () => {
+  test('the e-mail way has four steps: e-mail, code, rules, profile', () => {
+    expect([1, 2, 3, 4].map((n) => joinStepLabel(n as 1 | 2 | 3 | 4, false))).toEqual(['Step 1 of 4', 'Step 2 of 4', 'Step 3 of 4', 'Step 4 of 4']);
+  });
+
+  test('GitHub has no code step: the rules are step 2 of 3 and the profile step 3 of 3', () => {
+    expect(joinStepLabel(3, true)).toBe('Step 2 of 3');
+    expect(joinStepLabel(4, true)).toBe('Step 3 of 3');
+  });
+
+  test('before the person has signed in the way is not known yet, so the count stays at four', () => {
+    expect(joinStepLabel(1, true)).toBe('Step 1 of 4');
+    expect(joinStepLabel(2, true)).toBe('Step 2 of 4');
+  });
+});
+
+describe('signInFailure', () => {
+  test('a sign-in that was not finished already says what failed: that sentence alone', () => {
+    expect(signInFailure(SIGN_IN_NOT_FINISHED)).toEqual({ title: 'Sign-in was not finished. Try again.' });
+  });
+
+  test('any other message becomes the detail under a title that says what failed', () => {
+    expect(signInFailure('You are offline.')).toEqual({ title: 'Sign-in was not finished.', detail: 'You are offline.' });
+    expect(signInFailure('Something went wrong. Try again.')).toEqual({ title: 'Sign-in was not finished.', detail: 'Something went wrong. Try again.' });
+  });
+});
+
+describe('displayNameHint', () => {
+  test('says where the name comes from while the field still holds the GitHub name', () => {
+    expect(displayNameHint('Octo Dev', 'Octo Dev')).toBe('From your GitHub account. How other members see you.');
+  });
+
+  test('goes back to the plain hint once the name is changed', () => {
+    expect(displayNameHint('Octavia', 'Octo Dev')).toBe('How other members see you.');
+    expect(displayNameHint('Octo Dev ', 'Octo Dev')).toBe('How other members see you.');
+  });
+
+  test('has nothing to say about a name nobody suggested (e-mail, or an empty suggestion)', () => {
+    expect(displayNameHint('Rian', null)).toBe('How other members see you.');
+    expect(displayNameHint('', '')).toBe('How other members see you.');
   });
 });
 
