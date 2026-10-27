@@ -5,6 +5,8 @@ import { api, unwrap } from '../lib/api';
 interface AppData {
   /** undefined while loading, null before onboarding. */
   profile: StoredProfile | null | undefined;
+  /** The first load of the profile failed (it stays undefined); `refresh` tries again. */
+  loadFailed: boolean;
   dueCount: number;
   refresh(): Promise<void>;
   /** Unread messages for the rail, requests included. */
@@ -23,15 +25,20 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [dueCount, setDueCount] = useState(0);
   const [unread, setUnread] = useState(0);
   const [room, setRoom] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const refresh = useCallback(async () => {
     const p = unwrap(await api().profile.get());
     setProfile(p);
     if (p) setDueCount(unwrap(await api().review.queue()).items.length);
   }, []);
   useEffect(() => {
-    void refresh();
+    refresh().catch(() => setLoadFailed(true));
   }, [refresh]);
-  return <Ctx.Provider value={{ profile, dueCount, refresh, unread, setUnread, room, setRoom }}>{children}</Ctx.Provider>;
+  // A later successful `refresh` (the retry) clears the failure.
+  useEffect(() => {
+    if (profile !== undefined) setLoadFailed(false);
+  }, [profile]);
+  return <Ctx.Provider value={{ profile, loadFailed, dueCount, refresh, unread, setUnread, room, setRoom }}>{children}</Ctx.Provider>;
 }
 
 export function useAppData(): AppData {

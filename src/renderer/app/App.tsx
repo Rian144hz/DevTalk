@@ -9,6 +9,7 @@ import { Splash } from './Splash';
 import { CommandPalette } from './CommandPalette';
 import type { Command } from '../lib/commands';
 import { api } from '../lib/api';
+import { Button, Notice } from '../design-system';
 import type { Theme } from '../../core/ports';
 import { ComponentsScreen } from '../screens/ComponentsScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
@@ -48,7 +49,7 @@ const SHORTCUT_ROUTES: RouteName[] = ['home', 'practice', 'review', 'people', 'm
 
 /** `started`: the launch splash is over. The first screen also waits for the profile, whichever ends last. */
 function Shell({ started }: { started: boolean }) {
-  const { profile, dueCount, refresh, unread, setUnread, room } = useAppData();
+  const { profile, loadFailed, dueCount, refresh, unread, setUnread, room } = useAppData();
   // Inside a voice room, every way to Rooms leads back to that room; only leaving the Rooms screen (or Leave) ends it.
   const roomRef = useRef(room);
   roomRef.current = room;
@@ -128,7 +129,13 @@ function Shell({ started }: { started: boolean }) {
     document.title = 'DevTalk';
   }, []);
 
-  if (!started || profile === undefined) return null;
+  if (!started) return null;
+  // The data failing to load never holds the splash; once it is over, the person can try again.
+  if (profile === undefined) {
+    return loadFailed
+      ? <main className="page"><Notice tone="error" title="Could not load your data." action={<Button variant="secondary" onClick={() => void refresh().catch(() => undefined)}>Try again</Button>} /></main>
+      : null;
+  }
   if (profile === null) return <OnboardingScreen />;
 
   const name: RouteName = route.name === 'onboarding' ? 'home' : route.name;

@@ -36,7 +36,7 @@
    the animations run from the start (fill both). Timeline: pencil in 0–180 ms; name written 80–780 ms; "d" struck
    820–1000 ms; "D" written 960–1200 ms; hold; fade from --splash-show for --splash-fade (lib/splash.ts). */
 .splash { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: var(--bg); cursor: default; user-select: none; animation: splash-out var(--splash-fade) var(--ease-out) var(--splash-show) both; }
-.splash-art { display: block; width: calc(clamp(56px, 4.5vw, 72px) * 4.58); height: auto; overflow: visible; }
+.splash-art { display: block; width: calc(clamp(64px, 6.5vw, 112px) * 4.58); height: auto; overflow: visible; }
 .splash-word { font: 700 100px var(--font-ui); letter-spacing: -0.01em; fill: var(--ink); }
 .splash-pen { color: var(--pencil); transform: translateX(var(--run)); }
 .splash-pen .icon { stroke-width: 1.25; } /* the rail's 1.6 is too heavy at 7.5× */

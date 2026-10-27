@@ -72,14 +72,17 @@ test('with reduced motion the name stands still for 0.3 s', async ({ page }) => 
 
 test('the first run follows the system theme from the first frame', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
+  // The theme must be set while <head> is still being read (no <body> yet): before anything can be painted.
   await page.addInitScript(() => {
-    document.addEventListener('DOMContentLoaded', () => {
-      (window as unknown as { themeAtStart?: string }).themeAtStart = document.documentElement.dataset['theme'];
-    });
+    const seen = window as unknown as { themeFirstSet?: { theme: string; bodyExisted: boolean } };
+    new MutationObserver(() => {
+      const theme = document.documentElement.dataset['theme'];
+      if (theme && !seen.themeFirstSet) seen.themeFirstSet = { theme, bodyExisted: document.body !== null };
+    }).observe(document, { attributes: true, subtree: true });
   });
   await page.reload();
   await expect(splash(page)).toBeVisible();
-  expect(await page.evaluate(() => (window as unknown as { themeAtStart?: string }).themeAtStart)).toBe('light');
+  expect(await page.evaluate(() => (window as unknown as { themeFirstSet?: unknown }).themeFirstSet)).toEqual({ theme: 'light', bodyExisted: false });
   await expect(splash(page)).toHaveCSS('background-color', 'rgb(238, 240, 243)');
   await expect(firstRun(page)).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
@@ -121,6 +124,27 @@ test.describe('offline', () => {
   });
 });
 
+test('a failed data load still ends the splash, then offers to try again', async ({ app, page }) => {
+  // Make the profile load fail from the main process, as a broken IPC handler would; keep the real one to put back.
+  await app.evaluate(({ ipcMain }) => {
+    const handlers = (ipcMain as unknown as { _invokeHandlers: Map<string, unknown> })._invokeHandlers;
+    (globalThis as unknown as { realProfileGet: unknown }).realProfileGet = handlers.get('profile:get');
+    ipcMain.removeHandler('profile:get');
+    ipcMain.handle('profile:get', () => ({ ok: false, error: { kind: 'internal', message: 'Something went wrong. Try again.' } }));
+  });
+  await page.reload();
+  await expect(splash(page)).toBeVisible();
+  await expect(splash(page)).toBeHidden({ timeout: 3000 });
+  await expect(page.getByRole('alert')).toContainText('Could not load your data.');
+  await app.evaluate(({ ipcMain }) => {
+    ipcMain.removeHandler('profile:get');
+    ipcMain.handle('profile:get', (globalThis as unknown as { realProfileGet: Parameters<typeof ipcMain.handle>[1] }).realProfileGet);
+  });
+  await page.getByRole('button', { name: 'Try again' }).click();
+  await expect(firstRun(page)).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
 test('screenshots of the splash, mid-animation and at the end, in both themes', async ({ page }) => {
   test.skip(!process.env['DEVTALK_SPLASH_SHOTS'], 'set DEVTALK_SPLASH_SHOTS=1 to capture');
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -137,7 +161,7 @@ test('screenshots of the splash, mid-animation and at the end, in both themes', 
           a.currentTime = t;
         }
       }, ms);
-      await page.screenshot({ path: `.impeccable/review/splash-${name}-${theme}.png` });
+      await page.screenshot({ path: `.impeccable/review/splash-${theme}-${name}.png` });
     }
   }
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -145,6 +169,6 @@ test('screenshots of the splash, mid-animation and at the end, in both themes', 
     await page.emulateMedia({ colorScheme: theme });
     await page.reload();
     await expect(splash(page)).toBeVisible();
-    await page.screenshot({ path: `.impeccable/review/splash-still-${theme}.png` });
+    await page.screenshot({ path: `.impeccable/review/splash-${theme}-still.png` });
   }
 });
