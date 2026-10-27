@@ -38,7 +38,7 @@ function createMainWindow(leaveRoom: () => void): BrowserWindow {
     minWidth: 900,
     minHeight: 600,
     show: false,
-    backgroundColor: '#0f1115',
+    backgroundColor: '#0f1726',
     webPreferences: secureWebPreferences(join(__dirname, '../preload/index.cjs')),
   });
 
