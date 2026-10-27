@@ -1,16 +1,21 @@
 /* Base components. Values come from tokens.css only. */
 
-/* Buttons */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); border-radius: var(--r-control); padding: 9px var(--s4); font-weight: 500; border: 1px solid transparent; transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-ui) ease, border-color var(--dur-ui) ease; white-space: nowrap; }
-.btn:active:not([disabled]) { transform: scale(0.97); }
+/* Buttons: pills. Primary and secondary lift 1px on hover, every kind squeezes when pressed, an icon after the text nudges right. */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); border-radius: var(--r-pill); padding: 9px 18px; font-weight: 500; border: 1px solid transparent; transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease, transform 200ms var(--ease-out); white-space: nowrap; }
+.btn:focus-visible { border-radius: var(--r-pill); }
 .btn-primary { background: var(--accent); color: var(--on-accent); }
+.btn-primary:hover:not([disabled]) { background: var(--accent-hover); transform: translateY(-1px); }
 .btn-primary kbd { color: var(--on-accent); border-color: color-mix(in srgb, var(--on-accent) 35%, transparent); }
-.btn-secondary { background: transparent; border-color: var(--rule-strong); color: var(--ink); }
-.btn-secondary:hover:not([disabled]) { background: var(--sheet-hover); }
+.btn-secondary { background: var(--sheet); border-color: var(--rule-strong); color: var(--ink); }
+.btn-secondary:hover:not([disabled]) { background: var(--sheet-hover); transform: translateY(-1px); }
 .btn-quiet { background: transparent; color: var(--ink-2); padding-inline: var(--s3); }
-.btn-quiet:hover:not([disabled]) { color: var(--ink); background: var(--sheet); }
+.btn-quiet:hover:not([disabled]) { color: var(--ink); background: var(--pencil-wash); }
+.btn:active:not([disabled]) { transform: scale(0.98); }
+.btn > svg:last-child:not(:first-child) { transition: translate 300ms var(--ease-out); } /* only an icon after the text moves; the GitHub mark, busy dot and key hint stay put */
+.btn:hover:not([disabled]) > svg:last-child:not(:first-child) { translate: 4px; }
 .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
 .btn[aria-busy="true"] { cursor: progress; }
+@media (prefers-reduced-motion: reduce) { .btn, .btn > svg { transform: none !important; translate: none !important; } }
 .btn-busy-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: dt-pulse 1s ease-in-out infinite; }
 @keyframes dt-pulse { 50% { opacity: 0.3; } }
 
