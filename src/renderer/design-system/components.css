@@ -3,8 +3,8 @@
 /* Buttons */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); border-radius: var(--r-control); padding: 9px var(--s4); font-weight: 500; border: 1px solid transparent; transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-ui) ease, border-color var(--dur-ui) ease; white-space: nowrap; }
 .btn:active:not([disabled]) { transform: scale(0.97); }
-.btn-primary { background: var(--pencil); color: var(--pencil-ink); }
-.btn-primary kbd { color: var(--pencil-ink); border-color: color-mix(in srgb, var(--pencil-ink) 35%, transparent); }
+.btn-primary { background: var(--accent); color: var(--on-accent); }
+.btn-primary kbd { color: var(--on-accent); border-color: color-mix(in srgb, var(--on-accent) 35%, transparent); }
 .btn-secondary { background: transparent; border-color: var(--rule-strong); color: var(--ink); }
 .btn-secondary:hover:not([disabled]) { background: var(--sheet-hover); }
 .btn-quiet { background: transparent; color: var(--ink-2); padding-inline: var(--s3); }
