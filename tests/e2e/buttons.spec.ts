@@ -7,7 +7,7 @@
 // button with only a text and an icon cannot tell the two orders apart. A trailing icon therefore needs an element
 // before it, such as the label in a span, and the lab button below is built that way.
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from './fixtures';
+import { expect, onboard, test } from './fixtures';
 
 test.use({ social: '1' });
 
@@ -101,6 +101,7 @@ test('links styled as buttons are pills, and the size rules of the screens still
   // a.btn
   const link = lab(page, 'link');
   expect(await isPill(link)).toBe(true);
+  expect(await css(link, 'text-decoration-line')).toBe('none');
   await link.hover();
   await expect.poll(() => lift(link)).toBe(-1);
   // The base fill, not overridden by a screen
@@ -219,4 +220,32 @@ test('the focus ring follows the pill', async ({ page }) => {
   expect(await isPill(focused)).toBe(true);
   expect(await css(focused, 'outline-style')).toBe('solid');
   expect(await css(focused, 'outline-width')).toBe('2px');
+});
+
+test.describe('the like button on a profile', () => {
+  test.use({ social: 'people' });
+
+  test('is a pill that lifts, squeezes when pressed and sits still under reduced motion; the message link has no underline', async ({ page }) => {
+    await onboard(page);
+    await page.mouse.move(2, 2);
+    await page.evaluate(() => { location.hash = '#/people'; });
+    await page.getByRole('list', { name: 'Members' }).getByRole('listitem').filter({ hasText: 'Bia' }).getByRole('link').click();
+    // A press toggles the like, which renames the button (Like / Unlike), so find it by its class.
+    const like = page.locator('.like-button');
+    await expect(like).toBeVisible();
+    expect(await isPill(like)).toBe(true);
+    expect(await css(page.getByRole('link', { name: 'Send message' }), 'text-decoration-line')).toBe('none');
+    await expect.poll(() => lift(like)).toBe(0);
+    await like.hover();
+    await expect.poll(() => lift(like)).toBe(-1);
+    await page.mouse.down();
+    await expect.poll(() => squeeze(like)).toBeCloseTo(0.98, 3);
+    await page.mouse.up();
+    await away(page);
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await like.hover();
+    await expect.poll(() => css(like, 'background-color')).toBe(await token(page, 'background-color', '--sheet-hover'));
+    expect(await css(like, 'transform')).toBe('none');
+  });
 });

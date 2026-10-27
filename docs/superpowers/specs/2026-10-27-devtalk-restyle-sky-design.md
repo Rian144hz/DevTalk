@@ -22,8 +22,9 @@ animação de cartões ou linhas, a abertura animada (só herda as cores).
 
 1. Os tokens dos dois temas usam a paleta da §2, e todo par de texto passa o contraste da §4.
 2. Os botões são pílulas com o movimento da §3, e com "reduzir movimento" só a cor muda.
-3. Nenhuma cor fixa sobra fora dos tokens, exceto as que já são de propósito: o fundo escuro dos diálogos e os grounds
-   espelhados em `stack-icons.ts`, que passam a seguir os novos valores.
+3. Nenhuma cor fixa sobra fora dos tokens, exceto os grounds espelhados em `stack-icons.ts`, que passam a seguir os
+   novos valores. O fundo atrás dos diálogos e da paleta (o "scrim") agora é o token `--scrim`, marinho nos dois temas
+   (escuro `rgb(2 8 20 / 0.5)`, claro `rgb(11 42 79 / 0.24)`), e não mais um preto fixo.
 4. Os testes de unidade e e2e passam, há prints nos dois temas e uma revisão de design, e o DESIGN.md é atualizado.
 
 ## 2. Paleta

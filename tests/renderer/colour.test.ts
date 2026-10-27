@@ -78,6 +78,8 @@ type Channels = [number, number, number];
 function colourOf(block: string, token: string): { rgb: Channels; alpha: number } {
   const raw = declared(block, token);
   if (raw === null) throw new Error(`${token} is not declared`);
+  const alias = /^var\((--[\w-]+)\)$/.exec(raw);
+  if (alias) return colourOf(block, alias[1]!);
   if (/^#[0-9a-f]{6}$/i.test(raw)) return { rgb: rgb(raw), alpha: 1 };
   const m = /^rgb\(\s*(\d+)\s+(\d+)\s+(\d+)\s*(?:\/\s*([\d.]+)\s*)?\)$/.exec(raw);
   if (!m) throw new Error(`${token}: cannot read "${raw}"`);
@@ -118,6 +120,15 @@ describe.each(['dark', 'light'] as const)('sky-blue tokens, %s theme', (theme) =
 
   test('the focus ring reads at 3:1 on the grounds', () => {
     for (const ground of ['--bg', '--sheet']) pass(at('--focus'), at(ground), 3, `--focus on ${ground}`);
+  });
+
+  test('the warning notice, its line and the scrim are tokens; the warning text reads on its wash', () => {
+    for (const token of ['--warn-line', '--warn-wash', '--scrim']) expect(declared(block, token), token).not.toBeNull();
+    pass(at('--warn'), at('--warn-wash', at('--sheet')), 4.5, '--warn on --warn-wash');
+  });
+
+  test('ink reads on the sky wash that marks a selected row, on the grounds it sits on', () => {
+    for (const ground of ['--bg', '--bg-rail', '--sheet']) pass(at('--ink'), at('--pencil-wash', at(ground)), 4.5, `--ink on --pencil-wash over ${ground}`);
   });
 
   test('the badge grounds and neutral in stack-icons.ts mirror --bg, --sheet and --ink-2', () => {

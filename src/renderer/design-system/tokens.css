@@ -31,7 +31,9 @@
 
   /* State */
   --warn: #e8c27a;
-  --focus: #a6d2ff;
+  --warn-line: #c9a465;   /* edge of an error notice: a pastel amber, not a text colour */
+  --warn-wash: var(--sheet);
+  --focus: #d4e9ff;
 
   /* Badges: community violet, evolution copper, technical neutral (icons ≥ 3:1; labels stay in --ink) */
   --badge-community: #b4a7f5;
@@ -70,6 +72,7 @@
   --r-pill: 999px;        /* buttons */
 
   /* Elevation: only floating layers (palette, menus) */
+  --scrim: rgb(2 8 20 / 0.5);   /* behind a dialog or the palette: navy-black, never neutral grey */
   --shadow-float: 0 12px 32px -8px rgb(2 8 20 / 0.55), 0 2px 6px rgb(2 8 20 / 0.35); /* near-black navy: a navy lighter than the ground would glow */
 
   /* Motion */
@@ -103,6 +106,8 @@
   --ins: #1d6b3e;
   --ins-wash: rgb(70 190 120 / 0.16);
   --warn: #7a5200;
+  --warn-line: #e8bc6a;
+  --warn-wash: #fff1d6;
   --focus: #2f7de1;
   --badge-community: #5b46c4;
   --badge-evolution: #a4532a;
@@ -111,6 +116,7 @@
   --graph-2: #6dc58a;
   --graph-3: #3b9b5d;
   --graph-4: #236b3f;
+  --scrim: rgb(11 42 79 / 0.24);
   --shadow-float: 0 12px 32px -8px rgb(11 42 79 / 0.22), 0 2px 6px rgb(11 42 79 / 0.12);
 }
 
