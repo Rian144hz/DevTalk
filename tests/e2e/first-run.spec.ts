@@ -312,6 +312,25 @@ test.describe('People › Join', () => {
     await expect(page.getByText('Step 2 of 3')).toBeVisible();
   });
 
+  test('Escape in the command palette closes the palette and leaves the wait alone', async ({ app, page }) => {
+    await onboard(page);
+    await page.evaluate(() => { location.hash = '#/join'; });
+    await holdSignIn(app, 'not-finished');
+    await github(page).click();
+    await expect(waiting(page)).toBeVisible();
+    await page.keyboard.press('Control+k');
+    const palette = page.getByRole('dialog', { name: 'Search or jump to' });
+    await expect(palette).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(palette).toBeHidden();
+    await expect(waiting(page)).toBeVisible();
+    await expect(alerts(page)).toHaveCount(0);
+    // With the palette shut, Escape still cancels the wait.
+    await page.keyboard.press('Escape');
+    await expect(waiting(page)).toHaveCount(0);
+    await expect(page.getByLabel('E-mail')).toBeVisible();
+  });
+
   test('waits for the browser with a Cancel', async ({ app, page }) => {
     await onboard(page);
     await page.evaluate(() => { location.hash = '#/join'; });

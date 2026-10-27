@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Button } from '../design-system';
+import { isInDialog } from '../lib/keys';
 import { stackIconFor } from '../lib/stack-icons';
 
 /** The GitHub mark (Simple Icons, CC0) in the text colour of the button it sits in. */
@@ -30,7 +31,7 @@ export function GitHubWaiting({ onCancel }: { onCancel(): void }) {
   cancel.current = onCancel;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      if (e.key !== 'Escape' || e.defaultPrevented || isInDialog(e.target)) return;
       e.preventDefault();
       cancel.current();
     };
