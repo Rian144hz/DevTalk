@@ -60,3 +60,45 @@ export function createSessionStore(deps: { safeStorage: SafeStorageLike; filePat
     },
   };
 }
+
+const PROVIDER_TOKEN_KEYS = ['provider_token', 'provider_refresh_token'] as const;
+
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/** Deletes the provider token fields from one object; true when it had any. */
+function dropProviderTokens(o: Record<string, unknown>): boolean {
+  let dropped = false;
+  for (const k of PROVIDER_TOKEN_KEYS) {
+    if (k in o) {
+      delete o[k];
+      dropped = true;
+    }
+  }
+  return dropped;
+}
+
+/** The value without the GitHub provider tokens (top level and a nested currentSession); anything else comes back as it was. */
+function withoutTokens(value: string): string {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (!isRecord(parsed)) return value;
+    const top = dropProviderTokens(parsed);
+    const nested = isRecord(parsed['currentSession']) && dropProviderTokens(parsed['currentSession']);
+    return top || nested ? JSON.stringify(parsed) : value;
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * supabase-js saves the whole /token reply, so after a GitHub sign-in it would keep GitHub's own access and refresh
+ * tokens. The app never uses them: they are removed before anything is stored.
+ */
+export function withoutProviderTokens(inner: SessionStore): SessionStore {
+  return {
+    getItem: (key) => inner.getItem(key),
+    setItem: (key, value) => inner.setItem(key, withoutTokens(value)),
+    removeItem: (key) => inner.removeItem(key),
+    clear: () => inner.clear(),
+  };
+}

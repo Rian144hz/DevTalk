@@ -12,7 +12,7 @@ import { ROOM_MAX, ROOM_SIGNAL_MAX_BYTES, ROOM_THEMES, roomTitle } from '../../c
 import type { LiveRoom, RoomLiveEvent, RoomPerson, RoomReportContext, RoomState, RoomTheme, RoomTimer } from '../../core/social/rooms';
 import type { Level } from '../../core/domain/types';
 import type { Badge, MemberRow, ModerationReport, NoticeKind, ProfileDraft, ReportInput, SocialProfile } from '../../core/social/types';
-import type { MemberSummary, ModerationHistoryItem, Notice, PracticeGraphData, SocialBackend, SocialSession } from './backend';
+import type { AccountExport, MemberSummary, ModerationHistoryItem, Notice, PracticeGraphData, SocialBackend, SocialSession } from './backend';
 import { SocialError } from './errors';
 import type { SocialErrorKind } from './errors';
 import { NOT_FINISHED_MESSAGE } from './oauth-loopback';
@@ -21,6 +21,10 @@ export const FAKE_CODE = '123456';
 /** "Continue with GitHub" in the fake signs in at once as this test member (e2e). */
 export const FAKE_GITHUB_EMAIL = 'octo@example.com';
 export const FAKE_GITHUB_NAME = 'Octo Dev';
+/** The rest of what the fake GitHub shares (the account part of Export my data). */
+export const FAKE_GITHUB_ID = '1000001';
+export const FAKE_GITHUB_USERNAME = 'octo-dev';
+export const FAKE_GITHUB_PICTURE = 'https://avatars.githubusercontent.com/u/1000001?v=4';
 /** Handed to openExternal so the wiring can be checked; .test never resolves, so nothing real opens. */
 export const FAKE_GITHUB_AUTHORIZE_URL = 'https://fake-supabase.test/auth/v1/authorize?provider=github';
 const DAY_MS = 86_400_000;
@@ -920,9 +924,15 @@ export function createFakeSocialBackend(opts: FakeSocialOptions = {}): FakeSocia
       failIf('exportOwnData');
       const { userId, email } = me();
       const p = state.profiles[userId];
+      const github = state.users.find((u) => u.id === userId)?.github === true;
+      const account: AccountExport = {
+        email,
+        signInMethods: github ? ['email', 'github'] : ['email'],
+        github: github ? { id: FAKE_GITHUB_ID, name: FAKE_GITHUB_NAME, username: FAKE_GITHUB_USERNAME, picture: FAKE_GITHUB_PICTURE } : null,
+      };
       return {
         exportedAt: iso(),
-        account: { email },
+        account,
         profile: p ? toProfile(p) : null,
         consents: state.consents.filter((c) => c.userId === userId).map(({ userId: _u, ...c }) => c),
         blocks: state.blocks.filter((k) => k.blocker === userId).map((k) => ({ blocked: k.blocked })),

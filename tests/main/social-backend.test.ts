@@ -8,9 +8,15 @@ import type { SocialErrorKind } from '../../src/main/social/errors';
 import { createUnconfiguredBackend, type SocialBackend } from '../../src/main/social/backend';
 import { SocialError } from '../../src/main/social/errors';
 import { findShippedSecrets, readSocialConfig } from '../../src/main/social/config';
-import { createFakeSocialBackend } from '../../src/main/social/fake-backend';
+import {
+  createFakeSocialBackend,
+  FAKE_GITHUB_ID,
+  FAKE_GITHUB_NAME,
+  FAKE_GITHUB_PICTURE,
+  FAKE_GITHUB_USERNAME,
+} from '../../src/main/social/fake-backend';
 import { NOT_FINISHED_MESSAGE } from '../../src/main/social/oauth-loopback';
-import { createSessionStore } from '../../src/main/social/session-store';
+import { createSessionStore, withoutProviderTokens } from '../../src/main/social/session-store';
 import type { SafeStorageLike } from '../../src/main/vault/key-vault';
 
 let dir: string;
@@ -139,6 +145,44 @@ describe('session store', () => {
     createSessionStore({ safeStorage: fakeSafeStorage(), filePath: file }).setItem('k', 'v');
     const broken: SafeStorageLike = { ...fakeSafeStorage(), decryptString: () => { throw new Error('bad'); } };
     expect(createSessionStore({ safeStorage: broken, filePath: file }).getItem('k')).toBeNull();
+  });
+
+  describe('withoutProviderTokens', () => {
+    function wrapped() {
+      const file = join(dir, 'social-session.bin');
+      const inner = createSessionStore({ safeStorage: fakeSafeStorage(), filePath: file });
+      return { store: withoutProviderTokens(inner), inner, file };
+    }
+
+    test('drops provider_token and provider_refresh_token at the top level and in a nested currentSession', () => {
+      const { store, inner } = wrapped();
+      const tokens = { provider_token: 'gho_x', provider_refresh_token: 'ghr_x' };
+      store.setItem('a', JSON.stringify({ access_token: 'at', refresh_token: 'rt', ...tokens }));
+      store.setItem('b', JSON.stringify({ currentSession: { access_token: 'at', ...tokens }, expiresAt: 5 }));
+      expect(JSON.parse(inner.getItem('a')!)).toEqual({ access_token: 'at', refresh_token: 'rt' });
+      expect(JSON.parse(inner.getItem('b')!)).toEqual({ currentSession: { access_token: 'at' }, expiresAt: 5 });
+      expect(store.getItem('a')).toBe(inner.getItem('a'));
+    });
+
+    test('a non-JSON value, a JSON string or a session without those fields is stored exactly as given', () => {
+      const { store, inner, file } = wrapped();
+      const plain = '{"access_token":"at",  "refresh_token":"rt"}';
+      for (const [key, value] of [['verifier', 'abc123.def'], ['quoted', '"abc123"'], ['plain', plain], ['list', '[1,2]'], ['null', 'null']] as const) {
+        store.setItem(key, value);
+        expect(inner.getItem(key)).toBe(value);
+      }
+      expect(readFileSync(file).length).toBeGreaterThan(0);
+    });
+
+    test('removeItem and clear still reach the real store', () => {
+      const { store, inner } = wrapped();
+      store.setItem('k', 'v');
+      store.removeItem('k');
+      expect(inner.getItem('k')).toBeNull();
+      store.setItem('k', 'v');
+      store.clear();
+      expect(inner.getItem('k')).toBeNull();
+    });
   });
 });
 
@@ -1601,6 +1645,26 @@ describe('fake backend: GitHub sign-in', () => {
     await b.sendCode('rian@example.com');
     await b.verifyCode('rian@example.com', '123456');
     expect(await b.githubSuggestion()).toEqual({ displayName: null, avatar: null, avatarType: null });
+  });
+
+  test('the export says how you sign in; GitHub details only for the GitHub test member', async () => {
+    const mail = createFakeSocialBackend();
+    await mail.sendCode('rian@example.com');
+    await mail.verifyCode('rian@example.com', '123456');
+    expect((await mail.exportOwnData())['account']).toEqual({ email: 'rian@example.com', signInMethods: ['email'], github: null });
+
+    const b = createFakeSocialBackend();
+    await b.signInWithGitHub(browser());
+    expect((await b.exportOwnData())['account']).toEqual({
+      email: 'octo@example.com',
+      signInMethods: ['email', 'github'],
+      github: {
+        id: FAKE_GITHUB_ID,
+        name: FAKE_GITHUB_NAME,
+        username: FAKE_GITHUB_USERNAME,
+        picture: FAKE_GITHUB_PICTURE,
+      },
+    });
   });
 
   test('an injected failure stops the sign-in before the browser opens', async () => {

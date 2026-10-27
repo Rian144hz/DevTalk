@@ -1201,4 +1201,99 @@ describe('GitHub sign-in (Supabase)', () => {
       expect((await errorOf(b.githubSuggestion())).kind).toBe('not_signed_in');
     });
   });
+
+  describe('Export my data: how you sign in', () => {
+    const exportRoutes: Record<string, Reply> = {
+      'GET /rest/v1/profiles': json(200, null),
+      'POST /rest/v1/rpc/my_suspension': json(200, null),
+      'GET /rest/v1/consents': json(200, []),
+      'GET /rest/v1/blocks': json(200, []),
+      'GET /rest/v1/reports': json(200, []),
+      'GET /rest/v1/notices': json(200, []),
+      'POST /rest/v1/rpc/my_moderation_actions': json(200, []),
+      'POST /rest/v1/rpc/my_progress_export': json(200, { practiceDays: [], milestones: [] }),
+      'POST /rest/v1/rpc/my_chat_export': json(200, { conversations: [], messagesSent: [], correctionsGiven: [] }),
+      'POST /rest/v1/rpc/my_social_export': json(200, { following: [], followers: [], likesGiven: [] }),
+      'POST /rest/v1/rpc/my_rooms_export': json(200, { roomsCreated: [], sessions: [] }),
+      'POST /rest/v1/rpc/profile_badges': json(200, []),
+    };
+
+    test('a GitHub member gets the sign-in methods and what GitHub shared', async () => {
+      const body = githubUser('gh-1', {}, ['email', 'github']);
+      body.user.identities = [
+        { id: '0', identity_id: 'id-0', user_id: 'gh-1', provider: 'email', identity_data: { email: 'octo@example.com' } },
+        {
+          id: '583231', identity_id: 'id-1', user_id: 'gh-1', provider: 'github',
+          identity_data: {
+            provider_id: '583231', sub: '583231', full_name: 'Octo Dev', name: 'ignored', user_name: 'octocat',
+            avatar_url: 'https://avatars.githubusercontent.com/u/583231?v=4', email: 'octo@example.com',
+          },
+        },
+      ];
+      const { b } = ghBackend({ 'POST /auth/v1/verify': json(200, body), ...exportRoutes });
+      await b.verifyCode('octo@example.com', '123456');
+      const data = await b.exportOwnData();
+      expect(data['account']).toEqual({
+        email: 'octo@example.com',
+        signInMethods: ['email', 'github'],
+        github: { id: '583231', name: 'Octo Dev', username: 'octocat', picture: 'https://avatars.githubusercontent.com/u/583231?v=4' },
+      });
+    });
+
+    test('an e-mail member has no GitHub details (null), and GitHub with missing fields gives null fields', async () => {
+      const mail = ghBackend({ 'POST /auth/v1/verify': json(200, githubUser('u-1', {}, ['email'])), ...exportRoutes });
+      await mail.b.verifyCode('octo@example.com', '123456');
+      expect((await mail.b.exportOwnData())['account']).toEqual({ email: 'octo@example.com', signInMethods: ['email'], github: null });
+
+      const bare = ghBackend({ 'POST /auth/v1/verify': json(200, githubUser('gh-2', {}, ['github'])), ...exportRoutes });
+      await bare.b.verifyCode('octo@example.com', '123456');
+      expect((await bare.b.exportOwnData())['account']).toEqual({
+        email: 'octo@example.com',
+        signInMethods: ['github'],
+        github: { id: null, name: null, username: null, picture: null },
+      });
+    });
+  });
+
+  describe('the stored session never keeps the GitHub provider tokens', () => {
+    const withTokens = () => ({ ...githubUser(), provider_token: 'gho_PROVIDER_ACCESS', provider_refresh_token: 'ghr_PROVIDER_REFRESH' });
+
+    test('a /token reply with both tokens leaves neither in storage, and the session still works', async () => {
+      const { b, storage } = ghBackend({
+        'POST /auth/v1/token': json(200, withTokens()),
+        'GET /rest/v1/consents': json(200, ['terms', 'privacy', 'conduct', 'age_18'].map((document) => ({ document }))),
+        'GET /rest/v1/profiles': json(200, null),
+        'POST /rest/v1/rpc/my_suspension': json(200, null),
+      });
+      const s = await b.signInWithGitHub(browser('code=auth-code-1'));
+      expect(s).toEqual({ userId: 'gh-1', email: 'octo@example.com' });
+
+      const raw = storage.getItem('sb-proj-auth-token')!;
+      expect(raw).not.toBeNull();
+      expect(raw).not.toContain('provider_token');
+      expect(raw).not.toContain('provider_refresh_token');
+      expect([...storage.map.values()].join('\n')).not.toMatch(/gho_PROVIDER|ghr_PROVIDER/);
+      expect(JSON.parse(raw)).toMatchObject({ refresh_token: 'refresh-1', user: { id: 'gh-1' } });
+
+      // What the status check uses: the stored session, then calls made with its access token.
+      expect(await b.session()).toEqual(s);
+      expect(await b.hasAcceptedCurrentDocuments()).toBe(true);
+      expect(await b.getOwnProfile()).toBeNull();
+    });
+
+    test('the PKCE code verifier (a JSON string, not a session) is stored unchanged', async () => {
+      const { b, calls, storage } = ghBackend({ 'POST /auth/v1/token': json(200, withTokens()) });
+      let kept: string | null = null;
+      const web = browser('code=auth-code-2');
+      await b.signInWithGitHub({
+        openExternal: async (url) => {
+          kept = storage.getItem('sb-proj-auth-token-code-verifier');
+          await web.openExternal(url);
+        },
+      });
+      const sent = (calls.find((c) => c.path === '/auth/v1/token')!.body as { code_verifier: string }).code_verifier;
+      expect(sent).toMatch(/^[0-9a-f]{20,}$/);
+      expect(kept).toBe(JSON.stringify(sent));
+    });
+  });
 });

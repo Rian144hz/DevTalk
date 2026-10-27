@@ -18,11 +18,11 @@ import type { Badge, BadgeGroup, MascotId, MemberRow, NoticeActor, NoticeKind } 
 import type { AvailabilitySlot, ModerationReport, ProfileDraft, SocialProfile } from '../../core/social/types';
 import type { Level } from '../../core/domain/types';
 import type { Area, ReportContext, ReportReason } from '../../core/social/types';
-import type { GitHubSuggestion, MemberSummary, ModerationHistoryItem, Notice, PracticeGraphData, SocialBackend, SocialSession } from './backend';
+import type { AccountExport, GitHubSuggestion, MemberSummary, ModerationHistoryItem, Notice, PracticeGraphData, SocialBackend, SocialSession } from './backend';
 import { isAllowedAuthUrl } from '../security';
 import { SocialError, mapSupabaseError } from './errors';
 import { NOT_FINISHED_MESSAGE, PORTS_BUSY_MESSAGE, openLoopback, type Loopback } from './oauth-loopback';
-import type { SessionStore } from './session-store';
+import { withoutProviderTokens, type SessionStore } from './session-store';
 
 const DAY_MS = 86_400_000;
 const REQUIRED = [...LEGAL_DOCUMENTS, 'age_18'] as const;
@@ -325,6 +325,28 @@ function validText(raw: string): string {
   return text;
 }
 
+/** The text of a field GitHub sent, else null. */
+const textOrNull = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null);
+
+/** The `account` part of the data export: the e-mail, the sign-in providers and what GitHub shared (null without a GitHub identity). */
+function accountExport(email: string, identities: readonly { provider: string; identity_data?: Record<string, unknown> }[] | null | undefined): AccountExport {
+  const list = identities ?? [];
+  const github = list.find((i) => i.provider === 'github');
+  const data = github?.identity_data ?? {};
+  return {
+    email,
+    signInMethods: [...new Set(list.map((i) => i.provider))],
+    github: github
+      ? {
+          id: textOrNull(data['provider_id']) ?? textOrNull(data['sub']),
+          name: textOrNull(data['full_name']) ?? textOrNull(data['name']),
+          username: textOrNull(data['user_name']),
+          picture: textOrNull(data['avatar_url']),
+        }
+      : null,
+  };
+}
+
 export interface SupabaseBackendOptions {
   url: string;
   key: string;
@@ -343,7 +365,8 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
     auth: {
       // PKCE for GitHub: the code that comes back through the browser is useless without the verifier kept here.
       flowType: 'pkce',
-      storage: opts.storage,
+      // GitHub's own tokens come back in the /token reply; the app never uses them, so they are never stored.
+      storage: withoutProviderTokens(opts.storage),
       persistSession: true,
       autoRefreshToken: opts.autoRefreshToken ?? true,
       detectSessionInUrl: false,
@@ -719,6 +742,8 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
 
     async exportOwnData() {
       const { userId, email } = await me();
+      const { data: auth } = await client.auth.getSession();
+      const account = accountExport(email, auth.session?.user.identities);
       const row = await ownRow(userId);
       const consents = check(await client.from('consents').select('document, version, accepted_at').eq('user_id', userId));
       const blocks = check(await client.from('blocks').select('blocked, created_at').eq('blocker', userId));
@@ -744,7 +769,7 @@ export function createSupabaseBackend(opts: SupabaseBackendOptions): SocialBacke
       const badges = await this.badges(userId);
       return {
         exportedAt: new Date().toISOString(),
-        account: { email },
+        account,
         profile: row ? toProfile(row, await mySuspension()) : null,
         consents,
         blocks,

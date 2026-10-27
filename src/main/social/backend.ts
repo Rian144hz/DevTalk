@@ -17,6 +17,23 @@ export interface GitHubSignInOptions {
   signal?: AbortSignal;
 }
 
+/** What GitHub shared when the member signed in with it (Export my data). A field GitHub did not send is null. */
+export interface GitHubAccountDetails {
+  id: string | null;
+  name: string | null;
+  username: string | null;
+  picture: string | null;
+}
+
+/** The `account` part of Export my data: the e-mail, how the member signs in and, for GitHub, what GitHub shared. */
+export interface AccountExport {
+  email: string;
+  /** The sign-in providers of the account, for example ['email', 'github']. */
+  signInMethods: string[];
+  /** null when the account has no GitHub identity. */
+  github: GitHubAccountDetails | null;
+}
+
 /** What GitHub says about the member, to fill the profile form. Nothing is saved until the member saves the profile. */
 export interface GitHubSuggestion {
   displayName: string | null;
