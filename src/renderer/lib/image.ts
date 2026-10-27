@@ -58,6 +58,21 @@ export async function prepareAvatar(file: { type: string; size: number }, deps: 
   }
 }
 
+/**
+ * A photo that came as a data: URL (the GitHub suggestion) through the same preparation as a picked file: cropped,
+ * resized and re-encoded as WebP, which drops its metadata. Null when it cannot be used; the caller just goes without.
+ */
+export async function prepareSuggestedAvatar(src: string, deps: AvatarDeps): Promise<Uint8Array | null> {
+  try {
+    const parsed = parseDataUrl(src);
+    if (!parsed) return null;
+    // The window's CSP refuses fetch() of a data: URL, and createImageBitmap needs a Blob, so the bytes go back into one.
+    return await prepareAvatar(new Blob([parsed.bytes as Uint8Array<ArrayBuffer>], { type: parsed.type }), deps);
+  } catch {
+    return null;
+  }
+}
+
 // ---- Banner ----
 
 export const BANNER_WIDTH = 1500;

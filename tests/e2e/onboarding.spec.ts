@@ -1,4 +1,9 @@
-import { expect, test } from './fixtures';
+import { expect, practiseWithoutAccount, test } from './fixtures';
+
+// The first run opens on the welcome screen; these tests start at the coach setup.
+test.beforeEach(async ({ page }) => {
+  await practiseWithoutAccount(page);
+});
 
 test('onboarding saves profile and key, then lands on Home', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 2, name: 'Your languages' })).toBeVisible();

@@ -5,6 +5,20 @@
 .onboarding-step { margin-top: var(--s8); padding-top: var(--s6); border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: var(--s5); }
 .onboarding-actions { display: flex; justify-content: flex-end; gap: var(--s2); margin-top: var(--s2); }
 
+/* Welcome (first run) and the GitHub sign-in: the coach setup's column with three ways in */
+.welcome h1 { max-width: 20ch; }
+.welcome .lede { max-width: var(--measure); }
+.welcome-actions { margin-top: var(--s8); padding-top: var(--s6); border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: var(--s3); }
+.welcome-actions > .btn { width: 100%; padding-block: 11px; }
+.github-mark { flex: none; }
+.signin-wait { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); flex-wrap: wrap; }
+.signin-wait p { display: flex; align-items: center; gap: var(--s3); color: var(--ink-2); }
+.spinner { flex: none; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--rule-strong); border-top-color: var(--ink-2); animation: dt-spin 0.9s linear infinite; }
+@keyframes dt-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+.join-embedded .onboarding-col { max-width: 640px; }
+.first-run-legal { max-width: 960px; margin: 0 auto; }
+
 /* Settings */
 .settings section { max-width: 760px; padding: var(--s6) 0; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: var(--s5); }
 .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--s5); align-items: end; }
@@ -87,6 +101,10 @@
 .join-step { max-width: 640px; margin-top: var(--s6); padding-top: var(--s6); border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: var(--s4); }
 .join-step > p { color: var(--ink-2); max-width: var(--measure); overflow-wrap: anywhere; }
 .join-step .field { max-width: none; }
+.join-step > .btn { align-self: flex-start; }
+.join-step > .or-rule { display: flex; align-items: center; gap: var(--s3); max-width: none; color: var(--ink-3); font-size: var(--text-sm); }
+.or-rule::before, .or-rule::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+.join-email { display: flex; flex-direction: column; gap: var(--s4); }
 .input.code-input { font: 500 var(--text-lg) var(--font-mono); letter-spacing: 0; max-width: 220px; }
 .consents { list-style: none; padding: 0; display: flex; flex-direction: column; }
 .consent-row { display: flex; justify-content: space-between; align-items: center; gap: var(--s4); padding: var(--s3) 0; border-top: 1px solid var(--rule); flex-wrap: wrap; }

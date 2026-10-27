@@ -5,6 +5,7 @@ import { startTheme, useThemeEffect } from '../lib/useTheme';
 import type { RouteName } from '../lib/router';
 import { AppDataProvider, useAppData } from './AppData';
 import { Rail } from './Rail';
+import { FirstRun } from './FirstRun';
 import { Splash } from './Splash';
 import { CommandPalette } from './CommandPalette';
 import type { Command } from '../lib/commands';
@@ -12,7 +13,6 @@ import { api } from '../lib/api';
 import { Button, Notice } from '../design-system';
 import type { Theme } from '../../core/ports';
 import { ComponentsScreen } from '../screens/ComponentsScreen';
-import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { PracticeScreen } from '../screens/PracticeScreen';
@@ -136,7 +136,8 @@ function Shell({ started }: { started: boolean }) {
       ? <main className="page"><Notice tone="error" title="Could not load your data." action={<Button variant="secondary" onClick={() => void refresh().catch(() => undefined)}>Try again</Button>} /></main>
       : null;
   }
-  if (profile === null) return <OnboardingScreen />;
+  // First run: no coach profile on this computer yet.
+  if (profile === null) return <FirstRun />;
 
   const name: RouteName = route.name === 'onboarding' ? 'home' : route.name;
   const provider = profile.provider as ProviderId;

@@ -27,7 +27,12 @@ async function go(page: Page, hash: string, ready: string) {
   await page.getByRole('heading', { name: ready }).first().waitFor();
 }
 
-test('onboarding', async ({ page }) => {
+test('welcome and onboarding', async ({ page }) => {
+  for (const theme of THEMES) {
+    await page.evaluate((t) => { document.documentElement.dataset['theme'] = t; }, theme);
+    await shoot(page, 'welcome', theme);
+  }
+  await page.getByRole('button', { name: 'Practise without an account' }).click();
   for (const theme of THEMES) {
     await page.evaluate((t) => { document.documentElement.dataset['theme'] = t; }, theme);
     await shoot(page, 'onboarding-1', theme);

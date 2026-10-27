@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useId, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import type { Level } from '../../core/domain/types';
 import { mascotFor } from '../../core/social/mascots';
 import { AREAS, MASCOTS, PROFILE_LIMITS, type Area, type AvailabilitySlot, type MascotId, type ProfileDraft } from '../../core/social/types';
@@ -45,6 +45,8 @@ export function ProfileForm({
   initialAvatar,
   userId = null,
   initialBanner,
+  suggestedPhoto = null,
+  extraAction,
   submitLabel,
   onSubmit,
   onCancel,
@@ -55,6 +57,10 @@ export function ProfileForm({
   userId?: string | null;
   /** Given when editing an existing profile: enables the banner controls (null = no banner yet). */
   initialBanner?: string | null;
+  /** A photo already prepared for upload (the GitHub one): shown as the chosen photo, saved only with the form. */
+  suggestedPhoto?: Uint8Array | null;
+  /** Another action beside the submit button (a quiet one, such as "Skip for now"). */
+  extraAction?: ReactNode;
   submitLabel: string;
   /** Resolves to an error message, or null when saved. */
   onSubmit(draft: ProfileDraft, photo: PhotoChange, banner: BannerChange): Promise<string | null>;
@@ -80,8 +86,9 @@ export function ProfileForm({
   const [banner, setBanner] = useState<BannerChange>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(initialBanner ?? null);
   const [bannerError, setBannerError] = useState<string | null>(null);
-  const [photo, setPhoto] = useState<PhotoChange>(null);
-  const [preview, setPreview] = useState<string | null>(initialAvatar);
+  const [photo, setPhoto] = useState<PhotoChange>(suggestedPhoto ? { bytes: suggestedPhoto } : null);
+  const [preview, setPreview] = useState<string | null>(() => (suggestedPhoto ? bytesToDataUrl(suggestedPhoto, 'image/webp') : initialAvatar));
+  const [fromGitHub, setFromGitHub] = useState(suggestedPhoto !== null);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof ProfileDraft, string>>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -137,6 +144,7 @@ export function ProfileForm({
       const bytes = await prepareAvatar(file, browserAvatarDeps);
       setPhoto({ bytes });
       setPreview(bytesToDataUrl(bytes, 'image/webp'));
+      setFromGitHub(false);
     } catch (err) {
       setPhotoError(err instanceof AvatarInputError ? err.message : 'This image could not be read. Try another one.');
     } finally {
@@ -147,6 +155,7 @@ export function ProfileForm({
   function removePhoto() {
     setPhoto(initialAvatar ? 'remove' : null);
     setPreview(null);
+    setFromGitHub(false);
     setPhotoError(null);
   }
 
@@ -217,7 +226,7 @@ export function ProfileForm({
             <Button variant="secondary" onClick={() => fileRef.current?.click()}>{preview ? 'Change photo' : 'Add photo'}</Button>
             {preview && <Button variant="quiet" onClick={removePhoto}>Remove photo</Button>}
           </div>
-          <span className="field-hint">JPEG, PNG or WebP, up to 8 MB. It is cropped to a square.</span>
+          <span className="field-hint">{fromGitHub ? 'From your GitHub account' : 'JPEG, PNG or WebP, up to 8 MB. It is cropped to a square.'}</span>
           {photoError && <span className="field-error" role="alert">{photoError}</span>}
           <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" hidden
             onChange={(e) => void choosePhoto(e.target.files?.[0])} />
@@ -345,6 +354,7 @@ export function ProfileForm({
       {formError && <Notice tone="error" title={formError} />}
       <div className="form-actions">
         {onCancel && <Button variant="quiet" onClick={onCancel} disabled={busy}>Cancel</Button>}
+        {extraAction}
         <Button variant="primary" type="submit" busy={busy}>{submitLabel}</Button>
       </div>
     </form>

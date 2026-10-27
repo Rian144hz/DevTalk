@@ -4,7 +4,8 @@ import { rmSync } from 'node:fs';
 import { expect, launchApp, newDataDir, onboard, test } from './fixtures';
 
 const splash = (page: Page) => page.getByRole('img', { name: 'DevTalk', exact: true });
-const firstRun = (page: Page) => page.getByRole('heading', { level: 1, name: 'Set up your coach' });
+/** The first screen of a first run, after the splash. */
+const firstRun = (page: Page) => page.getByRole('heading', { level: 1, name: 'Practise the English you use at work.' });
 const today = (page: Page) => page.getByRole('heading', { level: 1, name: 'Today' });
 const running = (page: Page) => page.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running').length);
 

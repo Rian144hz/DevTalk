@@ -82,9 +82,22 @@ export async function setSize(page: Page, width: number, height: number): Promis
   await page.setViewportSize({ width, height });
 }
 
-/** Completes onboarding with defaults (Portuguese, B1 → B2, Gemini) and a test key. */
-export async function onboard(page: Page, key = 'test-key'): Promise<void> {
+/**
+ * Leaves the first-run welcome screen with "Practise without an account", which opens the coach setup.
+ * An app that already shows the coach setup (nothing to leave) is left as it is.
+ */
+export async function practiseWithoutAccount(page: Page): Promise<void> {
   await waitForStart(page);
+  const local = page.getByRole('button', { name: 'Practise without an account' });
+  const setup = page.getByRole('heading', { level: 1, name: 'Set up your coach' });
+  await local.or(setup).first().waitFor();
+  if (await local.isVisible()) await local.click();
+  await setup.waitFor();
+}
+
+/** Completes onboarding with defaults (Portuguese, B1 → B2, Gemini) and a test key, starting from the first-run welcome. */
+export async function onboard(page: Page, key = 'test-key'): Promise<void> {
+  await practiseWithoutAccount(page);
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByLabel('API key').fill(key);
