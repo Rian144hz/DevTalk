@@ -22,7 +22,7 @@
     "gen:stack-icons": "node scripts/gen-stack-icons.mts",
     "test:e2e": "electron-vite build && playwright test"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "type": "commonjs",
   "dependencies": {
     "@anthropic-ai/sdk": "0.133.0",

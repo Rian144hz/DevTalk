@@ -1,8 +1,73 @@
 # DevTalk
 
-A desktop app for developers who read English well but want to **produce** it: you answer short, realistic work situations (a stand-up update, a code review comment, explaining a bug, an interview question) in 3 to 5 sentences, and an AI coach marks your answer like an editor — edits inline, notes in the margin, a natural B2 rewrite and 2–3 expressions worth keeping. Those expressions come back in a spaced-repetition review (FSRS) and as required expressions in later challenges.
+**Practise the English you use at work.** DevTalk is a desktop app for developers who read English well but want to
+**produce** it. You answer short, realistic work situations, an AI coach marks your answer like an editor, and other
+developers practise with you in chat and voice rooms.
 
-Phase 1 is the solo coach: local, no account. The community (profiles, people, private chat and voice rooms) is optional and needs an account: sign in with a code sent to your e-mail or with GitHub.
+Built with Electron, React and TypeScript. The coach works on its own, with no account. The community is optional and
+runs on Supabase.
+
+## What it does
+
+### The coach (no account needed)
+
+- **Practice.** Short, realistic work situations: a stand-up update, a code review comment, explaining a bug, an
+  interview question. You answer in 3 to 5 sentences.
+- **Feedback like an editor.** Your answer comes back marked like a proof: words struck out and inserted inline,
+  notes in the margin, a natural B2 rewrite and 2–3 expressions worth keeping. Copy the rewrite or write it again.
+- **Review.** The expressions you keep come back in a spaced-repetition review (FSRS) and as required expressions in
+  later challenges.
+- **Progress.** Your edits by category, the history of past feedback and a practice graph.
+- **Your choice of coach.** Google Gemini (free tier, the default), Claude (Anthropic) or Ollama (runs on your
+  computer).
+
+### The community (optional, needs an account)
+
+- **Sign in** with a one-time code sent to your e-mail, or with GitHub. GitHub opens in your own browser, and the
+  app suggests your name and photo for your profile.
+- **Profiles.** A photo or one of nine mascots, a banner, your English level, your main technologies, badges (Creator,
+  7-day streak, Diff master, Room host…) and a practice graph. The graph gets day counts only, never your text.
+- **People.** A member list, follows and likes.
+- **Private chat with corrections.** One-to-one messages after the other person accepts your request. They can suggest
+  a correction to your message, shown as a word diff, and the coach can check a message before you send it.
+- **Voice rooms.** Open a room on the spot for up to 6 people. You talk freely, with a shared 60 or 90 second timer and
+  idea cards. There are host and room moderator roles: mute, remove, pass the host. Voice goes directly between the
+  computers (WebRTC) and is never recorded or transcribed.
+- **Safety.** Block, report with context, a moderators' queue and warnings. Rules and an 18+ check come before you
+  join. You can export your data or delete your account at any time.
+
+### The app
+
+- An animated splash on every launch and a welcome screen on the first run.
+- Light and dark themes that follow your system.
+- A command palette (**Ctrl+K**) and keyboard shortcuts for every screen.
+
+## Privacy and security
+
+- What you write to practise stays on your computer. The only exception is the coach you choose, which receives it.
+- Your coach API key is stored encrypted by the system keyring (Electron `safeStorage`). It is never in the code, the
+  repository or the built app.
+- Coach calls run in the main process. The window runs with `contextIsolation` and `sandbox` on and `nodeIntegration`
+  off, and the preload exposes a small typed API, checked with zod on every call.
+- The app holds only Supabase's publishable key, and row-level security protects every table. The secret key exists
+  only inside the server function that deletes accounts.
+- The community session is stored encrypted. GitHub sign-in uses PKCE and a short-lived local listener on
+  `127.0.0.1`, and GitHub's own tokens are never stored.
+- Voice is never recorded or transcribed. DevTalk is for adults (18+).
+
+## Tech stack
+
+- **App:** Electron, electron-vite, React 19 and TypeScript (strict), with zod at every IPC boundary.
+- **Local data:** SQLite (better-sqlite3), with ts-fsrs for spaced repetition.
+- **Coach:** Google Gemini, Anthropic Claude or Ollama.
+- **Community:** Supabase (Postgres with row-level security, Realtime, Storage, an Edge Function) and WebRTC voice.
+- **Tests:** Vitest, PGlite (Postgres in memory, for the database rules) and Playwright for Electron.
+
+## How it was built
+
+DevTalk was designed and built by Matheus Rian ([@Rian144hz](https://github.com/Rian144hz)) with
+[Claude Code](https://claude.com/claude-code). Each phase started as a design spec and an implementation plan; you can
+read both in `docs/superpowers/`. The visual system is documented in [`DESIGN.md`](DESIGN.md).
 
 ## Requirements
 
@@ -146,3 +211,13 @@ src/renderer   React app: design-system/ and screens/
 prompts        Runtime prompts
 tests          core, renderer, main, contract and e2e tests
 ```
+
+## License
+
+The code is released under the [MIT License](LICENSE).
+
+Third-party pieces keep their own terms:
+
+- The nine default mascots come from the free library at ipaslogo.com ("free to download and use commercially"). Their origin is recorded in [`docs/design/mascots/SOURCE.md`](docs/design/mascots/SOURCE.md).
+- Technology logos come from [Simple Icons](https://simpleicons.org) (CC0).
+- The fonts Public Sans and JetBrains Mono (SIL Open Font License) are installed from npm.
