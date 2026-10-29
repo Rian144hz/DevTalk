@@ -4,331 +4,397 @@
   "title": "Design System: DevTalk",
   "extensions": {
     "colorMeta": {
-      "graphite-ground": {
+      "night-ground": {
         "role": "neutral",
-        "displayName": "Graphite Ground",
-        "canonical": "#16181d",
+        "displayName": "Night Ground",
+        "canonical": "#0f1726",
         "cssVar": "--bg",
         "tonalRamp": [
-          "oklch(15% 0.010 268)",
-          "oklch(26% 0.010 268)",
-          "oklch(37% 0.010 268)",
-          "oklch(48% 0.010 268)",
-          "oklch(59% 0.010 268)",
-          "oklch(70% 0.010 268)",
-          "oklch(82% 0.010 268)",
-          "oklch(95% 0.010 268)"
+          "oklch(15% 0.032 262)",
+          "oklch(26% 0.032 262)",
+          "oklch(37% 0.032 262)",
+          "oklch(48% 0.032 262)",
+          "oklch(59% 0.032 262)",
+          "oklch(70% 0.032 262)",
+          "oklch(82% 0.032 262)",
+          "oklch(95% 0.032 262)"
         ],
-        "oklch": "oklch(20.9% 0.010 268)",
+        "oklch": "oklch(20.5% 0.032 262)",
         "theme": "dark (default :root)"
       },
-      "graphite-rail": {
+      "night-rail": {
         "role": "neutral",
-        "displayName": "Graphite Rail",
-        "canonical": "#121419",
+        "displayName": "Night Rail",
+        "canonical": "#0c1320",
         "cssVar": "--bg-rail",
         "tonalRamp": [
-          "oklch(15% 0.011 268)",
-          "oklch(26% 0.011 268)",
-          "oklch(37% 0.011 268)",
-          "oklch(48% 0.011 268)",
-          "oklch(59% 0.011 268)",
-          "oklch(70% 0.011 268)",
-          "oklch(82% 0.011 268)",
-          "oklch(95% 0.011 268)"
+          "oklch(15% 0.029 262)",
+          "oklch(26% 0.029 262)",
+          "oklch(37% 0.029 262)",
+          "oklch(48% 0.029 262)",
+          "oklch(59% 0.029 262)",
+          "oklch(70% 0.029 262)",
+          "oklch(82% 0.029 262)",
+          "oklch(95% 0.029 262)"
         ],
-        "oklch": "oklch(19.1% 0.011 268)",
+        "oklch": "oklch(18.7% 0.029 262)",
         "theme": "dark (default :root)"
       },
       "galley-sheet": {
         "role": "neutral",
         "displayName": "Galley Sheet",
-        "canonical": "#20232b",
+        "canonical": "#162033",
         "cssVar": "--sheet",
         "tonalRamp": [
-          "oklch(15% 0.016 269)",
-          "oklch(26% 0.016 269)",
-          "oklch(37% 0.016 269)",
-          "oklch(48% 0.016 269)",
-          "oklch(59% 0.016 269)",
-          "oklch(70% 0.016 269)",
-          "oklch(82% 0.016 269)",
-          "oklch(95% 0.016 269)"
+          "oklch(15% 0.039 263)",
+          "oklch(26% 0.039 263)",
+          "oklch(37% 0.039 263)",
+          "oklch(48% 0.039 263)",
+          "oklch(59% 0.039 263)",
+          "oklch(70% 0.039 263)",
+          "oklch(82% 0.039 263)",
+          "oklch(95% 0.039 263)"
         ],
-        "oklch": "oklch(25.7% 0.016 269)",
+        "oklch": "oklch(24.4% 0.039 263)",
         "theme": "dark (default :root)"
       },
       "galley-sheet-hover": {
         "role": "neutral",
         "displayName": "Galley Sheet Hover",
-        "canonical": "#262a33",
+        "canonical": "#1c2840",
         "cssVar": "--sheet-hover",
         "tonalRamp": [
-          "oklch(15% 0.018 266)",
-          "oklch(26% 0.018 266)",
-          "oklch(37% 0.018 266)",
-          "oklch(48% 0.018 266)",
-          "oklch(59% 0.018 266)",
-          "oklch(70% 0.018 266)",
-          "oklch(82% 0.018 266)",
-          "oklch(95% 0.018 266)"
+          "oklch(15% 0.048 263)",
+          "oklch(26% 0.048 263)",
+          "oklch(37% 0.048 263)",
+          "oklch(48% 0.048 263)",
+          "oklch(59% 0.048 263)",
+          "oklch(70% 0.048 263)",
+          "oklch(82% 0.048 263)",
+          "oklch(95% 0.048 263)"
         ],
-        "oklch": "oklch(28.5% 0.018 266)",
+        "oklch": "oklch(27.8% 0.048 263)",
         "theme": "dark (default :root)"
       },
       "rule": {
         "role": "neutral",
         "displayName": "Rule",
-        "canonical": "#2b2f39",
+        "canonical": "#24324a",
         "cssVar": "--rule",
         "tonalRamp": [
-          "oklch(15% 0.019 268)",
-          "oklch(26% 0.019 268)",
-          "oklch(37% 0.019 268)",
-          "oklch(48% 0.019 268)",
-          "oklch(59% 0.019 268)",
-          "oklch(70% 0.019 268)",
-          "oklch(82% 0.019 268)",
-          "oklch(95% 0.019 268)"
+          "oklch(15% 0.047 261)",
+          "oklch(26% 0.047 261)",
+          "oklch(37% 0.047 261)",
+          "oklch(48% 0.047 261)",
+          "oklch(59% 0.047 261)",
+          "oklch(70% 0.047 261)",
+          "oklch(82% 0.047 261)",
+          "oklch(95% 0.047 261)"
         ],
-        "oklch": "oklch(30.5% 0.019 268)",
+        "oklch": "oklch(31.6% 0.047 261)",
         "theme": "dark (default :root)"
       },
       "rule-strong": {
         "role": "neutral",
         "displayName": "Strong Rule",
-        "canonical": "#3a3f4b",
+        "canonical": "#33445f",
         "cssVar": "--rule-strong",
         "tonalRamp": [
-          "oklch(15% 0.022 267)",
-          "oklch(26% 0.022 267)",
-          "oklch(37% 0.022 267)",
-          "oklch(48% 0.022 267)",
-          "oklch(59% 0.022 267)",
-          "oklch(70% 0.022 267)",
-          "oklch(82% 0.022 267)",
-          "oklch(95% 0.022 267)"
+          "oklch(15% 0.051 259)",
+          "oklch(26% 0.051 259)",
+          "oklch(37% 0.051 259)",
+          "oklch(48% 0.051 259)",
+          "oklch(59% 0.051 259)",
+          "oklch(70% 0.051 259)",
+          "oklch(82% 0.051 259)",
+          "oklch(95% 0.051 259)"
         ],
-        "oklch": "oklch(36.8% 0.022 267)",
+        "oklch": "oklch(38.4% 0.051 259)",
         "theme": "dark (default :root)"
       },
       "ink": {
         "role": "neutral",
         "displayName": "Ink",
-        "canonical": "#e8e6e1",
+        "canonical": "#e6eef9",
         "cssVar": "--ink",
         "tonalRamp": [
-          "oklch(15% 0.007 89)",
-          "oklch(26% 0.007 89)",
-          "oklch(37% 0.007 89)",
-          "oklch(48% 0.007 89)",
-          "oklch(59% 0.007 89)",
-          "oklch(70% 0.007 89)",
-          "oklch(82% 0.007 89)",
-          "oklch(95% 0.007 89)"
+          "oklch(15% 0.017 256)",
+          "oklch(26% 0.017 256)",
+          "oklch(37% 0.017 256)",
+          "oklch(48% 0.017 256)",
+          "oklch(59% 0.017 256)",
+          "oklch(70% 0.017 256)",
+          "oklch(82% 0.017 256)",
+          "oklch(95% 0.017 256)"
         ],
-        "oklch": "oklch(92.5% 0.007 89)",
+        "oklch": "oklch(94.6% 0.017 256)",
         "theme": "dark (default :root)"
       },
       "ink-secondary": {
         "role": "neutral",
         "displayName": "Ink Secondary",
-        "canonical": "#b4b9c5",
+        "canonical": "#afc0d8",
         "cssVar": "--ink-2",
         "tonalRamp": [
-          "oklch(15% 0.018 268)",
-          "oklch(26% 0.018 268)",
-          "oklch(37% 0.018 268)",
-          "oklch(48% 0.018 268)",
-          "oklch(59% 0.018 268)",
-          "oklch(70% 0.018 268)",
-          "oklch(82% 0.018 268)",
-          "oklch(95% 0.018 268)"
+          "oklch(15% 0.039 257)",
+          "oklch(26% 0.039 257)",
+          "oklch(37% 0.039 257)",
+          "oklch(48% 0.039 257)",
+          "oklch(59% 0.039 257)",
+          "oklch(70% 0.039 257)",
+          "oklch(82% 0.039 257)",
+          "oklch(95% 0.039 257)"
         ],
-        "oklch": "oklch(78.6% 0.018 268)",
+        "oklch": "oklch(80.3% 0.039 257)",
         "theme": "dark (default :root)"
       },
       "ink-tertiary": {
         "role": "neutral",
         "displayName": "Ink Tertiary",
-        "canonical": "#8c93a3",
+        "canonical": "#8799b4",
         "cssVar": "--ink-3",
         "tonalRamp": [
-          "oklch(15% 0.025 267)",
-          "oklch(26% 0.025 267)",
-          "oklch(37% 0.025 267)",
-          "oklch(48% 0.025 267)",
-          "oklch(59% 0.025 267)",
-          "oklch(70% 0.025 267)",
-          "oklch(82% 0.025 267)",
-          "oklch(95% 0.025 267)"
+          "oklch(15% 0.045 258)",
+          "oklch(26% 0.045 258)",
+          "oklch(37% 0.045 258)",
+          "oklch(48% 0.045 258)",
+          "oklch(59% 0.045 258)",
+          "oklch(70% 0.045 258)",
+          "oklch(82% 0.045 258)",
+          "oklch(95% 0.045 258)"
         ],
-        "oklch": "oklch(66.3% 0.025 267)",
+        "oklch": "oklch(67.8% 0.045 258)",
         "theme": "dark (default :root)"
       },
       "pencil-blue": {
         "role": "primary",
         "displayName": "Non-Repro Pencil Blue",
-        "canonical": "#7fb2e5",
+        "canonical": "#8ec5ff",
         "cssVar": "--pencil",
         "tonalRamp": [
-          "oklch(15% 0.092 249)",
-          "oklch(26% 0.092 249)",
-          "oklch(37% 0.092 249)",
-          "oklch(48% 0.092 249)",
-          "oklch(59% 0.092 249)",
-          "oklch(70% 0.092 249)",
-          "oklch(82% 0.092 249)",
-          "oklch(95% 0.092 249)"
+          "oklch(15% 0.101 250)",
+          "oklch(26% 0.101 250)",
+          "oklch(37% 0.101 250)",
+          "oklch(48% 0.101 250)",
+          "oklch(59% 0.101 250)",
+          "oklch(70% 0.101 250)",
+          "oklch(82% 0.101 250)",
+          "oklch(95% 0.101 250)"
         ],
-        "oklch": "oklch(74.7% 0.092 249)",
+        "oklch": "oklch(80.7% 0.101 250)",
         "theme": "dark (default :root)"
       },
-      "pencil-ink": {
+      "sky-pill": {
         "role": "primary",
-        "displayName": "Pencil Ink",
-        "canonical": "#0d1622",
-        "cssVar": "--pencil-ink",
+        "displayName": "Sky Pill",
+        "canonical": "#8ec5ff",
+        "cssVar": "--accent",
+        "oklch": "oklch(80.7% 0.101 250)",
         "tonalRamp": [
-          "oklch(15% 0.028 256)",
-          "oklch(26% 0.028 256)",
-          "oklch(37% 0.028 256)",
-          "oklch(48% 0.028 256)",
-          "oklch(59% 0.028 256)",
-          "oklch(70% 0.028 256)",
-          "oklch(82% 0.028 256)",
-          "oklch(95% 0.028 256)"
+          "oklch(15% 0.101 250)",
+          "oklch(26% 0.101 250)",
+          "oklch(37% 0.101 250)",
+          "oklch(48% 0.101 250)",
+          "oklch(59% 0.101 250)",
+          "oklch(70% 0.101 250)",
+          "oklch(82% 0.101 250)",
+          "oklch(95% 0.101 250)"
         ],
-        "oklch": "oklch(19.8% 0.028 256)",
-        "theme": "dark (default :root)"
+        "theme": "dark (default :root) and light",
+        "purpose": "Fill of the primary button, the same sky in both themes; a fill only, never text on a ground."
+      },
+      "sky-pill-hover": {
+        "role": "primary",
+        "displayName": "Sky Pill Hover",
+        "canonical": "#a6d2ff",
+        "cssVar": "--accent-hover",
+        "oklch": "oklch(84.8% 0.078 249)",
+        "tonalRamp": [
+          "oklch(15% 0.078 249)",
+          "oklch(26% 0.078 249)",
+          "oklch(37% 0.078 249)",
+          "oklch(48% 0.078 249)",
+          "oklch(59% 0.078 249)",
+          "oklch(70% 0.078 249)",
+          "oklch(82% 0.078 249)",
+          "oklch(95% 0.078 249)"
+        ],
+        "theme": "dark (default :root)",
+        "purpose": "Hover of the primary button; lifts 1px."
+      },
+      "on-sky": {
+        "role": "primary",
+        "displayName": "On Sky (text on the sky pill)",
+        "canonical": "#0b2a4f",
+        "cssVar": "--on-accent",
+        "oklch": "oklch(28.5% 0.077 255)",
+        "tonalRamp": [
+          "oklch(15% 0.077 255)",
+          "oklch(26% 0.077 255)",
+          "oklch(37% 0.077 255)",
+          "oklch(48% 0.077 255)",
+          "oklch(59% 0.077 255)",
+          "oklch(70% 0.077 255)",
+          "oklch(82% 0.077 255)",
+          "oklch(95% 0.077 255)"
+        ],
+        "theme": "dark (default :root) and light",
+        "purpose": "Navy text and key hint on the sky pill, both themes."
       },
       "pencil-wash": {
         "role": "primary",
         "displayName": "Pencil Wash",
-        "canonical": "rgb(127 178 229 / 0.12)",
+        "canonical": "rgb(142 197 255 / 0.14)",
         "cssVar": "--pencil-wash",
         "theme": "dark (default :root)"
       },
       "dusty-rose": {
         "role": "secondary",
         "displayName": "Dusty Rose",
-        "canonical": "#d99aa8",
+        "canonical": "#f0a3b6",
         "cssVar": "--del",
         "tonalRamp": [
-          "oklch(15% 0.077 4)",
-          "oklch(26% 0.077 4)",
-          "oklch(37% 0.077 4)",
-          "oklch(48% 0.077 4)",
-          "oklch(59% 0.077 4)",
-          "oklch(70% 0.077 4)",
-          "oklch(82% 0.077 4)",
-          "oklch(95% 0.077 4)"
+          "oklch(15% 0.094 3)",
+          "oklch(26% 0.094 3)",
+          "oklch(37% 0.094 3)",
+          "oklch(48% 0.094 3)",
+          "oklch(59% 0.094 3)",
+          "oklch(70% 0.094 3)",
+          "oklch(82% 0.094 3)",
+          "oklch(95% 0.094 3)"
         ],
-        "oklch": "oklch(75.1% 0.077 4)",
+        "oklch": "oklch(79.5% 0.094 3)",
         "theme": "dark (default :root)"
       },
       "dusty-rose-wash": {
         "role": "secondary",
         "displayName": "Dusty Rose Wash",
-        "canonical": "rgb(217 154 168 / 0.12)",
+        "canonical": "rgb(240 163 182 / 0.14)",
         "cssVar": "--del-wash",
         "theme": "dark (default :root)"
       },
       "sage": {
         "role": "secondary",
         "displayName": "Sage",
-        "canonical": "#8cc5a2",
+        "canonical": "#8fd9ac",
         "cssVar": "--ins",
         "tonalRamp": [
-          "oklch(15% 0.078 157)",
-          "oklch(26% 0.078 157)",
-          "oklch(37% 0.078 157)",
-          "oklch(48% 0.078 157)",
-          "oklch(59% 0.078 157)",
-          "oklch(70% 0.078 157)",
-          "oklch(82% 0.078 157)",
-          "oklch(95% 0.078 157)"
+          "oklch(15% 0.098 157)",
+          "oklch(26% 0.098 157)",
+          "oklch(37% 0.098 157)",
+          "oklch(48% 0.098 157)",
+          "oklch(59% 0.098 157)",
+          "oklch(70% 0.098 157)",
+          "oklch(82% 0.098 157)",
+          "oklch(95% 0.098 157)"
         ],
-        "oklch": "oklch(77.4% 0.078 157)",
+        "oklch": "oklch(82.4% 0.098 157)",
         "theme": "dark (default :root)"
       },
       "sage-wash": {
         "role": "secondary",
         "displayName": "Sage Wash",
-        "canonical": "rgb(140 197 162 / 0.12)",
+        "canonical": "rgb(143 217 172 / 0.14)",
         "cssVar": "--ins-wash",
         "theme": "dark (default :root)"
       },
       "amber-warn": {
         "role": "tertiary",
         "displayName": "Proof Amber",
-        "canonical": "#e0b26a",
+        "canonical": "#e8c27a",
         "cssVar": "--warn",
         "tonalRamp": [
-          "oklch(15% 0.105 78)",
-          "oklch(26% 0.105 78)",
-          "oklch(37% 0.105 78)",
-          "oklch(48% 0.105 78)",
-          "oklch(59% 0.105 78)",
-          "oklch(70% 0.105 78)",
-          "oklch(82% 0.105 78)",
-          "oklch(95% 0.105 78)"
+          "oklch(15% 0.100 83)",
+          "oklch(26% 0.100 83)",
+          "oklch(37% 0.100 83)",
+          "oklch(48% 0.100 83)",
+          "oklch(59% 0.100 83)",
+          "oklch(70% 0.100 83)",
+          "oklch(82% 0.100 83)",
+          "oklch(95% 0.100 83)"
         ],
-        "oklch": "oklch(79.0% 0.105 78)",
+        "oklch": "oklch(83.2% 0.100 83)",
         "theme": "dark (default :root)"
+      },
+      "warn-line": {
+        "role": "tertiary",
+        "displayName": "Warn Line",
+        "canonical": "#c9a465",
+        "cssVar": "--warn-line",
+        "oklch": "oklch(73.8% 0.092 80)",
+        "tonalRamp": [
+          "oklch(15% 0.092 80)",
+          "oklch(26% 0.092 80)",
+          "oklch(37% 0.092 80)",
+          "oklch(48% 0.092 80)",
+          "oklch(59% 0.092 80)",
+          "oklch(70% 0.092 80)",
+          "oklch(82% 0.092 80)",
+          "oklch(95% 0.092 80)"
+        ],
+        "theme": "dark (default :root)",
+        "purpose": "Edge of an error notice; its wash in dark is the sheet."
+      },
+      "navy-scrim": {
+        "role": "neutral",
+        "displayName": "Navy Scrim",
+        "canonical": "rgb(2 8 20 / 0.5)",
+        "cssVar": "--scrim",
+        "theme": "dark (default :root)",
+        "purpose": "Veil behind the palette and the report dialog; navy, never grey."
       },
       "focus-blue": {
         "role": "neutral",
         "displayName": "Focus Blue",
-        "canonical": "#9cc6f0",
+        "canonical": "#d4e9ff",
         "cssVar": "--focus",
         "tonalRamp": [
-          "oklch(15% 0.075 249)",
-          "oklch(26% 0.075 249)",
-          "oklch(37% 0.075 249)",
-          "oklch(48% 0.075 249)",
-          "oklch(59% 0.075 249)",
-          "oklch(70% 0.075 249)",
-          "oklch(82% 0.075 249)",
-          "oklch(95% 0.075 249)"
+          "oklch(15% 0.037 249)",
+          "oklch(26% 0.037 249)",
+          "oklch(37% 0.037 249)",
+          "oklch(48% 0.037 249)",
+          "oklch(59% 0.037 249)",
+          "oklch(70% 0.037 249)",
+          "oklch(82% 0.037 249)",
+          "oklch(95% 0.037 249)"
         ],
-        "oklch": "oklch(81.1% 0.075 249)",
+        "oklch": "oklch(92.5% 0.037 249)",
         "theme": "dark (default :root)"
       },
       "light-ground": {
         "role": "neutral",
-        "displayName": "Graphite Ground (light theme)",
-        "canonical": "#eef0f3",
+        "displayName": "Pale Sky Ground (light theme)",
+        "canonical": "#f5f9ff",
         "cssVar": "--bg",
         "tonalRamp": [
-          "oklch(15% 0.005 258)",
-          "oklch(26% 0.005 258)",
-          "oklch(37% 0.005 258)",
-          "oklch(48% 0.005 258)",
-          "oklch(59% 0.005 258)",
-          "oklch(70% 0.005 258)",
-          "oklch(82% 0.005 258)",
-          "oklch(95% 0.005 258)"
+          "oklch(15% 0.009 258)",
+          "oklch(26% 0.009 258)",
+          "oklch(37% 0.009 258)",
+          "oklch(48% 0.009 258)",
+          "oklch(59% 0.009 258)",
+          "oklch(70% 0.009 258)",
+          "oklch(82% 0.009 258)",
+          "oklch(95% 0.009 258)"
         ],
-        "oklch": "oklch(95.4% 0.005 258)",
+        "oklch": "oklch(98.1% 0.009 258)",
         "theme": "light (:root[data-theme=\"light\"])"
       },
       "light-rail": {
         "role": "neutral",
-        "displayName": "Graphite Rail (light theme)",
-        "canonical": "#e6e9ee",
+        "displayName": "Sky Rail (light theme)",
+        "canonical": "#edf3fc",
         "cssVar": "--bg-rail",
         "tonalRamp": [
-          "oklch(15% 0.007 261)",
-          "oklch(26% 0.007 261)",
-          "oklch(37% 0.007 261)",
-          "oklch(48% 0.007 261)",
-          "oklch(59% 0.007 261)",
-          "oklch(70% 0.007 261)",
-          "oklch(82% 0.007 261)",
-          "oklch(95% 0.007 261)"
+          "oklch(15% 0.014 258)",
+          "oklch(26% 0.014 258)",
+          "oklch(37% 0.014 258)",
+          "oklch(48% 0.014 258)",
+          "oklch(59% 0.014 258)",
+          "oklch(70% 0.014 258)",
+          "oklch(82% 0.014 258)",
+          "oklch(95% 0.014 258)"
         ],
-        "oklch": "oklch(93.3% 0.007 261)",
+        "oklch": "oklch(96.2% 0.014 258)",
         "theme": "light (:root[data-theme=\"light\"])"
       },
       "light-sheet": {
@@ -352,199 +418,286 @@
       "light-sheet-hover": {
         "role": "neutral",
         "displayName": "Galley Sheet Hover (light theme)",
-        "canonical": "#f6f7f9",
+        "canonical": "#f2f7fe",
         "cssVar": "--sheet-hover",
         "tonalRamp": [
-          "oklch(15% 0.003 265)",
-          "oklch(26% 0.003 265)",
-          "oklch(37% 0.003 265)",
-          "oklch(48% 0.003 265)",
-          "oklch(59% 0.003 265)",
-          "oklch(70% 0.003 265)",
-          "oklch(82% 0.003 265)",
-          "oklch(95% 0.003 265)"
+          "oklch(15% 0.011 257)",
+          "oklch(26% 0.011 257)",
+          "oklch(37% 0.011 257)",
+          "oklch(48% 0.011 257)",
+          "oklch(59% 0.011 257)",
+          "oklch(70% 0.011 257)",
+          "oklch(82% 0.011 257)",
+          "oklch(95% 0.011 257)"
         ],
-        "oklch": "oklch(97.6% 0.003 265)",
+        "oklch": "oklch(97.4% 0.011 257)",
         "theme": "light (:root[data-theme=\"light\"])"
       },
       "light-rule": {
         "role": "neutral",
         "displayName": "Rule (light theme)",
-        "canonical": "#d5d9e0",
+        "canonical": "#e0e8f3",
         "cssVar": "--rule",
         "tonalRamp": [
-          "oklch(15% 0.011 262)",
-          "oklch(26% 0.011 262)",
-          "oklch(37% 0.011 262)",
-          "oklch(48% 0.011 262)",
-          "oklch(59% 0.011 262)",
-          "oklch(70% 0.011 262)",
-          "oklch(82% 0.011 262)",
-          "oklch(95% 0.011 262)"
+          "oklch(15% 0.017 256)",
+          "oklch(26% 0.017 256)",
+          "oklch(37% 0.017 256)",
+          "oklch(48% 0.017 256)",
+          "oklch(59% 0.017 256)",
+          "oklch(70% 0.017 256)",
+          "oklch(82% 0.017 256)",
+          "oklch(95% 0.017 256)"
         ],
-        "oklch": "oklch(88.4% 0.011 262)",
+        "oklch": "oklch(92.8% 0.017 256)",
         "theme": "light (:root[data-theme=\"light\"])"
       },
       "light-rule-strong": {
         "role": "neutral",
         "displayName": "Strong Rule (light theme)",
-        "canonical": "#bcc2cc",
+        "canonical": "#c7d4e6",
         "cssVar": "--rule-strong",
         "tonalRamp": [
-          "oklch(15% 0.016 261)",
-          "oklch(26% 0.016 261)",
-          "oklch(37% 0.016 261)",
-          "oklch(48% 0.016 261)",
-          "oklch(59% 0.016 261)",
-          "oklch(70% 0.016 261)",
-          "oklch(82% 0.016 261)",
-          "oklch(95% 0.016 261)"
+          "oklch(15% 0.029 256)",
+          "oklch(26% 0.029 256)",
+          "oklch(37% 0.029 256)",
+          "oklch(48% 0.029 256)",
+          "oklch(59% 0.029 256)",
+          "oklch(70% 0.029 256)",
+          "oklch(82% 0.029 256)",
+          "oklch(95% 0.029 256)"
         ],
-        "oklch": "oklch(81.2% 0.016 261)",
+        "oklch": "oklch(86.6% 0.029 256)",
         "theme": "light (:root[data-theme=\"light\"])"
       },
       "light-ink": {
         "role": "neutral",
         "displayName": "Ink (light theme)",
-        "canonical": "#1b1e24",
+        "canonical": "#0b2a4f",
         "cssVar": "--ink",
         "tonalRamp": [
-          "oklch(15% 0.012 264)",
-          "oklch(26% 0.012 264)",
-          "oklch(37% 0.012 264)",
-          "oklch(48% 0.012 264)",
-          "oklch(59% 0.012 264)",
-          "oklch(70% 0.012 264)",
-          "oklch(82% 0.012 264)",
-          "oklch(95% 0.012 264)"
+          "oklch(15% 0.077 255)",
+          "oklch(26% 0.077 255)",
+          "oklch(37% 0.077 255)",
+          "oklch(48% 0.077 255)",
+          "oklch(59% 0.077 255)",
+          "oklch(70% 0.077 255)",
+          "oklch(82% 0.077 255)",
+          "oklch(95% 0.077 255)"
         ],
-        "oklch": "oklch(23.5% 0.012 264)",
+        "oklch": "oklch(28.5% 0.077 255)",
         "theme": "light (:root[data-theme=\"light\"])"
       },
       "light-ink-secondary": {
         "role": "neutral",
         "displayName": "Ink Secondary (light theme)",
-        "canonical": "#454b57",
+        "canonical": "#3a5274",
         "cssVar": "--ink-2",
         "tonalRamp": [
-          "oklch(15% 0.022 264)",
-          "oklch(26% 0.022 264)",
-          "oklch(37% 0.022 264)",
-          "oklch(48% 0.022 264)",
-          "oklch(59% 0.022 264)",
-          "oklch(70% 0.022 264)",
-          "oklch(82% 0.022 264)",
-          "oklch(95% 0.022 264)"
+          "oklch(15% 0.064 257)",
+          "oklch(26% 0.064 257)",
+          "oklch(37% 0.064 257)",
+          "oklch(48% 0.064 257)",
+          "oklch(59% 0.064 257)",
+          "oklch(70% 0.064 257)",
+          "oklch(82% 0.064 257)",
+          "oklch(95% 0.064 257)"
         ],
-        "oklch": "oklch(41.2% 0.022 264)",
+        "oklch": "oklch(43.4% 0.064 257)",
         "theme": "light (:root[data-theme=\"light\"])"
       },
       "light-ink-tertiary": {
         "role": "neutral",
         "displayName": "Ink Tertiary (light theme)",
-        "canonical": "#5c6370",
+        "canonical": "#5a6f8c",
         "cssVar": "--ink-3",
         "tonalRamp": [
-          "oklch(15% 0.022 263)",
-          "oklch(26% 0.022 263)",
-          "oklch(37% 0.022 263)",
-          "oklch(48% 0.022 263)",
-          "oklch(59% 0.022 263)",
-          "oklch(70% 0.022 263)",
-          "oklch(82% 0.022 263)",
-          "oklch(95% 0.022 263)"
+          "oklch(15% 0.052 257)",
+          "oklch(26% 0.052 257)",
+          "oklch(37% 0.052 257)",
+          "oklch(48% 0.052 257)",
+          "oklch(59% 0.052 257)",
+          "oklch(70% 0.052 257)",
+          "oklch(82% 0.052 257)",
+          "oklch(95% 0.052 257)"
         ],
-        "oklch": "oklch(49.8% 0.022 263)",
+        "oklch": "oklch(53.6% 0.052 257)",
         "theme": "light (:root[data-theme=\"light\"])"
       },
       "light-pencil-blue": {
         "role": "primary",
         "displayName": "Non-Repro Pencil Blue (light theme)",
-        "canonical": "#2c66a8",
+        "canonical": "#1f63b8",
         "cssVar": "--pencil",
         "tonalRamp": [
-          "oklch(15% 0.120 254)",
-          "oklch(26% 0.120 254)",
-          "oklch(37% 0.120 254)",
-          "oklch(48% 0.120 254)",
-          "oklch(59% 0.120 254)",
-          "oklch(70% 0.120 254)",
-          "oklch(82% 0.120 254)",
-          "oklch(95% 0.120 254)"
+          "oklch(15% 0.150 256)",
+          "oklch(26% 0.150 256)",
+          "oklch(37% 0.150 256)",
+          "oklch(48% 0.150 256)",
+          "oklch(59% 0.150 256)",
+          "oklch(70% 0.150 256)",
+          "oklch(82% 0.150 256)",
+          "oklch(95% 0.150 256)"
         ],
-        "oklch": "oklch(50.6% 0.121 254)",
+        "oklch": "oklch(50.5% 0.150 256)",
         "theme": "light (:root[data-theme=\"light\"])"
       },
-      "light-pencil-ink": {
+      "light-pencil-wash": {
         "role": "primary",
-        "displayName": "Pencil Ink (light theme)",
-        "canonical": "#ffffff",
-        "cssVar": "--pencil-ink",
+        "displayName": "Sky Wash (light theme)",
+        "canonical": "rgb(142 197 255 / 0.22)",
+        "cssVar": "--pencil-wash",
+        "theme": "light (:root[data-theme=\"light\"])",
+        "purpose": "Selection and quiet-button hover tint."
+      },
+      "light-sky-pill-hover": {
+        "role": "primary",
+        "displayName": "Sky Pill Hover (light theme)",
+        "canonical": "#74b6ff",
+        "cssVar": "--accent-hover",
+        "oklch": "oklch(76.2% 0.125 252)",
         "tonalRamp": [
-          "oklch(15% 0.000 90)",
-          "oklch(26% 0.000 90)",
-          "oklch(37% 0.000 90)",
-          "oklch(48% 0.000 90)",
-          "oklch(59% 0.000 90)",
-          "oklch(70% 0.000 90)",
-          "oklch(82% 0.000 90)",
-          "oklch(95% 0.000 90)"
+          "oklch(15% 0.125 252)",
+          "oklch(26% 0.125 252)",
+          "oklch(37% 0.125 252)",
+          "oklch(48% 0.125 252)",
+          "oklch(59% 0.125 252)",
+          "oklch(70% 0.125 252)",
+          "oklch(82% 0.125 252)",
+          "oklch(95% 0.125 252)"
         ],
-        "oklch": "oklch(100.0% 0.000 90)",
-        "theme": "light (:root[data-theme=\"light\"])"
+        "theme": "light (:root[data-theme=\"light\"])",
+        "purpose": "Hover of the primary button in light."
       },
       "light-dusty-rose": {
         "role": "secondary",
         "displayName": "Dusty Rose (light theme)",
-        "canonical": "#a23e58",
+        "canonical": "#a3294b",
         "cssVar": "--del",
         "tonalRamp": [
-          "oklch(15% 0.120 7)",
-          "oklch(26% 0.120 7)",
-          "oklch(37% 0.120 7)",
-          "oklch(48% 0.120 7)",
-          "oklch(59% 0.120 7)",
-          "oklch(70% 0.120 7)",
-          "oklch(82% 0.120 7)",
-          "oklch(95% 0.120 7)"
+          "oklch(15% 0.158 9)",
+          "oklch(26% 0.158 9)",
+          "oklch(37% 0.158 9)",
+          "oklch(48% 0.158 9)",
+          "oklch(59% 0.158 9)",
+          "oklch(70% 0.158 9)",
+          "oklch(82% 0.158 9)",
+          "oklch(95% 0.158 9)"
         ],
-        "oklch": "oklch(50.8% 0.134 7)",
+        "oklch": "oklch(48.3% 0.158 9)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-dusty-rose-wash": {
+        "role": "secondary",
+        "displayName": "Dusty Rose Wash (light theme)",
+        "canonical": "rgb(240 120 150 / 0.16)",
+        "cssVar": "--del-wash",
         "theme": "light (:root[data-theme=\"light\"])"
       },
       "light-sage": {
         "role": "secondary",
         "displayName": "Sage (light theme)",
-        "canonical": "#2d7a4e",
+        "canonical": "#1d6b3e",
         "cssVar": "--ins",
         "tonalRamp": [
-          "oklch(15% 0.103 155)",
-          "oklch(26% 0.103 155)",
-          "oklch(37% 0.103 155)",
-          "oklch(48% 0.103 155)",
-          "oklch(59% 0.103 155)",
-          "oklch(70% 0.103 155)",
-          "oklch(82% 0.103 155)",
-          "oklch(95% 0.103 155)"
+          "oklch(15% 0.104 154)",
+          "oklch(26% 0.104 154)",
+          "oklch(37% 0.104 154)",
+          "oklch(48% 0.104 154)",
+          "oklch(59% 0.104 154)",
+          "oklch(70% 0.104 154)",
+          "oklch(82% 0.104 154)",
+          "oklch(95% 0.104 154)"
         ],
-        "oklch": "oklch(52.0% 0.103 155)",
+        "oklch": "oklch(46.9% 0.104 154)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-sage-wash": {
+        "role": "secondary",
+        "displayName": "Sage Wash (light theme)",
+        "canonical": "rgb(70 190 120 / 0.16)",
+        "cssVar": "--ins-wash",
         "theme": "light (:root[data-theme=\"light\"])"
       },
       "light-amber-warn": {
         "role": "tertiary",
         "displayName": "Proof Amber (light theme)",
-        "canonical": "#8a5a00",
+        "canonical": "#7a5200",
         "cssVar": "--warn",
         "tonalRamp": [
-          "oklch(15% 0.108 73)",
-          "oklch(26% 0.108 73)",
-          "oklch(37% 0.108 73)",
-          "oklch(48% 0.108 73)",
-          "oklch(59% 0.108 73)",
-          "oklch(70% 0.108 73)",
-          "oklch(82% 0.108 73)",
-          "oklch(95% 0.108 73)"
+          "oklch(15% 0.099 76)",
+          "oklch(26% 0.099 76)",
+          "oklch(37% 0.099 76)",
+          "oklch(48% 0.099 76)",
+          "oklch(59% 0.099 76)",
+          "oklch(70% 0.099 76)",
+          "oklch(82% 0.099 76)",
+          "oklch(95% 0.099 76)"
         ],
-        "oklch": "oklch(50.8% 0.108 73)",
+        "oklch": "oklch(47.1% 0.099 76)",
+        "theme": "light (:root[data-theme=\"light\"])"
+      },
+      "light-warn-line": {
+        "role": "tertiary",
+        "displayName": "Warn Line (light theme)",
+        "canonical": "#e8bc6a",
+        "cssVar": "--warn-line",
+        "oklch": "oklch(81.7% 0.113 82)",
+        "tonalRamp": [
+          "oklch(15% 0.113 82)",
+          "oklch(26% 0.113 82)",
+          "oklch(37% 0.113 82)",
+          "oklch(48% 0.113 82)",
+          "oklch(59% 0.113 82)",
+          "oklch(70% 0.113 82)",
+          "oklch(82% 0.113 82)",
+          "oklch(95% 0.113 82)"
+        ],
+        "theme": "light (:root[data-theme=\"light\"])",
+        "purpose": "Edge of an error notice."
+      },
+      "light-warn-wash": {
+        "role": "tertiary",
+        "displayName": "Warn Wash (light theme)",
+        "canonical": "#fff1d6",
+        "cssVar": "--warn-wash",
+        "oklch": "oklch(96.2% 0.038 84)",
+        "tonalRamp": [
+          "oklch(15% 0.038 84)",
+          "oklch(26% 0.038 84)",
+          "oklch(37% 0.038 84)",
+          "oklch(48% 0.038 84)",
+          "oklch(59% 0.038 84)",
+          "oklch(70% 0.038 84)",
+          "oklch(82% 0.038 84)",
+          "oklch(95% 0.038 84)"
+        ],
+        "theme": "light (:root[data-theme=\"light\"])",
+        "purpose": "Pastel fill of an error notice."
+      },
+      "light-focus-blue": {
+        "role": "neutral",
+        "displayName": "Focus Blue (light theme)",
+        "canonical": "#2f7de1",
+        "cssVar": "--focus",
+        "oklch": "oklch(59.5% 0.170 256)",
+        "tonalRamp": [
+          "oklch(15% 0.170 256)",
+          "oklch(26% 0.170 256)",
+          "oklch(37% 0.170 256)",
+          "oklch(48% 0.170 256)",
+          "oklch(59% 0.170 256)",
+          "oklch(70% 0.170 256)",
+          "oklch(82% 0.170 256)",
+          "oklch(95% 0.170 256)"
+        ],
+        "theme": "light (:root[data-theme=\"light\"])",
+        "purpose": "The 2px focus outline."
+      },
+      "light-navy-scrim": {
+        "role": "neutral",
+        "displayName": "Navy Scrim (light theme)",
+        "canonical": "rgb(11 42 79 / 0.24)",
+        "cssVar": "--scrim",
         "theme": "light (:root[data-theme=\"light\"])"
       },
       "community-violet": {
@@ -586,19 +739,19 @@
       "graph-0": {
         "role": "neutral",
         "displayName": "Graph Green (empty day)",
-        "canonical": "#22262e",
+        "canonical": "#1a2436",
         "cssVar": "--graph-0",
         "tonalRamp": [
-          "oklch(15% 0.016 264)",
-          "oklch(26% 0.016 264)",
-          "oklch(37% 0.016 264)",
-          "oklch(48% 0.016 264)",
-          "oklch(59% 0.016 264)",
-          "oklch(70% 0.016 264)",
-          "oklch(82% 0.016 264)",
-          "oklch(95% 0.016 264)"
+          "oklch(15% 0.037 262)",
+          "oklch(26% 0.037 262)",
+          "oklch(37% 0.037 262)",
+          "oklch(48% 0.037 262)",
+          "oklch(59% 0.037 262)",
+          "oklch(70% 0.037 262)",
+          "oklch(82% 0.037 262)",
+          "oklch(95% 0.037 262)"
         ],
-        "oklch": "oklch(26.8% 0.016 264)",
+        "oklch": "oklch(26.0% 0.037 262)",
         "theme": "dark (default :root)",
         "purpose": "Empty day in the practice graph; the ramp is the graph's own green, never next to a diff."
       },
@@ -713,19 +866,19 @@
       "light-graph-0": {
         "role": "neutral",
         "displayName": "Graph Green (empty day, light theme)",
-        "canonical": "#e1e4e9",
+        "canonical": "#e3eaf4",
         "cssVar": "--graph-0",
         "tonalRamp": [
-          "oklch(15% 0.008 261)",
-          "oklch(26% 0.008 261)",
-          "oklch(37% 0.008 261)",
-          "oklch(48% 0.008 261)",
-          "oklch(59% 0.008 261)",
-          "oklch(70% 0.008 261)",
-          "oklch(82% 0.008 261)",
-          "oklch(95% 0.008 261)"
+          "oklch(15% 0.015 257)",
+          "oklch(26% 0.015 257)",
+          "oklch(37% 0.015 257)",
+          "oklch(48% 0.015 257)",
+          "oklch(59% 0.015 257)",
+          "oklch(70% 0.015 257)",
+          "oklch(82% 0.015 257)",
+          "oklch(95% 0.015 257)"
         ],
-        "oklch": "oklch(91.8% 0.008 261)",
+        "oklch": "oklch(93.5% 0.015 257)",
         "theme": "light (:root[data-theme=\"light\"])",
         "purpose": "Empty day in the practice graph; the ramp is the graph's own green, never next to a diff."
       },
@@ -847,18 +1000,18 @@
     "shadows": [
       {
         "name": "float",
-        "value": "0 12px 32px -8px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.35)",
-        "purpose": "Floating layers only (command palette, report dialog, menus). Dark theme."
+        "value": "0 12px 32px -8px rgb(2 8 20 / 0.55), 0 2px 6px rgb(2 8 20 / 0.35)",
+        "purpose": "Floating layers only (command palette, report dialog, menus). Dark theme: a near-black navy, because a navy lighter than the ground would glow."
       },
       {
         "name": "float-light",
-        "value": "0 12px 32px -8px rgb(20 24 32 / 0.22), 0 2px 6px rgb(20 24 32 / 0.12)",
+        "value": "0 12px 32px -8px rgb(11 42 79 / 0.22), 0 2px 6px rgb(11 42 79 / 0.12)",
         "purpose": "Float shadow in the light theme."
       },
       {
         "name": "inset-ring",
         "value": "inset 0 0 0 1px var(--rule-strong)",
-        "purpose": "Selection outline on the checked segment, the selected palette row, the selected moderation report, the current conversation row and the reported message in a moderation copy; not elevation."
+        "purpose": "Selection outline on the checked segment, the selected moderation report and the reported message in a moderation copy; not elevation. The palette row and open conversation take the sky wash instead."
       },
       {
         "name": "separation-ring",
@@ -875,7 +1028,12 @@
       {
         "name": "dur-press",
         "value": "120ms",
-        "purpose": "Button press scale to 0.97."
+        "purpose": "Token for press timing. Buttons themselves transition colour, border and transform over 200ms."
+      },
+      {
+        "name": "button-lift",
+        "value": "translateY(-1px) on hover (primary, secondary, like); scale(0.98) on press (every button); 200ms on the strong ease-out",
+        "purpose": "Pill buttons lift and press; a trailing icon after the text would nudge 4px right on hover (dormant: no button has one). Removed under reduced motion."
       },
       {
         "name": "dur-ui",
@@ -895,7 +1053,7 @@
       {
         "name": "reduced-motion",
         "value": "all durations 0ms",
-        "purpose": "prefers-reduced-motion: reduce zeroes durations and stops loops."
+        "purpose": "prefers-reduced-motion: reduce zeroes durations, stops loops and removes button lift, press and nudge."
       },
       {
         "name": "ease-write",
@@ -948,7 +1106,7 @@
       "graphWeeks": 53,
       "graphCell": "10px (9px below 1100px)",
       "graphGap": "3px (2px below 1100px)",
-      "bannerRatio": "3:1 (6:1 empty band)",
+      "bannerRatio": "3:1 (6:1 empty band in the sky wash)",
       "profileAvatar": "96px, 5px ground ring, overlapping the banner by 48px",
       "mascotOption": "48px, 8px gap",
       "peopleTabs": "24px gap over a 1px rule, 24px below",
@@ -971,25 +1129,25 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The one primary action per view, in pencil blue, with an optional key hint.",
+      "description": "The one primary action per view: a sky pill with navy text and an optional key hint. Lifts 1px on hover, presses to 0.98, and nothing moves under reduced motion.",
       "html": "<button class=\"ds-btn ds-btn-primary\">Write it <kbd class=\"ds-kbd\">Enter</kbd></button>",
-      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2,8px);border-radius:var(--r-control,6px);padding:9px var(--s4,16px);font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);border:1px solid transparent;cursor:pointer;transition:transform var(--dur-press,120ms) var(--ease-out,cubic-bezier(0.23,1,0.32,1)),background-color var(--dur-ui,180ms) ease,border-color var(--dur-ui,180ms) ease;white-space:nowrap}.ds-btn:active{transform:scale(0.97)}.ds-btn:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}.ds-btn-primary{background:var(--pencil,#7fb2e5);color:var(--pencil-ink,#0d1622)}.ds-kbd{font:var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--pencil-ink,#0d1622);border:1px solid color-mix(in srgb,var(--pencil-ink,#0d1622) 35%,transparent);border-radius:var(--r-chip,4px);padding:0 5px;line-height:1.6}"
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2,8px);border-radius:var(--r-pill,999px);padding:9px 18px;font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);border:1px solid transparent;cursor:pointer;white-space:nowrap;transition:background-color 200ms ease,color 200ms ease,border-color 200ms ease,transform 200ms var(--ease-out,cubic-bezier(0.23,1,0.32,1))}.ds-btn:focus-visible{outline:2px solid var(--focus,#d4e9ff);outline-offset:2px}.ds-btn-primary{background:var(--accent,#8ec5ff);color:var(--on-accent,#0b2a4f)}.ds-btn-primary:hover{background:var(--accent-hover,#a6d2ff);transform:translateY(-1px)}.ds-btn:active{transform:scale(0.98)}.ds-kbd{font:var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--on-accent,#0b2a4f);border:1px solid color-mix(in srgb,var(--on-accent,#0b2a4f) 35%,transparent);border-radius:var(--r-chip,4px);padding:0 5px;line-height:1.6}@media (prefers-reduced-motion:reduce){.ds-btn{transform:none!important}}"
     },
     {
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "Outlined alternative action; fills with the sheet-hover tone on hover.",
+      "description": "Pill with a sheet fill and strong-rule border; hover takes the sheet-hover tone, gains a sky edge and lifts 1px; press scales to 0.98.",
       "html": "<button class=\"ds-btn-secondary\">Write it again</button>",
-      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;gap:8px;border-radius:var(--r-control,6px);padding:9px 16px;font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);background:transparent;border:1px solid var(--rule-strong,#3a3f4b);color:var(--ink,#e8e6e1);cursor:pointer;transition:transform 120ms cubic-bezier(0.23,1,0.32,1),background-color 180ms ease}.ds-btn-secondary:hover{background:var(--sheet-hover,#262a33)}.ds-btn-secondary:active{transform:scale(0.97)}.ds-btn-secondary:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}"
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2,8px);border-radius:var(--r-pill,999px);padding:9px 18px;font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);border:1px solid transparent;cursor:pointer;white-space:nowrap;transition:background-color 200ms ease,color 200ms ease,border-color 200ms ease,transform 200ms var(--ease-out,cubic-bezier(0.23,1,0.32,1));background:var(--sheet,#162033);border-color:var(--rule-strong,#33445f);color:var(--ink,#e6eef9)}.ds-btn-secondary:hover{background:var(--sheet-hover,#1c2840);border-color:color-mix(in srgb,var(--accent,#8ec5ff) 60%,var(--rule-strong,#33445f));transform:translateY(-1px)}.ds-btn-secondary:active{transform:scale(0.98)}.ds-btn-secondary:focus-visible{outline:2px solid var(--focus,#d4e9ff);outline-offset:2px}@media (prefers-reduced-motion:reduce){.ds-btn-secondary{transform:none!important}}"
     },
     {
       "name": "Quiet Button",
       "kind": "button",
       "refersTo": "button-quiet",
-      "description": "Borderless tertiary action such as Copy or Cancel.",
+      "description": "Borderless pill for tertiary actions such as Copy or Cancel; hover takes the sky wash with ink text, no lift; press scales to 0.98.",
       "html": "<button class=\"ds-btn-quiet\">Copy</button>",
-      "css": ".ds-btn-quiet{display:inline-flex;align-items:center;gap:8px;border-radius:var(--r-control,6px);padding:9px 12px;font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);background:transparent;border:1px solid transparent;color:var(--ink-2,#b4b9c5);cursor:pointer;transition:background-color 180ms ease,color 180ms ease}.ds-btn-quiet:hover{background:var(--sheet,#20232b);color:var(--ink,#e8e6e1)}.ds-btn-quiet:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}"
+      "css": ".ds-btn-quiet{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2,8px);border-radius:var(--r-pill,999px);padding:9px 18px;font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);border:1px solid transparent;cursor:pointer;white-space:nowrap;transition:background-color 200ms ease,color 200ms ease,border-color 200ms ease,transform 200ms var(--ease-out,cubic-bezier(0.23,1,0.32,1));padding:9px 12px;background:transparent;color:var(--ink-2,#afc0d8)}.ds-btn-quiet:hover{background:var(--pencil-wash,rgb(142 197 255 / 0.14));color:var(--ink,#e6eef9)}.ds-btn-quiet:active{transform:scale(0.98)}.ds-btn-quiet:focus-visible{outline:2px solid var(--focus,#d4e9ff);outline-offset:2px}@media (prefers-reduced-motion:reduce){.ds-btn-quiet{transform:none!important}}"
     },
     {
       "name": "Text Input",
@@ -997,15 +1155,15 @@
       "refersTo": "input",
       "description": "Recessed field on the ground colour; border shifts on hover and focus, amber when invalid.",
       "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">API key</span><input class=\"ds-input\" placeholder=\"Paste your key\"><span class=\"ds-field-hint\">Stored on this computer only.</span></label>",
-      "css": ".ds-field{display:flex;flex-direction:column;gap:4px;font-family:var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1)}.ds-field-label{font-size:var(--text-md,0.875rem);font-weight:600}.ds-field-hint{font-size:var(--text-sm,0.8125rem);color:var(--ink-3,#8c93a3)}.ds-input{width:100%;background:var(--bg,#16181d);border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-control,6px);padding:8px 12px;color:var(--ink,#e8e6e1);font:inherit}.ds-input::placeholder{color:var(--ink-3,#8c93a3)}.ds-input:hover{border-color:var(--ink-3,#8c93a3)}.ds-input:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:0;border-color:var(--focus,#9cc6f0)}.ds-input[aria-invalid=true]{border-color:var(--warn,#e0b26a)}"
+      "css": ".ds-field{display:flex;flex-direction:column;gap:4px;font-family:var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e6eef9)}.ds-field-label{font-size:var(--text-md,0.875rem);font-weight:600}.ds-field-hint{font-size:var(--text-sm,0.8125rem);color:var(--ink-3,#8799b4)}.ds-input{width:100%;background:var(--bg,#0f1726);border:1px solid var(--rule-strong,#33445f);border-radius:var(--r-control,6px);padding:8px 12px;color:var(--ink,#e6eef9);font:inherit}.ds-input::placeholder{color:var(--ink-3,#8799b4)}.ds-input:hover{border-color:var(--ink-3,#8799b4)}.ds-input:focus-visible{outline:2px solid var(--focus,#d4e9ff);outline-offset:0;border-color:var(--focus,#d4e9ff)}.ds-input[aria-invalid=true]{border-color:var(--warn,#e8c27a)}"
     },
     {
       "name": "Sidebar Navigation",
       "kind": "nav",
       "refersTo": "nav-item",
-      "description": "Rail rows with line icons; hover and current page take the sheet fill, counts in mono.",
+      "description": "Rail rows with line icons; hover takes the sheet fill, the current page takes the sky wash, counts in mono.",
       "html": "<nav class=\"ds-rail\"><a class=\"ds-nav\" aria-current=\"page\" href=\"#\"><svg class=\"ds-icon\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\"><path d=\"M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z\"/></svg>Home</a><a class=\"ds-nav\" href=\"#\"><svg class=\"ds-icon\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\"><path d=\"M4 5h16v14H4zM8 10h8M8 14h5\"/></svg>Review<span class=\"ds-count\">2</span></a></nav>",
-      "css": ".ds-rail{display:flex;flex-direction:column;gap:2px;width:232px;padding:20px 12px;background:var(--bg-rail,#121419);border-right:1px solid var(--rule,#2b2f39);font-family:var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-nav{display:flex;align-items:center;gap:12px;padding:7px 12px;border-radius:var(--r-control,6px);color:var(--ink-2,#b4b9c5);text-decoration:none;font-size:var(--text-md,0.875rem)}.ds-nav:hover{background:var(--sheet,#20232b);color:var(--ink,#e8e6e1)}.ds-nav[aria-current=page]{background:var(--sheet,#20232b);color:var(--ink,#e8e6e1);font-weight:600}.ds-nav:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}.ds-count{margin-left:auto;font:var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ink-2,#b4b9c5)}.ds-icon{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}"
+      "css": ".ds-rail{display:flex;flex-direction:column;gap:2px;width:232px;padding:20px 12px;background:var(--bg-rail,#0c1320);border-right:1px solid var(--rule,#24324a);font-family:var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-nav{display:flex;align-items:center;gap:12px;padding:7px 12px;border-radius:var(--r-control,6px);color:var(--ink-2,#afc0d8);text-decoration:none;font-size:var(--text-md,0.875rem)}.ds-nav:hover{background:var(--sheet,#162033);color:var(--ink,#e6eef9)}.ds-nav[aria-current=page]{background:var(--pencil-wash,rgb(142 197 255 / 0.14));color:var(--ink,#e6eef9);font-weight:600}.ds-nav:focus-visible{outline:2px solid var(--focus,#d4e9ff);outline-offset:2px}.ds-count{margin-left:auto;font:var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ink-2,#afc0d8)}.ds-icon{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}"
     },
     {
       "name": "Expression Chip and Type Badges",
@@ -1013,7 +1171,7 @@
       "refersTo": "chip",
       "description": "Mono expression chip in a strong-rule outline; pill badges distinguish expression types.",
       "html": "<div class=\"ds-row\"><span class=\"ds-chip\">roll out</span><span class=\"ds-badge\" data-type=\"phrasal_verb\">phrasal verb</span><span class=\"ds-badge\" data-type=\"collocation\">collocation</span><span class=\"ds-badge\" data-type=\"chunk\">chunk</span></div>",
-      "css": ".ds-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-family:var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-chip{font:var(--text-sm,0.8125rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-chip,4px);padding:1px 8px;color:var(--ink,#e8e6e1)}.ds-badge{font-size:var(--text-xs,0.75rem);font-weight:500;color:var(--ink-2,#b4b9c5);border:1px solid var(--rule-strong,#3a3f4b);border-radius:999px;padding:0 8px;white-space:nowrap}.ds-badge[data-type=phrasal_verb]{color:var(--ink,#e8e6e1);border-color:var(--ink-3,#8c93a3)}.ds-badge[data-type=collocation]{color:var(--ink,#e8e6e1);background:var(--sheet-hover,#262a33)}.ds-badge[data-type=chunk]{border-style:dashed}"
+      "css": ".ds-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-family:var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-chip{font:var(--text-sm,0.8125rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);border:1px solid var(--rule-strong,#33445f);border-radius:var(--r-chip,4px);padding:1px 8px;color:var(--ink,#e6eef9)}.ds-badge{font-size:var(--text-xs,0.75rem);font-weight:500;color:var(--ink-2,#afc0d8);border:1px solid var(--rule-strong,#33445f);border-radius:999px;padding:0 8px;white-space:nowrap}.ds-badge[data-type=phrasal_verb]{color:var(--ink,#e6eef9);border-color:var(--ink-3,#8799b4)}.ds-badge[data-type=collocation]{color:var(--ink,#e6eef9);background:var(--sheet-hover,#1c2840)}.ds-badge[data-type=chunk]{border-style:dashed}"
     },
     {
       "name": "Expression Card",
@@ -1021,7 +1179,7 @@
       "refersTo": "expression-card",
       "description": "Same layout wherever it appears: mono phrase, type badge, meaning, example.",
       "html": "<article class=\"ds-expr\"><div class=\"ds-expr-top\"><span class=\"ds-expr-phrase\">trade-off</span><span class=\"ds-badge2\">collocation</span></div><p class=\"ds-expr-meaning\">a choice with pros and cons</p><p class=\"ds-expr-example\">The trade-off is more memory for fewer queries.</p></article>",
-      "css": ".ds-expr{background:var(--sheet,#20232b);border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);padding:16px 20px;display:flex;flex-direction:column;gap:8px;max-width:260px;color:var(--ink,#e8e6e1);font-family:var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-expr p{margin:0}.ds-expr-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.ds-expr-phrase{font:500 var(--text-lg,1.0625rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-badge2{font-size:var(--text-xs,0.75rem);font-weight:500;color:var(--ink,#e8e6e1);background:var(--sheet-hover,#262a33);border:1px solid var(--rule-strong,#3a3f4b);border-radius:999px;padding:0 8px}.ds-expr-meaning{color:var(--ink-2,#b4b9c5);font-size:var(--text-md,0.875rem)}.ds-expr-example{font-size:var(--text-md,0.875rem)}"
+      "css": ".ds-expr{background:var(--sheet,#162033);border:1px solid var(--rule,#24324a);border-radius:var(--r-sheet,10px);padding:16px 20px;display:flex;flex-direction:column;gap:8px;max-width:260px;color:var(--ink,#e6eef9);font-family:var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-expr p{margin:0}.ds-expr-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.ds-expr-phrase{font:500 var(--text-lg,1.0625rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-badge2{font-size:var(--text-xs,0.75rem);font-weight:500;color:var(--ink,#e6eef9);background:var(--sheet-hover,#1c2840);border:1px solid var(--rule-strong,#33445f);border-radius:999px;padding:0 8px}.ds-expr-meaning{color:var(--ink-2,#afc0d8);font-size:var(--text-md,0.875rem)}.ds-expr-example{font-size:var(--text-md,0.875rem)}"
     },
     {
       "name": "Galley with Margin Notes",
@@ -1029,7 +1187,7 @@
       "refersTo": "galley",
       "description": "Signature: the learner's text as a proof, rose deletions, sage insertions, numbered pencil carets, notes aligned in the margin.",
       "html": "<article class=\"ds-galley\"><div class=\"ds-galley-head\"><h2>Your answer</h2><span>2 edits</span></div><div class=\"ds-line\"><p class=\"ds-line-text\">Yesterday I <del>have fixed</del> <ins>fixed</ins><span class=\"ds-mark\">1</span> the flaky test.</p><div class=\"ds-line-notes\"><p><span class=\"ds-note-label\"><span class=\"ds-mark\">1</span>verb tense</span>With \"yesterday\" use the simple past.</p></div></div></article>",
-      "css": ".ds-galley{background:var(--sheet,#20232b);border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);color:var(--ink,#e8e6e1);font-family:var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-galley-head{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid var(--rule,#2b2f39)}.ds-galley-head h2{margin:0;font-size:var(--text-lg,1.0625rem);font-weight:600}.ds-galley-head span{font-size:var(--text-sm,0.8125rem);color:var(--ink-3,#8c93a3)}.ds-line{display:grid;grid-template-columns:minmax(0,1fr) 248px;padding:12px 0}.ds-line-text{margin:0;padding:8px 24px;font:var(--text-base,0.9375rem)/1.85 var(--font-mono,'JetBrains Mono',ui-monospace,monospace);white-space:pre-wrap}.ds-line-notes{padding:8px 20px;border-left:1px solid var(--rule,#2b2f39);font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-line-notes p{margin:0}.ds-note-label{display:flex;align-items:center;gap:6px;color:var(--pencil,#7fb2e5);font-weight:500}.ds-galley del{color:var(--del,#d99aa8);text-decoration:line-through;text-decoration-thickness:1.5px;background:var(--del-wash,rgb(217 154 168 / 0.12));border-radius:2px}.ds-galley ins{color:var(--ins,#8cc5a2);text-decoration:none;background:var(--ins-wash,rgb(140 197 162 / 0.12));border-radius:2px}.ds-mark{display:inline-grid;place-items:center;width:16px;height:16px;font:500 10px var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--pencil,#7fb2e5);border:1px solid var(--pencil,#7fb2e5);border-radius:50%;vertical-align:2px;margin-left:2px}"
+      "css": ".ds-galley{background:var(--sheet,#162033);border:1px solid var(--rule,#24324a);border-radius:var(--r-sheet,10px);color:var(--ink,#e6eef9);font-family:var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-galley-head{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid var(--rule,#24324a)}.ds-galley-head h2{margin:0;font-size:var(--text-lg,1.0625rem);font-weight:600}.ds-galley-head span{font-size:var(--text-sm,0.8125rem);color:var(--ink-3,#8799b4)}.ds-line{display:grid;grid-template-columns:minmax(0,1fr) 248px;padding:12px 0}.ds-line-text{margin:0;padding:8px 24px;font:var(--text-base,0.9375rem)/1.85 var(--font-mono,'JetBrains Mono',ui-monospace,monospace);white-space:pre-wrap}.ds-line-notes{padding:8px 20px;border-left:1px solid var(--rule,#24324a);font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#afc0d8)}.ds-line-notes p{margin:0}.ds-note-label{display:flex;align-items:center;gap:6px;color:var(--pencil,#8ec5ff);font-weight:500}.ds-galley del{color:var(--del,#f0a3b6);text-decoration:line-through;text-decoration-thickness:1.5px;background:var(--del-wash,rgb(240 163 182 / 0.14));border-radius:2px}.ds-galley ins{color:var(--ins,#8fd9ac);text-decoration:none;background:var(--ins-wash,rgb(143 217 172 / 0.14));border-radius:2px}.ds-mark{display:inline-grid;place-items:center;width:16px;height:16px;font:500 10px var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--pencil,#8ec5ff);border:1px solid var(--pencil,#8ec5ff);border-radius:50%;vertical-align:2px;margin-left:2px}"
     },
     {
       "name": "Avatar",
@@ -1037,7 +1195,7 @@
       "refersTo": "avatar",
       "description": "Photo, else the member's mascot (chosen or picked from their id), else the initial, in a ruled circle never coloured per person; the photo always wins. 96px on the People profile (5px ground ring over the banner), 72px in Edit profile, 40px in the member list, 32px in follow notices and the moderation queue.",
       "html": "<span class=\"ds-avatar\" aria-hidden=\"true\">R</span>",
-      "css": ".ds-avatar{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font:600 17px/1 var(--font-ui,'Public Sans',system-ui,sans-serif);object-fit:cover}"
+      "css": ".ds-avatar{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--rule-strong,#33445f);background:var(--sheet-hover,#1c2840);color:var(--ink-2,#afc0d8);font:600 17px/1 var(--font-ui,'Public Sans',system-ui,sans-serif);object-fit:cover}"
     },
     {
       "name": "Stack Tag",
@@ -1045,22 +1203,22 @@
       "refersTo": "stack-tag",
       "description": "A profile technology: Simple Icons logo in currentColor (the text tone) and its name in sans, in a 4px strong-rule chip; name only when no logo is known.",
       "html": "<ul class=\"ds-stack\"><li><span class=\"ds-stack-tag\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/></svg><span>Python</span></span></li><li><span class=\"ds-stack-tag\"><span>Godot</span></span></li></ul>",
-      "css": ".ds-stack{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px}.ds-stack-tag{display:inline-flex;align-items:center;gap:6px;font:400 var(--text-md,0.875rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1);border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-chip,4px);padding:2px 8px}.ds-stack-tag svg{flex:none;fill:currentColor}"
+      "css": ".ds-stack{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px}.ds-stack-tag{display:inline-flex;align-items:center;gap:6px;font:400 var(--text-md,0.875rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e6eef9);border:1px solid var(--rule-strong,#33445f);border-radius:var(--r-chip,4px);padding:2px 8px}.ds-stack-tag svg{flex:none;fill:currentColor}"
     },
     {
       "name": "Profile Fact Sheet",
       "kind": "custom",
       "description": "A profile as a ruled definition list: 180px term column in secondary ink (140px below 1040px). Also used for the moderation report detail.",
       "html": "<dl class=\"ds-facts\"><dt>Native language</dt><dd>Portuguese (Brazil)</dd><dt>Time zone</dt><dd>America/Bahia</dd></dl>",
-      "css": ".ds-facts{display:grid;grid-template-columns:180px minmax(0,1fr);margin:0;border-top:1px solid var(--rule,#2b2f39);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1)}.ds-facts dt,.ds-facts dd{margin:0;padding:12px 0;border-bottom:1px solid var(--rule,#2b2f39)}.ds-facts dt{color:var(--ink-2,#b4b9c5);font-size:var(--text-md,0.875rem)}"
+      "css": ".ds-facts{display:grid;grid-template-columns:180px minmax(0,1fr);margin:0;border-top:1px solid var(--rule,#24324a);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e6eef9)}.ds-facts dt,.ds-facts dd{margin:0;padding:12px 0;border-bottom:1px solid var(--rule,#24324a)}.ds-facts dt{color:var(--ink-2,#afc0d8);font-size:var(--text-md,0.875rem)}"
     },
     {
       "name": "Report Dialog",
       "kind": "custom",
       "refersTo": "dialog",
-      "description": "The second floating layer after the palette: 520px sheet, float shadow, 35% black backdrop, no open/close animation; reason as radio rows with an ink accent, short sans textarea, quiet Cancel and primary Send.",
+      "description": "The second floating layer after the palette: 520px sheet, float shadow, navy scrim backdrop, no open/close animation; reason as radio rows with an ink accent, short sans textarea, quiet Cancel and primary Send.",
       "html": "<div class=\"ds-dialog\" role=\"dialog\" aria-label=\"Report Sam\"><h2>Report Sam</h2><p class=\"ds-dialog-lede\">Reports go to the moderators. Sam is not told who reported them.</p><label class=\"ds-radio-row\"><input type=\"radio\" name=\"r\" checked> Spam or scams</label><label class=\"ds-radio-row\"><input type=\"radio\" name=\"r\"> Something else</label></div>",
-      "css": ".ds-dialog{width:min(520px,92vw);padding:24px;display:flex;flex-direction:column;gap:16px;background:var(--sheet,#20232b);color:var(--ink,#e8e6e1);border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-sheet,10px);box-shadow:0 12px 32px -8px rgb(0 0 0 / 0.55),0 2px 6px rgb(0 0 0 / 0.35);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-dialog h2{margin:0;font-size:var(--text-lg,1.0625rem);font-weight:600}.ds-dialog-lede{margin:-8px 0 0;color:var(--ink-2,#b4b9c5)}.ds-radio-row{display:flex;align-items:center;gap:12px;padding:6px 8px;border-radius:var(--r-control,6px);cursor:pointer}.ds-radio-row:hover{background:var(--sheet-hover,#262a33)}.ds-radio-row input{accent-color:var(--ink,#e8e6e1);width:16px;height:16px;margin:0}"
+      "css": ".ds-dialog{width:min(520px,92vw);padding:24px;display:flex;flex-direction:column;gap:16px;background:var(--sheet,#162033);color:var(--ink,#e6eef9);border:1px solid var(--rule-strong,#33445f);border-radius:var(--r-sheet,10px);box-shadow:0 12px 32px -8px rgb(2 8 20 / 0.55),0 2px 6px rgb(2 8 20 / 0.35);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-dialog h2{margin:0;font-size:var(--text-lg,1.0625rem);font-weight:600}.ds-dialog-lede{margin:-8px 0 0;color:var(--ink-2,#afc0d8)}.ds-radio-row{display:flex;align-items:center;gap:12px;padding:6px 8px;border-radius:var(--r-control,6px);cursor:pointer}.ds-radio-row:hover{background:var(--sheet-hover,#1c2840)}.ds-radio-row input{accent-color:var(--ink,#e6eef9);width:16px;height:16px;margin:0}"
     },
     {
       "name": "Inline Confirmation",
@@ -1068,15 +1226,15 @@
       "refersTo": "confirm-panel",
       "description": "Block, account deletion and moderation decisions confirm inline, never in a modal: a neutral strong-rule sheet panel; the typed e-mail or required reason is the guard; no amber, no danger colour; the confirming action is secondary.",
       "html": "<div class=\"ds-confirm\" role=\"group\" aria-label=\"Block Sam\"><p>Block Sam? You will stop seeing each other in DevTalk, and Sam cannot contact you.</p><div class=\"ds-confirm-actions\"><button class=\"ds-confirm-btn\">Block</button><button class=\"ds-confirm-quiet\">Cancel</button></div></div>",
-      "css": ".ds-confirm{display:flex;flex-direction:column;gap:8px;max-width:68ch;padding:16px 20px;border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-sheet,10px);background:var(--sheet,#20232b);color:var(--ink,#e8e6e1);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-confirm p{margin:0}.ds-confirm-actions{display:flex;gap:8px}.ds-confirm-btn,.ds-confirm-quiet{font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);border-radius:var(--r-control,6px);padding:9px 16px;cursor:pointer}.ds-confirm-btn{background:transparent;border:1px solid var(--rule-strong,#3a3f4b);color:var(--ink,#e8e6e1)}.ds-confirm-btn:hover{background:var(--sheet-hover,#262a33)}.ds-confirm-quiet{background:transparent;border:1px solid transparent;color:var(--ink-2,#b4b9c5);padding-inline:12px}"
+      "css": ".ds-confirm{display:flex;flex-direction:column;gap:8px;max-width:68ch;padding:16px 20px;border:1px solid var(--rule-strong,#33445f);border-radius:var(--r-sheet,10px);background:var(--sheet,#162033);color:var(--ink,#e6eef9);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-confirm p{margin:0}.ds-confirm-actions{display:flex;gap:8px}.ds-confirm-btn,.ds-confirm-quiet{font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);border-radius:var(--r-pill,999px);padding:9px 18px;cursor:pointer}.ds-confirm-btn{background:transparent;border:1px solid var(--rule-strong,#33445f);color:var(--ink,#e6eef9)}.ds-confirm-btn:hover{background:var(--sheet-hover,#1c2840)}.ds-confirm-quiet{background:transparent;border:1px solid transparent;color:var(--ink-2,#afc0d8);padding-inline:12px}"
     },
     {
       "name": "Moderation Queue",
       "kind": "nav",
       "refersTo": "queue-row-selected",
-      "description": "Open reports as a ruled list: avatar, name, reason in secondary ink, date in tertiary ink; hover takes the sheet fill, the selected row sheet-hover plus an inset ring, like the palette selection.",
+      "description": "Open reports as a ruled list: avatar, name, reason in secondary ink, date in tertiary ink; hover takes the sheet fill, the selected row sheet-hover plus an inset ring, the one selection that kept it.",
       "html": "<ul class=\"ds-queue\"><li><button aria-current=\"true\"><span class=\"ds-q-av\">S</span><span><b>Sam</b><br><small>Spam or scams, profile</small></span><time>14 October 2026</time></button></li><li><button><span class=\"ds-q-av\">A</span><span><b>Alex</b><br><small>Harassment or bullying, profile</small></span><time>14 October 2026</time></button></li></ul>",
-      "css": ".ds-queue{list-style:none;padding:0;margin:0;width:340px;border-top:1px solid var(--rule,#2b2f39)}.ds-queue li{border-bottom:1px solid var(--rule,#2b2f39)}.ds-queue button{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 8px;background:transparent;border:0;border-radius:var(--r-control,6px);color:var(--ink,#e8e6e1);text-align:left;font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);cursor:pointer}.ds-queue button:hover{background:var(--sheet,#20232b)}.ds-queue button[aria-current=true]{background:var(--sheet-hover,#262a33);box-shadow:inset 0 0 0 1px var(--rule-strong,#3a3f4b)}.ds-queue b{font-weight:600}.ds-queue small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-queue time{align-self:start;font-size:var(--text-sm,0.8125rem);color:var(--ink-3,#8c93a3);white-space:nowrap}.ds-q-av{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font-weight:600;font-size:13px}"
+      "css": ".ds-queue{list-style:none;padding:0;margin:0;width:340px;border-top:1px solid var(--rule,#24324a)}.ds-queue li{border-bottom:1px solid var(--rule,#24324a)}.ds-queue button{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 8px;background:transparent;border:0;border-radius:var(--r-control,6px);color:var(--ink,#e6eef9);text-align:left;font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);cursor:pointer}.ds-queue button:hover{background:var(--sheet,#162033)}.ds-queue button[aria-current=true]{background:var(--sheet-hover,#1c2840);box-shadow:inset 0 0 0 1px var(--rule-strong,#33445f)}.ds-queue b{font-weight:600}.ds-queue small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#afc0d8)}.ds-queue time{align-self:start;font-size:var(--text-sm,0.8125rem);color:var(--ink-3,#8799b4);white-space:nowrap}.ds-q-av{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:50%;border:1px solid var(--rule-strong,#33445f);background:var(--sheet-hover,#1c2840);color:var(--ink-2,#afc0d8);font-weight:600;font-size:13px}"
     },
     {
       "name": "Member Badges",
@@ -1084,7 +1242,7 @@
       "refersTo": "member-badge",
       "description": "A member's badges as pills in group order (community, technical, language, evolution): fill 11% of the group colour, border 50% group colour into the strong rule; the icon carries the colour, the label stays in ink. Distinct from the expression type badge.",
       "html": "<ul class=\"ds-badges\"><li><span class=\"ds-mb ds-mb-community\"><svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M5.5 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM2 13c0-2 1.5-3.5 3.5-3.5S9 11 9 13M11 7.5a1.75 1.75 0 1 0 0-3.5M11.5 9.5c1.5.3 2.5 1.6 2.5 3.5\"/></svg><span>Helper</span></span></li><li><span class=\"ds-mb\"><svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M5 4 1.5 8 5 12M11 4l3.5 4L11 12\"/></svg><span>Reviewer</span></span></li><li><span class=\"ds-mb ds-mb-language\" style=\"--c:#4B8BBE\"><svg class=\"ds-logo\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/></svg><span>Python</span></span></li><li><span class=\"ds-mb ds-mb-evolution\"><svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M2 13h12M4 13V9M8 13V6M12 13V3\"/></svg><span>100 answers</span></span></li></ul>",
-      "css": ".ds-badges{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:6px}.ds-mb{--c:var(--badge-neutral,var(--ink-2,#b4b9c5));display:inline-flex;align-items:center;gap:6px;font:400 var(--text-sm,0.8125rem)/1.5 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1);border-radius:999px;padding:2px 10px 2px 8px;border:1px solid color-mix(in srgb,var(--c) 50%,var(--rule-strong,#3a3f4b));background:color-mix(in srgb,var(--c) 11%,transparent)}.ds-mb-community{--c:var(--badge-community,#b4a7f5)}.ds-mb-evolution{--c:var(--badge-evolution,#e39a6c)}.ds-mb svg{flex:none;width:15px;height:15px;color:var(--c);fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.ds-mb svg.ds-logo{width:14px;height:14px;fill:currentColor;stroke:none}"
+      "css": ".ds-badges{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:6px}.ds-mb{--c:var(--badge-neutral,var(--ink-2,#afc0d8));display:inline-flex;align-items:center;gap:6px;font:400 var(--text-sm,0.8125rem)/1.5 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e6eef9);border-radius:999px;padding:2px 10px 2px 8px;border:1px solid color-mix(in srgb,var(--c) 50%,var(--rule-strong,#33445f));background:color-mix(in srgb,var(--c) 11%,transparent)}.ds-mb-community{--c:var(--badge-community,#b4a7f5)}.ds-mb-evolution{--c:var(--badge-evolution,#e39a6c)}.ds-mb svg{flex:none;width:15px;height:15px;color:var(--c);fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.ds-mb svg.ds-logo{width:14px;height:14px;fill:currentColor;stroke:none}"
     },
     {
       "name": "Practice Graph",
@@ -1092,15 +1250,15 @@
       "refersTo": "graph-cell",
       "description": "53 Monday-first weeks of 2px-radius cells in the graph's own green ramp: facts line, month labels, sticky Mon/Wed/Fri column, the day's text line (live region) and a Less ... More legend at the grid's right edge. One tab stop with arrow keys; never shown next to a diff.",
       "html": "<div class=\"ds-graph\"><p class=\"ds-g-facts\">42 days with practice this year. Current streak 3 days, longest 9.</p><div class=\"ds-g-body\"><div class=\"ds-g-days\" aria-hidden=\"true\"><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span></span></div><div class=\"ds-g-grid\" tabindex=\"0\" role=\"grid\" aria-label=\"Practice per day\"><i class=\"l0\"></i><i class=\"l1\"></i><i class=\"l0\"></i><i class=\"l2\"></i><i class=\"l0\"></i><i class=\"l0\"></i><i class=\"l1\"></i><i class=\"l3\"></i><i class=\"l2\"></i><i class=\"l0\"></i><i class=\"l4\"></i><i class=\"l1\"></i><i class=\"l0\"></i><i class=\"l0\"></i><i class=\"l2\"></i><i class=\"l0\"></i><i class=\"l1\"></i><i class=\"l0\"></i><i class=\"l3\"></i><i class=\"l0\"></i><i class=\"l0\"></i></div></div><div class=\"ds-g-foot\"><p aria-live=\"polite\">Wednesday 14 October: 2 answers, 1 review.</p><span class=\"ds-g-legend\">Less <i class=\"l0\"></i><i class=\"l1\"></i><i class=\"l2\"></i><i class=\"l3\"></i><i class=\"l4\"></i> More</span></div></div>",
-      "css": ".ds-graph{--cell:10px;display:flex;flex-direction:column;gap:8px;width:max-content;font-family:var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-g-facts{margin:0;color:var(--ink-2,#b4b9c5);font-variant-numeric:tabular-nums}.ds-g-body{display:flex;gap:4px}.ds-g-days{display:grid;grid-template-rows:repeat(7,var(--cell));row-gap:3px;font-size:var(--text-xs,0.75rem);line-height:var(--cell);color:var(--ink-3,#8c93a3)}.ds-g-grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,var(--cell));grid-auto-columns:var(--cell);gap:3px}.ds-g-grid:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}.ds-graph i{display:block;width:var(--cell);height:var(--cell);border-radius:2px}.ds-g-grid i:hover{outline:1px solid var(--ink,#e8e6e1)}.l0{background:var(--graph-0,#22262e)}.l1{background:var(--graph-1,#1f4a31)}.l2{background:var(--graph-2,#2e7a47)}.l3{background:var(--graph-3,#43a862)}.l4{background:var(--graph-4,#6fd38a)}.ds-g-foot{display:flex;justify-content:space-between;align-items:center;gap:8px 16px}.ds-g-foot p{margin:0;font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-g-legend{margin-left:auto;display:inline-flex;align-items:center;gap:3px;font-size:var(--text-xs,0.75rem);color:var(--ink-3,#8c93a3)}"
+      "css": ".ds-graph{--cell:10px;display:flex;flex-direction:column;gap:8px;width:max-content;font-family:var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-g-facts{margin:0;color:var(--ink-2,#afc0d8);font-variant-numeric:tabular-nums}.ds-g-body{display:flex;gap:4px}.ds-g-days{display:grid;grid-template-rows:repeat(7,var(--cell));row-gap:3px;font-size:var(--text-xs,0.75rem);line-height:var(--cell);color:var(--ink-3,#8799b4)}.ds-g-grid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,var(--cell));grid-auto-columns:var(--cell);gap:3px}.ds-g-grid:focus-visible{outline:2px solid var(--focus,#d4e9ff);outline-offset:2px}.ds-graph i{display:block;width:var(--cell);height:var(--cell);border-radius:2px}.ds-g-grid i:hover{outline:1px solid var(--ink,#e6eef9)}.l0{background:var(--graph-0,#1a2436)}.l1{background:var(--graph-1,#1f4a31)}.l2{background:var(--graph-2,#2e7a47)}.l3{background:var(--graph-3,#43a862)}.l4{background:var(--graph-4,#6fd38a)}.ds-g-foot{display:flex;justify-content:space-between;align-items:center;gap:8px 16px}.ds-g-foot p{margin:0;font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#afc0d8)}.ds-g-legend{margin-left:auto;display:inline-flex;align-items:center;gap:3px;font-size:var(--text-xs,0.75rem);color:var(--ink-3,#8799b4)}"
     },
     {
       "name": "Profile Banner",
       "kind": "card",
       "refersTo": "banner",
-      "description": "A 3:1 cover with the sheet radius on the People profile; the 96px avatar overlaps its lower edge in a 5px ground ring. No banner: a 6:1 band in the rail tone. Animated banners show their first frame under reduced motion or when Play animated banners is off.",
+      "description": "A 3:1 cover with the sheet radius on the People profile; the 96px avatar overlaps its lower edge in a 5px ground ring. No banner: a 6:1 band in the sky wash. Animated banners show their first frame under reduced motion or when Play animated banners is off.",
       "html": "<div class=\"ds-profile\"><div class=\"ds-banner\" aria-hidden=\"true\"></div><div class=\"ds-p-head\"><span class=\"ds-p-av\"><span>R</span></span><h2>Rian</h2></div></div>",
-      "css": ".ds-profile{width:520px;font-family:var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1)}.ds-banner{aspect-ratio:3/1;border-radius:var(--r-sheet,10px);overflow:hidden;background:linear-gradient(135deg,#2a3140,#3b4558)}.ds-p-head{display:flex;align-items:flex-end;gap:16px;padding-inline:20px}.ds-p-av{display:inline-flex;margin-top:-48px;padding:5px;border-radius:50%;background:var(--bg,#16181d)}.ds-p-av span{display:inline-grid;place-items:center;width:96px;height:96px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font-weight:600;font-size:36px}.ds-p-head h2{margin:0 0 4px;font-size:var(--text-lg,1.0625rem);font-weight:600}"
+      "css": ".ds-profile{width:520px;font-family:var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e6eef9)}.ds-banner{aspect-ratio:3/1;border-radius:var(--r-sheet,10px);overflow:hidden;background:var(--pencil-wash,rgb(142 197 255 / 0.14))}.ds-p-head{display:flex;align-items:flex-end;gap:16px;padding-inline:20px}.ds-p-av{display:inline-flex;margin-top:-48px;padding:5px;border-radius:50%;background:var(--bg,#0f1726)}.ds-p-av span{display:inline-grid;place-items:center;width:96px;height:96px;border-radius:50%;border:1px solid var(--rule-strong,#33445f);background:var(--sheet-hover,#1c2840);color:var(--ink-2,#afc0d8);font-weight:600;font-size:36px}.ds-p-head h2{margin:0 0 4px;font-size:var(--text-lg,1.0625rem);font-weight:600}"
     },
     {
       "name": "Mascot Picker",
@@ -1108,7 +1266,7 @@
       "refersTo": "mascot-option",
       "description": "Edit profile: a wrapping row of nine 48px mascot circles; the checked one gets a 2px ground then 2px ink separation ring, focus adds the 2px focus outline offset 5px. Mascots show only when there is no photo.",
       "html": "<fieldset class=\"ds-mascots\"><legend>Mascot</legend><div><label><input type=\"radio\" name=\"m\" checked><span style=\"background:#f3d36b\"></span></label><label><input type=\"radio\" name=\"m\"><span style=\"background:#9c7350\"></span></label><label><input type=\"radio\" name=\"m\"><span style=\"background:#f2a7c3\"></span></label></div></fieldset>",
-      "css": ".ds-mascots{border:0;padding:0;margin:0;font-family:var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1)}.ds-mascots legend{padding:0;margin-bottom:8px;font-size:var(--text-md,0.875rem);font-weight:600}.ds-mascots div{display:flex;flex-wrap:wrap;gap:8px}.ds-mascots label{display:inline-flex;border-radius:50%;cursor:pointer}.ds-mascots input{position:absolute;opacity:0;width:1px;height:1px}.ds-mascots span{display:block;width:48px;height:48px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b)}.ds-mascots label:has(input:checked) span{box-shadow:0 0 0 2px var(--bg,#16181d),0 0 0 4px var(--ink,#e8e6e1)}.ds-mascots label:has(input:focus-visible) span{outline:2px solid var(--focus,#9cc6f0);outline-offset:5px}"
+      "css": ".ds-mascots{border:0;padding:0;margin:0;font-family:var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e6eef9)}.ds-mascots legend{padding:0;margin-bottom:8px;font-size:var(--text-md,0.875rem);font-weight:600}.ds-mascots div{display:flex;flex-wrap:wrap;gap:8px}.ds-mascots label{display:inline-flex;border-radius:50%;cursor:pointer}.ds-mascots input{position:absolute;opacity:0;width:1px;height:1px}.ds-mascots span{display:block;width:48px;height:48px;border-radius:50%;border:1px solid var(--rule-strong,#33445f)}.ds-mascots label:has(input:checked) span{box-shadow:0 0 0 2px var(--bg,#0f1726),0 0 0 4px var(--ink,#e6eef9)}.ds-mascots label:has(input:focus-visible) span{outline:2px solid var(--focus,#d4e9ff);outline-offset:5px}"
     },
     {
       "name": "People Tabs",
@@ -1116,7 +1274,7 @@
       "refersTo": "people-tab",
       "description": "Route links (Members, Following, Your profile) over a 1px rule; the current tab is ink with a 2px ink underline, never pencil. A member's profile and lists keep Members marked.",
       "html": "<nav class=\"ds-tabs\" aria-label=\"People\"><a href=\"#\" aria-current=\"page\">Members</a><a href=\"#\">Following</a><a href=\"#\">Your profile</a></nav>",
-      "css": ".ds-tabs{display:flex;gap:24px;max-width:760px;border-bottom:1px solid var(--rule,#2b2f39);font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-tabs a{padding:8px 0;margin-bottom:-1px;border-bottom:2px solid transparent;color:var(--ink-2,#b4b9c5);text-decoration:none}.ds-tabs a:hover{color:var(--ink,#e8e6e1)}.ds-tabs a[aria-current=page]{color:var(--ink,#e8e6e1);border-bottom-color:var(--ink,#e8e6e1)}.ds-tabs a:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px;border-radius:var(--r-control,6px)}"
+      "css": ".ds-tabs{display:flex;gap:24px;max-width:760px;border-bottom:1px solid var(--rule,#24324a);font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-tabs a{padding:8px 0;margin-bottom:-1px;border-bottom:2px solid transparent;color:var(--ink-2,#afc0d8);text-decoration:none}.ds-tabs a:hover{color:var(--ink,#e6eef9)}.ds-tabs a[aria-current=page]{color:var(--ink,#e6eef9);border-bottom-color:var(--ink,#e6eef9)}.ds-tabs a:focus-visible{outline:2px solid var(--focus,#d4e9ff);outline-offset:2px;border-radius:var(--r-control,6px)}"
     },
     {
       "name": "Member List",
@@ -1124,23 +1282,23 @@
       "refersTo": "member-row",
       "description": "Ruled rows, one link each: 40px avatar or mascot, name (600) over a 13px secondary-ink meta line, main technologies as language badges on the right; hover takes the sheet. Loaded 30 at a time with Load more.",
       "html": "<ul class=\"ds-members\"><li><a href=\"#\"><span class=\"ds-m-av\">A</span><span class=\"ds-m-main\"><b>Ana Souza</b><small>Back end developer, B1</small></span><span class=\"ds-m-badges\"><span>Go</span><span>Python</span></span></a></li><li><a href=\"#\"><span class=\"ds-m-av\">R</span><span class=\"ds-m-main\"><b>Rui Lima</b><small>Front end developer, A2</small></span><span class=\"ds-m-badges\"><span>TypeScript</span></span></a></li></ul>",
-      "css": ".ds-members{list-style:none;padding:0;margin:0;max-width:760px;border-top:1px solid var(--rule,#2b2f39);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-members li{border-bottom:1px solid var(--rule,#2b2f39)}.ds-members a{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 8px;border-radius:var(--r-control,6px);color:var(--ink,#e8e6e1);text-decoration:none}.ds-members a:hover{background:var(--sheet,#20232b)}.ds-members a:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}.ds-m-main{display:flex;flex-direction:column;min-width:0}.ds-m-main b{font-weight:600}.ds-m-main small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-m-av{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font-weight:600}.ds-m-badges{display:flex;flex-wrap:wrap;gap:6px}.ds-m-badges span{font-size:var(--text-sm,0.8125rem);color:var(--ink,#e8e6e1);border:1px solid var(--rule-strong,#3a3f4b);border-radius:999px;padding:2px 10px}"
+      "css": ".ds-members{list-style:none;padding:0;margin:0;max-width:760px;border-top:1px solid var(--rule,#24324a);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-members li{border-bottom:1px solid var(--rule,#24324a)}.ds-members a{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 8px;border-radius:var(--r-control,6px);color:var(--ink,#e6eef9);text-decoration:none}.ds-members a:hover{background:var(--sheet,#162033)}.ds-members a:focus-visible{outline:2px solid var(--focus,#d4e9ff);outline-offset:2px}.ds-m-main{display:flex;flex-direction:column;min-width:0}.ds-m-main b{font-weight:600}.ds-m-main small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#afc0d8)}.ds-m-av{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--rule-strong,#33445f);background:var(--sheet-hover,#1c2840);color:var(--ink-2,#afc0d8);font-weight:600}.ds-m-badges{display:flex;flex-wrap:wrap;gap:6px}.ds-m-badges span{font-size:var(--text-sm,0.8125rem);color:var(--ink,#e6eef9);border:1px solid var(--rule-strong,#33445f);border-radius:999px;padding:2px 10px}"
     },
     {
       "name": "Follow and Like",
       "kind": "custom",
       "refersTo": "like-button",
-      "description": "Under a profile's name: Follow (primary, the profile's one pencil action) or Following (secondary); a like control shaped like a secondary control with a heart filled in the text tone when liked and a tabular count; follower and following counts as secondary-ink links. Nothing is ranked.",
+      "description": "Under a profile's name: Follow (a sky-pill primary, the profile's one primary action) or Following (secondary); a like control shaped like a secondary pill with a heart filled in the text tone when liked and a tabular count; follower and following counts as secondary-ink links. Nothing is ranked.",
       "html": "<div class=\"ds-social\"><button class=\"ds-follow\" aria-label=\"Follow Ana Souza\">Follow</button><button class=\"ds-like\" aria-pressed=\"true\" aria-label=\"Unlike Ana Souza's profile, 12 likes\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path d=\"M8 13.5S2.5 10.2 2.5 6.2A2.9 2.9 0 0 1 8 4.6a2.9 2.9 0 0 1 5.5 1.6c0 4-5.5 7.3-5.5 7.3z\"/></svg><span>12</span></button><a href=\"#\">34 followers</a><a href=\"#\">21 following</a></div>",
-      "css": ".ds-social{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-social button{display:inline-flex;align-items:center;font:inherit;font-weight:500;border-radius:var(--r-control,6px);cursor:pointer;transition:transform 120ms cubic-bezier(0.23,1,0.32,1),background-color 180ms ease}.ds-social button:active{transform:scale(0.97)}.ds-social button:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}.ds-follow{padding:9px 16px;border:1px solid transparent;background:var(--pencil,#7fb2e5);color:var(--pencil-ink,#0d1622)}.ds-like{gap:6px;padding:9px 12px;border:1px solid var(--rule-strong,#3a3f4b);background:transparent;color:var(--ink,#e8e6e1);font-variant-numeric:tabular-nums}.ds-like:hover{background:var(--sheet-hover,#262a33)}.ds-like svg{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.ds-like[aria-pressed=true] svg{fill:currentColor}.ds-social a{color:var(--ink-2,#b4b9c5);font-size:var(--text-md,0.875rem);font-variant-numeric:tabular-nums}.ds-social a:hover{color:var(--ink,#e8e6e1)}"
+      "css": ".ds-social{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-social button{display:inline-flex;align-items:center;font:inherit;font-weight:500;border-radius:var(--r-pill,999px);cursor:pointer;transition:background-color 200ms ease,transform 200ms var(--ease-out,cubic-bezier(0.23,1,0.32,1))}.ds-social button:hover{transform:translateY(-1px)}.ds-social button:active{transform:scale(0.98)}.ds-social button:focus-visible{outline:2px solid var(--focus,#d4e9ff);outline-offset:2px}.ds-follow{padding:9px 18px;border:1px solid transparent;background:var(--accent,#8ec5ff);color:var(--on-accent,#0b2a4f)}.ds-follow:hover{background:var(--accent-hover,#a6d2ff)}.ds-like{gap:6px;padding:9px 12px;border:1px solid var(--rule-strong,#33445f);background:transparent;color:var(--ink,#e6eef9);font-variant-numeric:tabular-nums}.ds-like:hover{background:var(--sheet-hover,#1c2840)}.ds-like svg{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.ds-like[aria-pressed=true] svg{fill:currentColor}.ds-social a{color:var(--ink-2,#afc0d8);font-size:var(--text-md,0.875rem);font-variant-numeric:tabular-nums}.ds-social a:hover{color:var(--ink,#e6eef9)}@media (prefers-reduced-motion:reduce){.ds-social button{transform:none!important}}"
     },
     {
       "name": "Conversation List",
       "kind": "custom",
       "refersTo": "conversation-row",
-      "description": "Requests then Conversations as ruled rows in the member list's grammar: 40px avatar or mascot, name (600) over a one-line 13px secondary-ink preview ('Message deleted' in tertiary ink, 'Waiting for <name>' for a sent request), time 12px tertiary in tabular figures over a mono unread count in ink. Hover takes the sheet; the open conversation takes sheet-hover and the inset ring.",
+      "description": "Requests then Conversations as ruled rows in the member list's grammar: 40px avatar or mascot, name (600) over a one-line 13px secondary-ink preview ('Message deleted' in tertiary ink, 'Waiting for <name>' for a sent request), time 12px tertiary in tabular figures over a mono unread count in ink. Hover takes the sheet; the open conversation takes the sky wash.",
       "html": "<ul class=\"ds-convs\"><li><a href=\"#\" aria-current=\"page\"><span class=\"ds-c-av\">B</span><span class=\"ds-c-main\"><b>Bia</b><small>How was the meeting? Did you show the new endpoints?</small></span><span class=\"ds-c-side\"><time>17 Oct</time><span class=\"ds-c-count\">2</span></span></a></li><li><a href=\"#\"><span class=\"ds-c-av\">R</span><span class=\"ds-c-main\"><b>Rui</b><small class=\"is-absent\">Message deleted</small></span><span class=\"ds-c-side\"><time>Yesterday</time></span></a></li></ul>",
-      "css": ".ds-convs{list-style:none;padding:0;margin:0;width:300px;border-top:1px solid var(--rule,#2b2f39);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-convs li{border-bottom:1px solid var(--rule,#2b2f39)}.ds-convs a{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 8px;border-radius:var(--r-control,6px);color:var(--ink,#e8e6e1);text-decoration:none}.ds-convs a:hover{background:var(--sheet,#20232b)}.ds-convs a[aria-current=page]{background:var(--sheet-hover,#262a33);box-shadow:inset 0 0 0 1px var(--rule-strong,#3a3f4b)}.ds-convs a:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}.ds-c-main{display:flex;flex-direction:column;min-width:0}.ds-c-main b{font-weight:600}.ds-c-main small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-c-main small.is-absent{color:var(--ink-3,#8c93a3)}.ds-c-av{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font-weight:600}.ds-c-side{display:flex;flex-direction:column;align-items:flex-end;gap:2px;align-self:start;padding-top:2px}.ds-c-side time{font-size:var(--text-xs,0.75rem);color:var(--ink-3,#8c93a3);font-variant-numeric:tabular-nums}.ds-c-count{font:600 var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ink,#e8e6e1)}"
+      "css": ".ds-convs{list-style:none;padding:0;margin:0;width:300px;border-top:1px solid var(--rule,#24324a);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-convs li{border-bottom:1px solid var(--rule,#24324a)}.ds-convs a{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 8px;border-radius:var(--r-control,6px);color:var(--ink,#e6eef9);text-decoration:none}.ds-convs a:hover{background:var(--sheet,#162033)}.ds-convs a[aria-current=page]{background:var(--pencil-wash,rgb(142 197 255 / 0.14))}.ds-convs a:focus-visible{outline:2px solid var(--focus,#d4e9ff);outline-offset:2px}.ds-c-main{display:flex;flex-direction:column;min-width:0}.ds-c-main b{font-weight:600}.ds-c-main small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#afc0d8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-c-main small.is-absent{color:var(--ink-3,#8799b4)}.ds-c-av{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--rule-strong,#33445f);background:var(--sheet-hover,#1c2840);color:var(--ink-2,#afc0d8);font-weight:600}.ds-c-side{display:flex;flex-direction:column;align-items:flex-end;gap:2px;align-self:start;padding-top:2px}.ds-c-side time{font-size:var(--text-xs,0.75rem);color:var(--ink-3,#8799b4);font-variant-numeric:tabular-nums}.ds-c-count{font:600 var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ink,#e6eef9)}"
     },
     {
       "name": "Message Thread",
@@ -1148,7 +1306,7 @@
       "refersTo": "chat-bubble",
       "description": "On the ground inside the sheet pane: a 12px tertiary day label between rules; mono 14px/1.6 pre-wrap bubbles, theirs left on the sheet with the rule, yours right on sheet-hover with the strong rule, at most 75%; time under each; a deleted message is a dashed outline with tertiary sans 'Message deleted'; a peer correction is a sheet note with a word diff in the galley's rose and sage marks and a quiet Thanks; message actions are quiet 12px buttons on the time row.",
       "html": "<div class=\"ds-thread\"><p class=\"ds-day\">17 Oct</p><div class=\"ds-msg is-mine\"><p class=\"ds-bubble\">Yesterday I have a long meeting about our API.</p><span class=\"ds-time\">21:21</span><div class=\"ds-corr\"><span class=\"ds-who\">Bia suggested</span><p class=\"ds-diff\">Yesterday I <del>have</del> <ins>had</ins> a long meeting about our API.</p><button class=\"ds-q\">Thanks</button></div></div><div class=\"ds-msg\"><p class=\"ds-bubble\">How was the meeting?</p><span class=\"ds-meta\"><span class=\"ds-time\">21:31</span><button class=\"ds-q\">Suggest a correction</button><button class=\"ds-q\">Report</button></span></div><div class=\"ds-msg\"><p class=\"ds-bubble is-deleted\">Message deleted</p></div></div>",
-      "css": ".ds-thread{display:flex;flex-direction:column;gap:12px;padding:16px 20px;background:var(--bg,#16181d);border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1)}.ds-day{display:flex;align-items:center;gap:12px;margin:0;font-size:var(--text-xs,0.75rem);font-weight:500;color:var(--ink-3,#8c93a3)}.ds-day::before,.ds-day::after{content:\"\";flex:1;border-top:1px solid var(--rule,#2b2f39)}.ds-msg{display:flex;flex-direction:column;align-items:flex-start;max-width:75%}.ds-msg.is-mine{align-self:flex-end;align-items:flex-end}.ds-bubble{margin:0;padding:8px 12px;border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);background:var(--sheet,#20232b);font:var(--text-md,0.875rem)/1.6 var(--font-mono,'JetBrains Mono',ui-monospace,monospace);white-space:pre-wrap;overflow-wrap:anywhere}.ds-msg.is-mine .ds-bubble{background:var(--sheet-hover,#262a33);border-color:var(--rule-strong,#3a3f4b)}.ds-bubble.is-deleted{font-family:var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink-3,#8c93a3);border-style:dashed;background:transparent}.ds-meta{display:flex;align-items:center;gap:8px}.ds-time{font-size:var(--text-xs,0.75rem);color:var(--ink-3,#8c93a3);font-variant-numeric:tabular-nums}.ds-q{font:500 var(--text-xs,0.75rem) var(--font-ui,'Public Sans',system-ui,sans-serif);padding:2px 8px;border:0;border-radius:var(--r-control,6px);background:transparent;color:var(--ink-2,#b4b9c5);cursor:pointer}.ds-q:hover{background:var(--sheet,#20232b);color:var(--ink,#e8e6e1)}.ds-corr{margin-top:8px;padding:12px;border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);background:var(--sheet,#20232b);display:flex;flex-direction:column;align-items:flex-start;gap:8px;width:100%}.ds-who{font-size:var(--text-xs,0.75rem);color:var(--ink-2,#b4b9c5)}.ds-diff{margin:0;font:var(--text-md,0.875rem)/1.6 var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-diff del{color:var(--del,#d99aa8);text-decoration:line-through;text-decoration-thickness:1.5px;background:var(--del-wash,rgb(217 154 168 / 0.12));border-radius:2px}.ds-diff ins{color:var(--ins,#8cc5a2);text-decoration:none;background:var(--ins-wash,rgb(140 197 162 / 0.12));border-radius:2px}"
+      "css": ".ds-thread{display:flex;flex-direction:column;gap:12px;padding:16px 20px;background:var(--bg,#0f1726);border:1px solid var(--rule,#24324a);border-radius:var(--r-sheet,10px);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e6eef9)}.ds-day{display:flex;align-items:center;gap:12px;margin:0;font-size:var(--text-xs,0.75rem);font-weight:500;color:var(--ink-3,#8799b4)}.ds-day::before,.ds-day::after{content:\"\";flex:1;border-top:1px solid var(--rule,#24324a)}.ds-msg{display:flex;flex-direction:column;align-items:flex-start;max-width:75%}.ds-msg.is-mine{align-self:flex-end;align-items:flex-end}.ds-bubble{margin:0;padding:8px 12px;border:1px solid var(--rule,#24324a);border-radius:var(--r-sheet,10px);background:var(--sheet,#162033);font:var(--text-md,0.875rem)/1.6 var(--font-mono,'JetBrains Mono',ui-monospace,monospace);white-space:pre-wrap;overflow-wrap:anywhere}.ds-msg.is-mine .ds-bubble{background:var(--sheet-hover,#1c2840);border-color:var(--rule-strong,#33445f)}.ds-bubble.is-deleted{font-family:var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink-3,#8799b4);border-style:dashed;background:transparent}.ds-meta{display:flex;align-items:center;gap:8px}.ds-time{font-size:var(--text-xs,0.75rem);color:var(--ink-3,#8799b4);font-variant-numeric:tabular-nums}.ds-q{font:500 var(--text-xs,0.75rem) var(--font-ui,'Public Sans',system-ui,sans-serif);padding:2px 8px;border:0;border-radius:var(--r-control,6px);background:transparent;color:var(--ink-2,#afc0d8);cursor:pointer}.ds-q:hover{background:var(--sheet,#162033);color:var(--ink,#e6eef9)}.ds-corr{margin-top:8px;padding:12px;border:1px solid var(--rule,#24324a);border-radius:var(--r-sheet,10px);background:var(--sheet,#162033);display:flex;flex-direction:column;align-items:flex-start;gap:8px;width:100%}.ds-who{font-size:var(--text-xs,0.75rem);color:var(--ink-2,#afc0d8)}.ds-diff{margin:0;font:var(--text-md,0.875rem)/1.6 var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-diff del{color:var(--del,#f0a3b6);text-decoration:line-through;text-decoration-thickness:1.5px;background:var(--del-wash,rgb(240 163 182 / 0.14));border-radius:2px}.ds-diff ins{color:var(--ins,#8fd9ac);text-decoration:none;background:var(--ins-wash,rgb(143 217 172 / 0.14));border-radius:2px}"
     },
     {
       "name": "Composer and Coach Check",
@@ -1156,7 +1314,7 @@
       "refersTo": "coach-check",
       "description": "The mono chat textarea over a row: 'n / 2000' in 12px tertiary mono (amber past the limit), Check with the coach (secondary), Send (primary, the one primary). The check panel sits on the ground with the strong rule: 'The coach on your draft', the draft diff, notes led by the edit in pencil mono, 'A more natural way:', Use this version (secondary) and Keep mine (quiet).",
       "html": "<div class=\"ds-compose\"><section class=\"ds-check\"><span class=\"ds-who\">The coach on your draft</span><p class=\"ds-diff\">Yesterday I <del>have</del> fixed the bug.</p><ul><li><span class=\"ds-edit\">have fixed → fixed</span> With \"yesterday\" use the simple past.</li></ul><div class=\"ds-row\"><button class=\"ds-sec\">Use this version</button><button class=\"ds-q\">Keep mine</button></div></section><textarea class=\"ds-chat-input\" rows=\"2\">Yesterday I have fixed the bug.</textarea><div class=\"ds-row\"><span class=\"ds-counter\">31 / 2000</span><button class=\"ds-sec\">Check with the coach</button><button class=\"ds-pri\">Send</button></div></div>",
-      "css": ".ds-compose{display:flex;flex-direction:column;gap:8px;padding:12px 20px 16px;background:var(--sheet,#20232b);border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1)}.ds-check{padding:12px;border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-sheet,10px);background:var(--bg,#16181d);display:flex;flex-direction:column;gap:8px}.ds-check ul{list-style:none;padding:0;margin:0;font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-edit{font-family:var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--pencil,#7fb2e5)}.ds-who{font-size:var(--text-xs,0.75rem);color:var(--ink-2,#b4b9c5)}.ds-diff{margin:0;font:var(--text-md,0.875rem)/1.6 var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-diff del{color:var(--del,#d99aa8);text-decoration:line-through;background:var(--del-wash,rgb(217 154 168 / 0.12));border-radius:2px}.ds-chat-input{min-height:64px;resize:none;padding:8px 12px;border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-control,6px);background:var(--bg,#16181d);color:var(--ink,#e8e6e1);font:var(--text-md,0.875rem)/1.6 var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-chat-input:focus{outline:none;border-color:var(--focus,#9cc6f0)}.ds-row{display:flex;align-items:center;justify-content:flex-end;gap:12px}.ds-counter{margin-right:auto;font:var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ink-3,#8c93a3)}.ds-sec,.ds-pri,.ds-q{font:500 var(--text-base,0.9375rem) var(--font-ui,'Public Sans',system-ui,sans-serif);padding:9px 16px;border-radius:var(--r-control,6px);cursor:pointer}.ds-sec{background:transparent;border:1px solid var(--rule-strong,#3a3f4b);color:var(--ink,#e8e6e1)}.ds-sec:hover{background:var(--sheet-hover,#262a33)}.ds-pri{background:var(--pencil,#7fb2e5);border:1px solid transparent;color:var(--pencil-ink,#0d1622)}.ds-q{background:transparent;border:0;color:var(--ink-2,#b4b9c5)}"
+      "css": ".ds-compose{display:flex;flex-direction:column;gap:8px;padding:12px 20px 16px;background:var(--sheet,#162033);border:1px solid var(--rule,#24324a);border-radius:var(--r-sheet,10px);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e6eef9)}.ds-check{padding:12px;border:1px solid var(--rule-strong,#33445f);border-radius:var(--r-sheet,10px);background:var(--bg,#0f1726);display:flex;flex-direction:column;gap:8px}.ds-check ul{list-style:none;padding:0;margin:0;font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#afc0d8)}.ds-edit{font-family:var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--pencil,#8ec5ff)}.ds-who{font-size:var(--text-xs,0.75rem);color:var(--ink-2,#afc0d8)}.ds-diff{margin:0;font:var(--text-md,0.875rem)/1.6 var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-diff del{color:var(--del,#f0a3b6);text-decoration:line-through;background:var(--del-wash,rgb(240 163 182 / 0.14));border-radius:2px}.ds-chat-input{min-height:64px;resize:none;padding:8px 12px;border:1px solid var(--rule-strong,#33445f);border-radius:var(--r-control,6px);background:var(--bg,#0f1726);color:var(--ink,#e6eef9);font:var(--text-md,0.875rem)/1.6 var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-chat-input:focus{outline:none;border-color:var(--focus,#d4e9ff)}.ds-row{display:flex;align-items:center;justify-content:flex-end;gap:12px}.ds-counter{margin-right:auto;font:var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ink-3,#8799b4)}.ds-sec,.ds-pri,.ds-q{font:500 var(--text-base,0.9375rem) var(--font-ui,'Public Sans',system-ui,sans-serif);padding:9px 18px;border-radius:var(--r-pill,999px);cursor:pointer}.ds-sec{background:transparent;border:1px solid var(--rule-strong,#33445f);color:var(--ink,#e6eef9)}.ds-sec:hover{background:var(--sheet-hover,#1c2840)}.ds-pri{background:var(--accent,#8ec5ff);border:1px solid transparent;color:var(--on-accent,#0b2a4f)}.ds-q{background:transparent;border:0;color:var(--ink-2,#afc0d8)}"
     },
     {
       "name": "Room List",
@@ -1164,15 +1322,15 @@
       "refersTo": "room-row",
       "description": "Live voice rooms as ruled rows: title (600) over a 13px secondary line with theme, level and host; 24px faces; the seats 'n / 6' in 13px secondary mono; Join (secondary link) or 'Full' in tertiary ink. Create a room is the page's one primary; no rooms is the empty state 'No rooms right now.'",
       "html": "<ul class=\"ds-rooms\" aria-label=\"Live rooms\"><li><span class=\"ds-r-main\"><b>Free talk Friday</b><small>Free talk, any level. Host: Max</small></span><span class=\"ds-r-faces\"><span>M</span><span>A</span><span>B</span><span>C</span><span>D</span><span>E</span></span><span class=\"ds-r-seats\">6 / 6</span><span class=\"ds-r-full\">Full</span></li><li><span class=\"ds-r-main\"><b>Stand-up practice</b><small>Stand-up, B1. Host: Bia</small></span><span class=\"ds-r-faces\"><span>B</span><span>C</span></span><span class=\"ds-r-seats\">2 / 6</span><a class=\"ds-r-join\" href=\"#\" aria-label=\"Join Stand-up practice\">Join</a></li></ul>",
-      "css": ".ds-rooms{list-style:none;padding:0;margin:0;max-width:760px;border-top:1px solid var(--rule,#2b2f39);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1)}.ds-rooms li{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:16px;align-items:center;padding:12px 8px;border-bottom:1px solid var(--rule,#2b2f39)}.ds-r-main{display:flex;flex-direction:column;min-width:0}.ds-r-main b{font-weight:600}.ds-r-main small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-r-faces{display:flex;gap:4px}.ds-r-faces span{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font-size:11px;font-weight:600}.ds-r-seats{font:400 var(--text-sm,0.8125rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ink-2,#b4b9c5);white-space:nowrap}.ds-r-full{font-size:var(--text-sm,0.8125rem);color:var(--ink-3,#8c93a3);padding-inline:16px}.ds-r-join{display:inline-flex;align-items:center;padding:9px 16px;border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-control,6px);color:var(--ink,#e8e6e1);font-weight:500;text-decoration:none;transition:background-color 180ms ease,transform 120ms cubic-bezier(0.23,1,0.32,1)}.ds-r-join:hover{background:var(--sheet-hover,#262a33)}.ds-r-join:active{transform:scale(0.97)}.ds-r-join:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}"
+      "css": ".ds-rooms{list-style:none;padding:0;margin:0;max-width:760px;border-top:1px solid var(--rule,#24324a);font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e6eef9)}.ds-rooms li{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:16px;align-items:center;padding:12px 8px;border-bottom:1px solid var(--rule,#24324a)}.ds-r-main{display:flex;flex-direction:column;min-width:0}.ds-r-main b{font-weight:600}.ds-r-main small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#afc0d8)}.ds-r-faces{display:flex;gap:4px}.ds-r-faces span{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1px solid var(--rule-strong,#33445f);background:var(--sheet-hover,#1c2840);color:var(--ink-2,#afc0d8);font-size:11px;font-weight:600}.ds-r-seats{font:400 var(--text-sm,0.8125rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);color:var(--ink-2,#afc0d8);white-space:nowrap}.ds-r-full{font-size:var(--text-sm,0.8125rem);color:var(--ink-3,#8799b4);padding-inline:16px}.ds-r-join{display:inline-flex;align-items:center;padding:9px 16px;border:1px solid var(--rule-strong,#33445f);border-radius:var(--r-control,6px);color:var(--ink,#e6eef9);font-weight:500;text-decoration:none;transition:background-color 180ms ease,transform 120ms cubic-bezier(0.23,1,0.32,1)}.ds-r-join:hover{background:var(--sheet-hover,#1c2840)}.ds-r-join:active{transform:scale(0.97)}.ds-r-join:focus-visible{outline:2px solid var(--focus,#d4e9ff);outline-offset:2px}"
     },
     {
       "name": "Room View",
       "kind": "custom",
       "refersTo": "room-person",
-      "description": "People as ruled rows (40px face, name, level/role/status line, mic-off icon, quiet Options); the speaking ring is the ink separation ring; person options open inline with a ruled second group for room actions; the timer shows only its number in mono; the sticky bar holds Mute (Ctrl M), Leave and, for the host, End room (quiet). No pencil primary in a room.",
+      "description": "People as ruled rows (40px face, name, level/role/status line, mic-off icon, quiet Options); the speaking ring is the ink separation ring; person options open inline with a ruled second group for room actions; the timer shows only its number in mono; the sticky bar holds Mute (Ctrl M), Leave and, for the host, End room (quiet). No sky-pill primary in a room.",
       "html": "<div class=\"ds-room\"><ul class=\"ds-people\"><li><div class=\"ds-p-row\"><span class=\"ds-face is-speaking\">R</span><span class=\"ds-p-main\"><b>Rian <i>(You)</i></b><small>B1, Host</small></span></div></li><li><div class=\"ds-p-row\"><span class=\"ds-face\">D</span><span class=\"ds-p-main\"><b>Dani</b><small>C1, Room moderator, Muted</small></span><span class=\"ds-muted\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M10 6.5V4a2 2 0 0 0-4 0v3.5M6.6 8.6A2 2 0 0 0 10 7.5\"/><path d=\"M3.5 8a4.5 4.5 0 0 0 7.4 3.4M12.4 9a4.5 4.5 0 0 0 .1-1M8 12.5V14M2.5 2.5l11 11\"/></svg></span><button class=\"ds-q\" aria-expanded=\"true\">Options</button></div><div class=\"ds-opts\" role=\"group\" aria-label=\"Options for Dani\"><div class=\"ds-row\"><button class=\"ds-q\">Mute for me</button><button class=\"ds-q\">Report</button><button class=\"ds-sec\">Block Dani</button></div><div class=\"ds-row ds-opts-room\"><button class=\"ds-sec\">Mute for everyone</button><button class=\"ds-sec\">Make host</button><button class=\"ds-sec\">Remove</button></div></div></li></ul><section class=\"ds-card\"><h2>Timer</h2><p class=\"ds-left\"><span>58</span> s left</p><div class=\"ds-row\"><button class=\"ds-sec\">60 s</button><button class=\"ds-sec\">90 s</button><button class=\"ds-q\">Stop</button></div></section><footer class=\"ds-bar\" role=\"group\" aria-label=\"Room controls\"><button class=\"ds-sec\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"6\" y=\"2\" width=\"4\" height=\"7\" rx=\"2\"/><path d=\"M3.5 8a4.5 4.5 0 0 0 9 0M8 12.5V14\"/></svg>Mute <kbd>Ctrl M</kbd></button><button class=\"ds-sec\">Leave</button><button class=\"ds-q\">End room</button></footer></div>",
-      "css": ".ds-room{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:24px 40px;align-items:start;font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e8e6e1);background:var(--bg,#16181d)}.ds-people{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule,#2b2f39)}.ds-people li{border-bottom:1px solid var(--rule,#2b2f39)}.ds-p-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:12px 8px}.ds-face{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--rule-strong,#3a3f4b);background:var(--sheet-hover,#262a33);color:var(--ink-2,#b4b9c5);font-weight:600;transition:box-shadow 180ms cubic-bezier(0.23,1,0.32,1)}.ds-face.is-speaking{box-shadow:0 0 0 2px var(--bg,#16181d),0 0 0 4px var(--ink,#e8e6e1)}.ds-p-main{display:flex;flex-direction:column;min-width:0}.ds-p-main b{font-weight:600}.ds-p-main i{font-style:normal;font-weight:400;color:var(--ink-2,#b4b9c5)}.ds-p-main small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#b4b9c5)}.ds-muted{display:inline-flex;grid-column:3;color:var(--ink-2,#b4b9c5)}.ds-p-row>.ds-q{grid-column:4}.ds-opts{display:flex;flex-direction:column;align-items:flex-start;gap:12px;margin:0 8px 12px;padding:12px 16px;border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-sheet,10px);background:var(--sheet,#20232b)}.ds-opts-room{align-self:stretch;padding-top:12px;border-top:1px solid var(--rule,#2b2f39)}.ds-row{display:flex;flex-wrap:wrap;gap:8px}.ds-card{display:flex;flex-direction:column;gap:12px;padding:16px 20px;border:1px solid var(--rule,#2b2f39);border-radius:var(--r-sheet,10px);background:var(--sheet,#20232b)}.ds-card h2{margin:0;font-size:var(--text-lg,1.0625rem);font-weight:600}.ds-left{margin:0;font-size:var(--text-lg,1.0625rem);font-weight:600}.ds-left span{font:600 var(--text-xl,1.25rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-bar{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:16px 0 20px;border-top:1px solid var(--rule,#2b2f39);background:var(--bg,#16181d)}.ds-room button{display:inline-flex;align-items:center;gap:8px;font:inherit;font-weight:500;border-radius:var(--r-control,6px);cursor:pointer;transition:background-color 180ms ease,color 180ms ease,transform 120ms cubic-bezier(0.23,1,0.32,1)}.ds-room button:active{transform:scale(0.97)}.ds-room button:focus-visible{outline:2px solid var(--focus,#9cc6f0);outline-offset:2px}.ds-sec{padding:9px 16px;background:transparent;color:var(--ink,#e8e6e1);border:1px solid var(--rule-strong,#3a3f4b)}.ds-sec:hover{background:var(--sheet-hover,#262a33)}.ds-q{padding:9px 12px;background:transparent;color:var(--ink-2,#b4b9c5);border:0}.ds-q:hover{background:var(--sheet,#20232b);color:var(--ink,#e8e6e1)}.ds-room kbd{font:400 var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);padding:0 5px;border:1px solid var(--rule-strong,#3a3f4b);border-radius:var(--r-chip,4px);color:var(--ink-2,#b4b9c5)}"
+      "css": ".ds-room{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:24px 40px;align-items:start;font:400 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);color:var(--ink,#e6eef9);background:var(--bg,#0f1726)}.ds-people{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule,#24324a)}.ds-people li{border-bottom:1px solid var(--rule,#24324a)}.ds-p-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:12px 8px}.ds-face{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--rule-strong,#33445f);background:var(--sheet-hover,#1c2840);color:var(--ink-2,#afc0d8);font-weight:600;transition:box-shadow 180ms cubic-bezier(0.23,1,0.32,1)}.ds-face.is-speaking{box-shadow:0 0 0 2px var(--bg,#0f1726),0 0 0 4px var(--ink,#e6eef9)}.ds-p-main{display:flex;flex-direction:column;min-width:0}.ds-p-main b{font-weight:600}.ds-p-main i{font-style:normal;font-weight:400;color:var(--ink-2,#afc0d8)}.ds-p-main small{font-size:var(--text-sm,0.8125rem);color:var(--ink-2,#afc0d8)}.ds-muted{display:inline-flex;grid-column:3;color:var(--ink-2,#afc0d8)}.ds-p-row>.ds-q{grid-column:4}.ds-opts{display:flex;flex-direction:column;align-items:flex-start;gap:12px;margin:0 8px 12px;padding:12px 16px;border:1px solid var(--rule-strong,#33445f);border-radius:var(--r-sheet,10px);background:var(--sheet,#162033)}.ds-opts-room{align-self:stretch;padding-top:12px;border-top:1px solid var(--rule,#24324a)}.ds-row{display:flex;flex-wrap:wrap;gap:8px}.ds-card{display:flex;flex-direction:column;gap:12px;padding:16px 20px;border:1px solid var(--rule,#24324a);border-radius:var(--r-sheet,10px);background:var(--sheet,#162033)}.ds-card h2{margin:0;font-size:var(--text-lg,1.0625rem);font-weight:600}.ds-left{margin:0;font-size:var(--text-lg,1.0625rem);font-weight:600}.ds-left span{font:600 var(--text-xl,1.25rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace)}.ds-bar{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:16px 0 20px;border-top:1px solid var(--rule,#24324a);background:var(--bg,#0f1726)}.ds-room button{display:inline-flex;align-items:center;gap:8px;font:inherit;font-weight:500;border-radius:var(--r-pill,999px);cursor:pointer;transition:background-color 200ms ease,color 200ms ease,transform 200ms cubic-bezier(0.23,1,0.32,1)}.ds-room button:active{transform:scale(0.98)}.ds-room button:focus-visible{outline:2px solid var(--focus,#d4e9ff);outline-offset:2px}.ds-sec{padding:9px 18px;background:transparent;color:var(--ink,#e6eef9);border:1px solid var(--rule-strong,#33445f)}.ds-sec:hover{background:var(--sheet-hover,#1c2840)}.ds-q{padding:9px 12px;background:transparent;color:var(--ink-2,#afc0d8);border:0}.ds-q:hover{background:var(--pencil-wash,rgb(142 197 255 / 0.14));color:var(--ink,#e6eef9)}.ds-room kbd{font:400 var(--text-xs,0.75rem) var(--font-mono,'JetBrains Mono',ui-monospace,monospace);padding:0 5px;border:1px solid var(--rule-strong,#33445f);border-radius:var(--r-chip,4px);color:var(--ink-2,#afc0d8)}"
     },
     {
       "name": "Splash",
@@ -1180,7 +1338,7 @@
       "refersTo": "splash",
       "description": "Launch screen on the theme ground: the pencil writes \"devTalk\" in Public Sans 700, then marks it (rose-struck d, sage D above), holds and fades. 1500ms + 250ms fade; reduced motion shows the still name 300ms. Click, Enter, Space or Escape skips.",
       "html": "<div class=\"ds-splash\"><svg viewBox=\"0 0 458 230\" width=\"360\" aria-label=\"DevTalk\"><text x=\"0\" y=\"150\" class=\"w\"><tspan class=\"d\">d</tspan>evTalk</text><rect x=\"-4\" y=\"118\" width=\"62\" height=\"6\" rx=\"3\" class=\"s\"/><text x=\"29\" y=\"52\" text-anchor=\"middle\" class=\"i\">D</text></svg></div>",
-      "css": ".ds-splash{display:grid;place-items:center;background:var(--bg,#16181d);padding:48px}.ds-splash .w{font:700 100px var(--font-ui,'Public Sans',system-ui,sans-serif);letter-spacing:-0.01em;fill:var(--ink,#e8e6e1)}.ds-splash .d,.ds-splash .s{fill:var(--del,#d99aa8)}.ds-splash .i{font:700 54px var(--font-ui,'Public Sans',system-ui,sans-serif);fill:var(--ins,#8cc5a2)}"
+      "css": ".ds-splash{display:grid;place-items:center;background:var(--bg,#0f1726);padding:48px}.ds-splash .w{font:700 100px var(--font-ui,'Public Sans',system-ui,sans-serif);letter-spacing:-0.01em;fill:var(--ink,#e6eef9)}.ds-splash .d,.ds-splash .s{fill:var(--del,#f0a3b6)}.ds-splash .i{font:700 54px var(--font-ui,'Public Sans',system-ui,sans-serif);fill:var(--ins,#8fd9ac)}"
     },
     {
       "name": "GitHub Button",
@@ -1188,7 +1346,7 @@
       "refersTo": "button-github",
       "description": "The primary button with the GitHub mark (Simple Icons, CC0, 16px, currentColor) before \"Continue with GitHub\". The one primary of a sign-in screen; full column width at 11px vertical padding on Welcome.",
       "html": "<button class=\"ds-btn\"><svg class=\"ds-mark\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"10\" fill=\"currentColor\"/></svg>Continue with GitHub</button>",
-      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2,8px);border-radius:var(--r-control,6px);padding:11px var(--s4,16px);font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);border:1px solid transparent;background:var(--pencil,#7fb2e5);color:var(--pencil-ink,#0d1622);width:100%}.ds-mark{flex:none}"
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2,8px);border-radius:var(--r-pill,999px);padding:11px 18px;font:500 var(--text-base,0.9375rem)/1.6 var(--font-ui,'Public Sans',system-ui,sans-serif);border:1px solid transparent;background:var(--accent,#8ec5ff);color:var(--on-accent,#0b2a4f);width:100%}.ds-mark{flex:none}"
     },
     {
       "name": "Welcome Actions",
@@ -1196,16 +1354,16 @@
       "refersTo": "welcome-actions",
       "description": "First-run sign-in: brand line, 20ch heading, lede, then under a 1px rule the GitHub primary, e-mail secondary and \"Practise without an account\" quiet (primary when the build has no community). Waiting swaps them for a spinner, \"Finish signing in with GitHub in your browser.\" / \"Then come back here.\" and a secondary Cancel; an error Notice \"Sign-in was not finished.\" sits above. Top padding clamp(56px, 18vh, 176px), not centred.",
       "html": "<div class=\"ds-wel\"><h2>Practise the English you use at work.</h2><p>A coach marks your writing, and other developers talk with you.</p><div class=\"ds-acts\"><button class=\"ds-p\">Continue with GitHub</button><button class=\"ds-s\">Continue with e-mail</button><button class=\"ds-q\">Practise without an account</button></div></div>",
-      "css": ".ds-wel{max-width:560px;display:flex;flex-direction:column;gap:var(--s2,8px)}.ds-wel h2{max-width:20ch;margin:0;font:700 1.625rem/1.2 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-wel p{margin:0;color:var(--ink-2,#b4b9c5)}.ds-acts{margin-top:32px;padding-top:24px;border-top:1px solid var(--rule,#2b2f39);display:flex;flex-direction:column;gap:12px}.ds-acts button{width:100%;padding:11px 16px;border-radius:var(--r-control,6px);font:500 0.9375rem var(--font-ui,'Public Sans',system-ui,sans-serif);border:1px solid transparent;background:transparent;color:var(--ink-2,#b4b9c5)}.ds-acts .ds-p{background:var(--pencil,#7fb2e5);color:var(--pencil-ink,#0d1622)}.ds-acts .ds-s{border-color:var(--rule-strong,#3a3f4b);color:var(--ink,#e8e6e1)}"
+      "css": ".ds-wel{max-width:560px;display:flex;flex-direction:column;gap:var(--s2,8px)}.ds-wel h2{max-width:20ch;margin:0;font:700 1.625rem/1.2 var(--font-ui,'Public Sans',system-ui,sans-serif)}.ds-wel p{margin:0;color:var(--ink-2,#afc0d8)}.ds-acts{margin-top:32px;padding-top:24px;border-top:1px solid var(--rule,#24324a);display:flex;flex-direction:column;gap:12px}.ds-acts button{width:100%;padding:11px 18px;border-radius:var(--r-pill,999px);font:500 0.9375rem var(--font-ui,'Public Sans',system-ui,sans-serif);border:1px solid transparent;background:transparent;color:var(--ink-2,#afc0d8)}.ds-acts .ds-p{background:var(--accent,#8ec5ff);color:var(--on-accent,#0b2a4f)}.ds-acts .ds-s{border-color:var(--rule-strong,#33445f);color:var(--ink,#e6eef9)}"
     }
   ],
   "narrative": {
     "northStar": "Galley Proof",
-    "overview": "Every answer the learner writes is a galley, and the coach marks it the way an editor marks a proof: in non-repro blue pencil, with numbered carets in the line and short notes in the margin beside the line they mark. Removals are struck through in dusty rose and insertions sit beside them in sage; these are edits, not grades. The interface around the galley is a quiet desktop tool: a graphite ground, raised sheets with 1px rules, sans-serif chrome, and monospace wherever the learner's own words or a reusable expression appear.\n\nDensity is that of a working document rather than a dashboard. Content is set in one main column with a narrow side column; lists are ruled, not boxed; headings are sentence-case and plain. The system rejects the category default it was built against: a grey dashboard of stat cards with one violet accent. Progress is shown as facts, ruled lists and tally marks, never as metric tiles.\n\nDark is the default theme; a light theme swaps to a cool white sheet on pale grey with a darker pencil. Both themes share every structural rule.",
+    "overview": "Every answer the learner writes is a galley, and the coach marks it the way an editor marks a proof: in non-repro blue pencil, with numbered carets in the line and short notes in the margin beside the line they mark. Removals are struck through in dusty rose and insertions sit beside them in sage; these are edits, not grades. The interface around the galley is a quiet desktop tool: a pale sky ground (deep navy in dark), white sheets with 1px rules, sans-serif chrome, and monospace wherever the learner's own words or a reusable expression appear.\n\nDensity is that of a working document rather than a dashboard. Content is set in one main column with a narrow side column; lists are ruled, not boxed; headings are sentence-case and plain. The system rejects the category default it was built against: a grey dashboard of stat cards with one violet accent. Progress is shown as facts, ruled lists and tally marks, never as metric tiles.\n\nDark is the default theme, a night-navy ground with navy sheets and a sky-blue pill; the light theme is a pale sky ground with white sheets, navy ink and a deeper pencil blue for text. Both themes share every structural rule.",
     "keyCharacteristics": [
-      "One accent, pencil blue, carrying only the coach's voice and the primary action.",
+      "One accent, sky blue: a pill fill for the primary action, and pencil blue for the coach's voice as text and marks.",
       "Desaturated rose/sage diff marks on monospace text; never \"wrong/right\" colouring.",
-      "Flat raised sheets defined by 1px rules; shadow only on floating layers.",
+      "Flat raised sheets defined by 1px rules; shadow only on floating layers. Buttons are pills and the only things that move.",
       "Margin notes aligned row by row to the line they annotate.",
       "Sentence-case, untracked type throughout; no uppercase labels.",
       "A few identifier colours (badge violet and copper, language brand colours, the graph green), each confined to one component."
@@ -1213,7 +1371,7 @@
     "rules": [
       {
         "name": "The Blue Pencil Rule",
-        "body": "Pencil blue belongs to the coach and to the one primary action on a screen. It never decorates headings, backgrounds or icons that the coach did not \"write\".",
+        "body": "Pencil blue is text and marks, and belongs to the coach; the sky pill belongs to the one primary action on a screen. Neither decorates headings, backgrounds or icons that the coach did not \"write\". The sky wash may only tint a selection or a hover.",
         "section": "colors"
       },
       {
@@ -1223,7 +1381,7 @@
       },
       {
         "name": "The One Home Rule",
-        "body": "Every colour outside the neutrals has exactly one home: blue for the coach and the primary action, amber for app problems, rose and sage for the diff, violet for community badges, copper for evolution badges, brand colours for language badges, graph green for the graph. The graph green is never shown next to a diff.",
+        "body": "Every colour outside the neutrals has exactly one home: blue for the coach (pencil) and the primary action (sky pill), amber for app problems, rose and sage for the diff, violet for community badges, copper for evolution badges, brand colours for language badges, graph green for the graph. The graph green is never shown next to a diff.",
         "section": "colors"
       },
       {
@@ -1238,17 +1396,20 @@
       },
       {
         "name": "The Float-Only Rule",
-        "body": "Sheets, cards and buttons cast no shadow. If it is not floating over the page, it has no shadow.",
+        "body": "Sheets, cards and buttons cast no shadow; a button's lift is movement, not a shadow. If it is not floating over the page, it has no shadow.",
         "section": "elevation"
       }
     ],
     "dos": [
-      "**Do** keep pencil blue to the coach's marks, notes, progress and the one primary action per view.",
+      "**Do** keep pencil blue to the coach's marks and notes as text, and the sky pill to the one primary action per view.",
+      "**Do** use the sky wash for every selected state (current nav row, selected palette row, open conversation) and for the quiet-button hover; keep ink on top of it.",
+      "**Do** shape every button as a pill that lifts 1px on hover (primary and secondary) and presses to 0.98, and drop all of that movement under reduced motion.",
+      "**Do** put a navy scrim, never black or grey, behind the palette and dialogs, and a near-black navy float shadow in dark.",
       "**Do** set the learner's text, expressions, keys and counts in JetBrains Mono, and everything else in Public Sans.",
       "**Do** align every margin note to the galley line it marks, numbered to match its caret.",
       "**Do** separate rows and sections with 1px rules and a top border rather than wrapping them in cards.",
       "**Do** use the three-step tonal stack (rail, ground, sheet) for depth, and the float shadow only for overlays.",
-      "**Do** honour reduced motion: all durations drop to 0ms and looping animations stop.",
+      "**Do** honour reduced motion: all durations drop to 0ms, looping animations stop, and buttons neither lift, press nor nudge.",
       "**Do** confirm destructive actions inline in a neutral panel, guarded by a typed e-mail or a required reason.",
       "**Do** let the icon carry a member badge's colour and keep its label in ink.",
       "**Do** show an animated banner's first frame, still, under reduced motion or when \"Play animated banners\" is off.",
@@ -1270,9 +1431,11 @@
     "donts": [
       "**Don't** build a dashboard of stat cards or metric tiles; progress is facts, ruled lists and tallies.",
       "**Don't** use rose or sage outside the diff, or label anything \"wrong\" or \"correct\".",
-      "**Don't** add a second accent colour or tint headings with the pencil. Badge violet and copper, language brand colours and the graph green are identifiers confined to their component, not accents.",
+      "**Don't** add a second accent colour, tint headings with the pencil, or set pencil blue or the sky pill as the fill of a second button. Use the sky pill only as a fill under `on-sky` text, never as text on a ground. Badge violet and copper, language brand colours and the graph green are identifiers confined to their component, not accents.",
       "**Don't** use violet, copper or the graph green outside member badges and the practice graph, or show the graph beside a diff.",
-      "**Don't** add shadows to sheets, cards or buttons.",
+      "**Don't** add shadows to sheets, cards or buttons; a button lifts, it does not cast.",
+      "**Don't** use a neutral grey or pure black veil behind a dialog, or a hard-edged red or saturated amber fill for a notice; warn is a pastel chip.",
+      "**Don't** rely on the trailing-icon nudge as a design device until a button actually has a trailing icon; it is dormant.",
       "**Don't** uppercase or letter-space labels, or put small category labels above headings.",
       "**Don't** animate the command palette or the report dialog open or closed.",
       "**Don't** colour destructive actions amber or red; amber stays for problems with the app.",
@@ -1284,7 +1447,7 @@
       "**Don't** colour unread: the count is plain mono ink, in the rail and the conversation list, and unread rows are not bolded or tinted.",
       "**Don't** tell a sender their request was declined; a decline is silent.",
       "**Don't** colour the speaking ring, the microphone meter or the muted icon; speaking is ink, never pencil, sage or a status colour.",
-      "**Don't** put a pencil primary inside a room; speaking is the main act, so the bar and the person options use secondary and quiet buttons only.",
+      "**Don't** put a sky-pill primary inside a room; speaking is the main act, so the bar and the person options use secondary and quiet buttons only.",
       "**Don't** show recording affordances in a room: no record button, recording dot, saved audio or playback; a voice is never recorded.",
       "**Don't** list one \"could not connect\" notice per person; name everyone unreachable in one notice.",
       "**Don't** add a tagline, progress bar or button to the splash, or run it longer than 1.5s plus the fade.",
