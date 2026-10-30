@@ -29,7 +29,8 @@
 .palette-input:focus-visible { outline: none; }
 .palette-list { list-style: none; padding: var(--s2); margin: 0; max-height: 50vh; overflow: auto; }
 .palette-list li { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); padding: var(--s2) var(--s3); border-radius: var(--r-control); cursor: pointer; }
-.palette-list li[aria-selected="true"] { background: var(--pencil-wash); }
+/* The active row has an edge as well as the wash: it is the only cue for what Enter will run */
+.palette-list li[aria-selected="true"] { background: var(--pencil-wash); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 60%, var(--rule-strong)); }
 .palette-empty { color: var(--ink-3); cursor: default; }
 
 /* Launch splash: the pencil writes the name, then marks one letter like a proof. Base styles are the finished frame;

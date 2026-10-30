@@ -7,7 +7,7 @@
 // button with only a text and an icon cannot tell the two orders apart. A trailing icon therefore needs an element
 // before it, such as the label in a span, and the lab button below is built that way.
 import type { Locator, Page } from '@playwright/test';
-import { expect, onboard, test } from './fixtures';
+import { computedValue, expect, onboard, styleOf, test } from './fixtures';
 
 test.use({ social: '1' });
 
@@ -43,17 +43,9 @@ async function addLab(page: Page): Promise<void> {
 }
 
 /** A token as the browser computes it for a CSS property, to compare with getComputedStyle. */
-const token = (page: Page, cssProp: string, name: string) =>
-  page.evaluate(([prop, n]) => {
-    const probe = document.createElement('span');
-    probe.style.setProperty(prop!, `var(${n})`);
-    document.body.append(probe);
-    const value = getComputedStyle(probe).getPropertyValue(prop!);
-    probe.remove();
-    return value;
-  }, [cssProp, name] as const);
+const token = (page: Page, cssProp: string, name: string) => computedValue(page, cssProp, `var(${name})`);
 
-const css = (loc: Locator, prop: string) => loc.evaluate((el, p) => getComputedStyle(el).getPropertyValue(p), prop);
+const css = styleOf;
 /** The vertical shift (matrix ty) of the element's transform; 0 for `none`. */
 const lift = (loc: Locator) => loc.evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m42);
 /** The horizontal scale (matrix a) of the element's transform; 1 for `none`. */
@@ -204,13 +196,29 @@ test('with reduced motion buttons never move, and only the colour changes', asyn
   await expect.poll(() => css(trail, 'background-color')).toBe(await token(page, 'background-color', '--sheet-hover'));
   expect(await css(trail, 'transform')).toBe('none');
   expect(await css(trail.locator('svg'), 'translate')).toBe('none');
+});
 
-  const press = lab(page, 'primary');
-  await press.hover();
-  await page.mouse.down();
-  await expect.poll(() => css(press, 'background-color')).toBe(await token(page, 'background-color', '--accent-hover'));
-  expect(await css(press, 'transform')).toBe('none');
-  await page.mouse.up();
+// The squeeze is the press feedback and reduced motion takes it away. The hover fill is already on while the pointer is
+// down, so a press needs a fill of its own: the primary goes back to the resting sky, the secondary steps on to the rule
+// tone and the quiet one to the strong rule. (Re-using the secondary or quiet hover fill would change nothing under a
+// mouse press.)
+test('with reduced motion a press changes the fill of every kind of button, and nothing moves', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await addLab(page);
+  for (const [id, hover, pressed] of [
+    ['primary', '--accent-hover', '--accent'],
+    ['secondary', '--sheet-hover', '--rule'],
+    ['small', '--pencil-wash', '--rule-strong'],
+  ] as const) {
+    const button = lab(page, id);
+    await button.hover();
+    await expect.poll(() => css(button, 'background-color'), `${id} hovered`).toBe(await token(page, 'background-color', hover));
+    await page.mouse.down();
+    await expect.poll(() => css(button, 'background-color'), `${id} pressed`).toBe(await token(page, 'background-color', pressed));
+    expect(await css(button, 'transform'), id).toBe('none');
+    await page.mouse.up();
+    await away(page);
+  }
 });
 
 test('the focus ring follows the pill', async ({ page }) => {
@@ -235,6 +243,17 @@ test.describe('the like button on a profile', () => {
     await expect(like).toBeVisible();
     expect(await isPill(like)).toBe(true);
     expect(await css(page.getByRole('link', { name: 'Send message' }), 'text-decoration-line')).toBe('none');
+    // It is a secondary pill like its neighbours: once Bia is followed, "Following" is the next one along, and the two
+    // share the sheet fill, the strong-rule edge and the padding.
+    await page.getByRole('button', { name: 'Follow Bia', exact: true }).click();
+    const following = page.getByRole('button', { name: 'Stop following Bia', exact: true });
+    await expect(following).toBeVisible();
+    await expect(like).toBeEnabled();
+    await away(page);
+    const sheet = await token(page, 'background-color', '--sheet');
+    await expect.poll(() => css(following, 'background-color')).toBe(sheet);
+    await expect.poll(() => css(like, 'background-color')).toBe(sheet);
+    for (const prop of ['border-top-color', 'border-top-width', 'padding']) expect(await css(like, prop), prop).toBe(await css(following, prop));
     await expect.poll(() => lift(like)).toBe(0);
     await like.hover();
     await expect.poll(() => lift(like)).toBe(-1);

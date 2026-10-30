@@ -34,8 +34,10 @@ lápis). O azul-céu não lê como texto em fundo claro, então o token se divid
 
 - `--accent`, `--accent-hover` e `--on-accent`: o preenchimento do botão principal e o texto em cima dele.
 - `--pencil`: texto e marcas azuis, legível no fundo de cada tema.
-- `--pencil-ink` sai. `--pencil-wash` continua e passa a ser a lavagem azul-céu, usada na seleção de texto e no hover
-  do botão discreto.
+- `--pencil-ink` sai. `--pencil-wash` continua e passa a ser a lavagem azul-céu, usada na seleção de texto, no hover
+  do botão discreto, nas linhas selecionadas (item atual do menu lateral, conversa aberta, linha ativa da paleta e
+  relatório ou membro selecionado na moderação) e no banner do perfil sem imagem. A linha ativa da paleta ganha também
+  uma borda de 1px (`--accent` a 60% sobre `--rule-strong`), a única pista do que o Enter vai executar.
 
 Os valores abaixo são o alvo. Se algum não passar o teste de contraste, o implementador ajusta o mínimo e registra a
 mudança.
@@ -50,7 +52,7 @@ mudança.
 | `--rule-strong` | `#c7d4e6` | `#33445f` |
 | `--ink` | `#0b2a4f` | `#e6eef9` |
 | `--ink-2` | `#3a5274` | `#afc0d8` |
-| `--ink-3` | `#5a6f8c` | `#8799b4` |
+| `--ink-3` | `#556985` | `#8fa0b9` |
 | `--accent` | `#8ec5ff` | `#8ec5ff` |
 | `--accent-hover` | `#74b6ff` | `#a6d2ff` |
 | `--on-accent` | `#0b2a4f` | `#0b2a4f` |
@@ -61,9 +63,18 @@ mudança.
 | `--ins` | `#1d6b3e` | `#8fd9ac` |
 | `--ins-wash` | `rgb(70 190 120 / 0.16)` | `rgb(143 217 172 / 0.14)` |
 | `--warn` | `#7a5200` | `#e8c27a` |
-| `--focus` | `#2f7de1` | `#a6d2ff` |
+| `--warn-line` | `#e8bc6a` | `#c9a465` |
+| `--warn-wash` | `#fff1d6` | `var(--sheet)` |
+| `--focus` | `#2f7de1` | `#d4e9ff` |
+| `--scrim` | `rgb(11 42 79 / 0.24)` | `rgb(2 8 20 / 0.5)` |
 | `--graph-0` | `#e3eaf4` | `#1a2436` |
 
+- `--ink-3` saiu do alvo original (claro `#5a6f8c`, escuro `#8799b4`): não passava 4,5:1 sobre a lavagem azul-céu de uma
+  linha selecionada (§4). A revisão final propôs `#576b88` no claro, que dá 4,60:1 sobre `--bg` mas ainda 4,40:1 sobre
+  `--bg-rail`; o escuro dava 4,14:1 sobre `--sheet`. Os valores da tabela são o mínimo que passa nas três bases, nos
+  dois temas.
+- `--warn-line` e `--warn-wash` pintam a borda e o fundo do aviso de erro (um âmbar pastel); no escuro o fundo é a
+  própria folha. `--scrim` é o véu atrás dos diálogos e da paleta.
 - As outras cores do gráfico continuam verdes. As cores de selo ficam, desde que passem o teste.
 - `--shadow-float` usa sombra tingida de marinho (`rgb(11 42 79 / …)`) nos dois temas.
 - `theme-boot.js` não muda: ele só põe `data-theme`, e as cores vêm dos tokens.
@@ -81,7 +92,11 @@ mudança.
   ícone que vem antes do texto, como o do GitHub, fica parado.
 - **Tempos:** fundo e transform em 200ms. O ícone anda em 300ms, na curva `--ease-out`.
 - **Desabilitado e ocupado:** sem hover nem movimento. A opacidade continua como hoje.
-- **Reduzir movimento:** nada sobe, aperta ou anda, só a cor muda.
+- **Reduzir movimento:** nada sobe, aperta ou anda, só a cor muda. Sem o aperto, o clique ganha um passo de cor além do
+  hover (o do mouse já está ligado): o primário volta para `--accent`, o secundário vai para `--rule` e o discreto para
+  `--rule-strong`.
+- **Curtir:** o botão de curtir de um perfil é um secundário comum (`btn btn-secondary`): mesma pílula, preenchimento
+  `--sheet`, subida, aperto e cor do clique. Só tem 6px entre o coração e o número, em algarismos tabulares.
 - **Foco visível:** o contorno de foco segue a pílula.
 
 ## 4. Contraste (teste de unidade)
@@ -91,10 +106,13 @@ mudança.
 | Pares | Mínimo |
 |---|---|
 | `--ink`, `--ink-2` e `--ink-3` sobre `--bg`, `--bg-rail`, `--sheet` e `--sheet-hover` | 4,5:1 |
-| `--pencil` sobre `--bg` e `--sheet` | 4,5:1 |
+| `--ink`, `--ink-2` e `--ink-3` sobre `--pencil-wash` (linha selecionada), composta sobre `--bg`, `--bg-rail` e `--sheet` | 4,5:1 |
+| `--ink` e `--ink-2` sobre `--warn-wash` (título, detalhe e ação do aviso de erro), composta sobre `--sheet` e `--bg` | 4,5:1 |
+| `--pencil` sobre `--bg`, `--sheet` e `--sheet-hover` | 4,5:1 |
 | `--on-accent` sobre `--accent` e sobre `--accent-hover` | 4,5:1 |
-| `--del` sobre `--del-wash`, e `--ins` sobre `--ins-wash`, cada lavagem composta sobre `--sheet` | 4,5:1 |
-| `--warn` sobre `--sheet` | 4,5:1 |
+| `--del` sobre `--del-wash`, e `--ins` sobre `--ins-wash`, cada lavagem composta sobre `--sheet` e sobre `--bg` | 4,5:1 |
+| `--warn` sobre `--sheet` e `--bg` | 4,5:1 |
+| `--ink` sobre `--rule`, e `--ink` e `--ink-2` sobre `--rule-strong` (preenchimentos do clique com reduzir movimento) | 4,5:1 |
 | `--focus` sobre `--bg` e `--sheet` | 3:1 |
 
 ## 5. Testes e entrega
@@ -104,6 +122,10 @@ mudança.
   - Os dois testes de `start.spec.ts` que fixam a cor de fundo da abertura passam a usar o novo `--bg` claro.
   - Um teste de botão confere o formato de pílula, a subida de 1px no hover do primário e que, com reduzir movimento,
     não há transform.
+  - Com reduzir movimento, apertar um botão (primário, secundário ou discreto) troca o preenchimento e continua sem
+    transform. O botão de curtir tem o mesmo preenchimento, borda e espaço do "Seguindo".
+  - A linha selecionada da moderação (relatório ou membro) tem a lavagem azul-céu e nenhum anel; a linha ativa da
+    paleta tem a lavagem e a borda de 1px.
 - **Prints:** todas as telas nos dois temas, em 1440 e 960 (o `screenshots.spec.ts` que já existe), com folhas de
   contato.
 - **Revisão:** revisão de design (impeccable), DESIGN.md atualizado e revisão final.

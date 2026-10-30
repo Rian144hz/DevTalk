@@ -110,25 +110,43 @@ describe.each(['dark', 'light'] as const)('sky-blue tokens, %s theme', (theme) =
     for (const ink of ['--ink', '--ink-2', '--ink-3']) {
       for (const ground of ['--bg', '--bg-rail', '--sheet', '--sheet-hover']) pass(at(ink), at(ground), 4.5, `${ink} on ${ground}`);
     }
-    for (const ground of ['--bg', '--sheet']) pass(at('--pencil'), at(ground), 4.5, `--pencil on ${ground}`);
+    for (const ground of ['--bg', '--sheet', '--sheet-hover']) pass(at('--pencil'), at(ground), 4.5, `--pencil on ${ground}`);
     for (const fill of ['--accent', '--accent-hover']) pass(at('--on-accent'), at(fill), 4.5, `--on-accent on ${fill}`);
-    const sheet = at('--sheet');
-    pass(at('--del'), at('--del-wash', sheet), 4.5, '--del on its wash');
-    pass(at('--ins'), at('--ins-wash', sheet), 4.5, '--ins on its wash');
-    pass(at('--warn'), sheet, 4.5, '--warn on --sheet');
+    // Diff marks sit in galleys (on the sheet) and in the splash and chat bubbles (on the ground): both washes are blended over each.
+    for (const ground of ['--sheet', '--bg']) {
+      pass(at('--del'), at('--del-wash', at(ground)), 4.5, `--del on its wash over ${ground}`);
+      pass(at('--ins'), at('--ins-wash', at(ground)), 4.5, `--ins on its wash over ${ground}`);
+    }
+    for (const ground of ['--sheet', '--bg']) pass(at('--warn'), at(ground), 4.5, `--warn on ${ground}`);
   });
 
   test('the focus ring reads at 3:1 on the grounds', () => {
     for (const ground of ['--bg', '--sheet']) pass(at('--focus'), at(ground), 3, `--focus on ${ground}`);
   });
 
-  test('the warning notice, its line and the scrim are tokens; the warning text reads on its wash', () => {
+  test('the warning notice, its line and the scrim are tokens', () => {
     for (const token of ['--warn-line', '--warn-wash', '--scrim']) expect(declared(block, token), token).not.toBeNull();
-    pass(at('--warn'), at('--warn-wash', at('--sheet')), 4.5, '--warn on --warn-wash');
   });
 
-  test('ink reads on the sky wash that marks a selected row, on the grounds it sits on', () => {
-    for (const ground of ['--bg', '--bg-rail', '--sheet']) pass(at('--ink'), at('--pencil-wash', at(ground)), 4.5, `--ink on --pencil-wash over ${ground}`);
+  // components.css draws .notice-title in --ink and .notice-detail and the quiet action in --ink-2 on --warn-wash;
+  // --warn itself is never text on that wash (it is the field error and the counter, both on the ground or the sheet).
+  test('the error notice reads on its wash: title in --ink, detail and quiet action in --ink-2', () => {
+    for (const ink of ['--ink', '--ink-2']) {
+      for (const ground of ['--sheet', '--bg']) pass(at(ink), at('--warn-wash', at(ground)), 4.5, `${ink} on --warn-wash over ${ground}`);
+    }
+  });
+
+  test('ink, ink-2 and ink-3 read on the sky wash that marks a selected row, over every ground it sits on', () => {
+    for (const ink of ['--ink', '--ink-2', '--ink-3']) {
+      for (const ground of ['--bg', '--bg-rail', '--sheet']) pass(at(ink), at('--pencil-wash', at(ground)), 4.5, `${ink} on --pencil-wash over ${ground}`);
+    }
+  });
+
+  // components.css, under reduced motion: a pressed secondary button takes --rule and a pressed quiet one --rule-strong.
+  // The label is --ink under a mouse press (the hover colour is still on) and --ink-2 on the quiet button when pressed from the keyboard.
+  test('text reads on the fills a pressed button takes under reduced motion', () => {
+    pass(at('--ink'), at('--rule'), 4.5, '--ink on --rule');
+    for (const ink of ['--ink', '--ink-2']) pass(at(ink), at('--rule-strong'), 4.5, `${ink} on --rule-strong`);
   });
 
   test('the badge grounds and neutral in stack-icons.ts mirror --bg, --sheet and --ink-2', () => {

@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { _electron as electron, test as base, type ElectronApplication, type Page } from '@playwright/test';
+import { _electron as electron, test as base, type ElectronApplication, type Locator, type Page } from '@playwright/test';
 
 export { expect } from '@playwright/test';
 
@@ -33,6 +33,23 @@ export async function launchApp(o: LaunchOptions): Promise<ElectronApplication> 
 }
 
 export const newDataDir = () => mkdtempSync(join(tmpdir(), 'devtalk-e2e-'));
+
+/** The computed value of a CSS property on an element. */
+export const styleOf = (loc: Locator, prop: string) => loc.evaluate((el, p) => getComputedStyle(el).getPropertyValue(p), prop);
+
+/**
+ * What the browser computes for `prop: value`, such as `background-color: var(--pencil-wash)` or a `color-mix(...)`,
+ * to compare with `styleOf`. A token in a stylesheet and the same token here come out as the same string.
+ */
+export const computedValue = (page: Page, prop: string, value: string) =>
+  page.evaluate(([p, v]) => {
+    const probe = document.createElement('span');
+    probe.style.setProperty(p!, v!);
+    document.body.append(probe);
+    const out = getComputedStyle(probe).getPropertyValue(p!);
+    probe.remove();
+    return out;
+  }, [prop, value] as const);
 
 /** Launches the built app with the fixture coach and a throwaway data directory. */
 export const test = base.extend<{

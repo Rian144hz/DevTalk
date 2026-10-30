@@ -15,7 +15,14 @@
 .btn:hover:not([disabled]) > svg:last-child:not(:first-child) { translate: 4px; }
 .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
 .btn[aria-busy="true"] { cursor: progress; }
-@media (prefers-reduced-motion: reduce) { .btn, .btn > svg, .like-button { transform: none !important; translate: none !important; } }
+@media (prefers-reduced-motion: reduce) {
+  .btn, .btn > svg { transform: none !important; translate: none !important; }
+  /* With no squeeze, a press shows as one more step of fill past the hover (a mouse press starts on the hover fill): the primary
+     goes back to the resting sky, the secondary on to the rule tone, the quiet one on to the strong rule. */
+  .btn-primary:active:not([disabled]) { background: var(--accent); }
+  .btn-secondary:active:not([disabled]) { background: var(--rule); }
+  .btn-quiet:active:not([disabled]) { background: var(--rule-strong); }
+}
 .btn-busy-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: dt-pulse 1s ease-in-out infinite; }
 @keyframes dt-pulse { 50% { opacity: 0.3; } }
 
@@ -193,10 +200,8 @@ kbd { font: var(--text-xs) var(--font-mono); color: var(--ink-2); border: 1px so
 
 /* Follow, like and the public counts under a profile's name */
 .social-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4); margin-bottom: var(--s5); }
-.like-button { display: inline-flex; align-items: center; gap: 6px; padding: 9px var(--s3); border: 1px solid var(--rule-strong); border-radius: var(--r-pill); background: transparent; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; transition: background-color 200ms ease, transform 200ms var(--ease-out); }
-.like-button:hover:not(:disabled) { background: var(--sheet-hover); transform: translateY(-1px); }
-.like-button:active:not(:disabled) { transform: scale(0.98); }
+/* A secondary pill (.btn .btn-secondary) with a tighter icon gap and tabular figures; liked fills the heart */
+.like-button { gap: 6px; font-variant-numeric: tabular-nums; }
 .like-button[aria-pressed="true"] .icon { fill: currentColor; }
-.like-button:disabled { opacity: 0.5; }
 .social-count { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); font-size: var(--text-md); font-variant-numeric: tabular-nums; }
 a.social-count:hover { color: var(--ink); }

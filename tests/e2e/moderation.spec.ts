@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { expect, joinCommunity, onboard, test } from './fixtures';
+import type { Locator } from '@playwright/test';
+import { computedValue, expect, joinCommunity, onboard, styleOf, test } from './fixtures';
 
 interface FakeState {
   notices: { userId: string; message: string }[];
@@ -93,6 +94,30 @@ test.describe('as a moderator', () => {
     await expect(badges.getByText('This is you. You cannot change your own badges; another moderator can do it.')).toBeVisible();
     await expect(badges.getByRole('button', { name: /^(Give|Remove) / })).toHaveCount(3);
     for (const b of await badges.getByRole('button', { name: /^(Give|Remove) / }).all()) await expect(b).toBeDisabled();
+  });
+
+  // Like the current nav row, the open conversation and the active palette row: a selected row takes the sky wash and no ring.
+  test('the selected report and the selected member take the sky wash, not a ring', async ({ page }) => {
+    await onboard(page);
+    await page.getByRole('link', { name: 'Moderation' }).click();
+    await page.mouse.move(2, 2); // not under the pointer, which would hover a row
+    const wash = await computedValue(page, 'background-color', 'var(--pencil-wash)');
+    const selectedRow = async (row: Locator) => {
+      await row.click();
+      await expect(row).toHaveAttribute('aria-current', 'true');
+      await page.mouse.move(2, 2);
+      return { fill: await styleOf(row, 'background-color'), ring: await styleOf(row, 'box-shadow') };
+    };
+
+    const reports = page.getByRole('list', { name: 'Open reports' }).getByRole('button');
+    expect(await styleOf(reports.first(), 'background-color')).toBe('rgba(0, 0, 0, 0)');
+    expect(await selectedRow(reports.first())).toEqual({ fill: wash, ring: 'none' });
+    expect(await styleOf(reports.last(), 'background-color')).toBe('rgba(0, 0, 0, 0)');
+
+    const badges = page.getByRole('region', { name: 'Badges', exact: true });
+    await badges.getByLabel('Find a member').fill('Sam');
+    const member = badges.getByRole('list', { name: 'Members found' }).getByRole('button', { name: /Sam/ });
+    expect(await selectedRow(member)).toEqual({ fill: wash, ring: 'none' });
   });
 
   test('the palette can open Moderation', async ({ page }) => {

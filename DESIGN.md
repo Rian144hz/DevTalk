@@ -10,7 +10,7 @@ colors:
   rule-strong: "#33445f"
   ink: "#e6eef9"
   ink-secondary: "#afc0d8"
-  ink-tertiary: "#8799b4"
+  ink-tertiary: "#8fa0b9"
   sky-pill: "#8ec5ff"
   sky-pill-hover: "#a6d2ff"
   on-sky: "#0b2a4f"
@@ -39,7 +39,7 @@ colors:
   light-rule-strong: "#c7d4e6"
   light-ink: "#0b2a4f"
   light-ink-secondary: "#3a5274"
-  light-ink-tertiary: "#5a6f8c"
+  light-ink-tertiary: "#556985"
   light-sky-pill-hover: "#74b6ff"
   light-pencil-blue: "#1f63b8"
   light-pencil-wash: "rgb(142 197 255 / 0.22)"
@@ -232,7 +232,7 @@ components:
     rounded: "{rounded.sheet}"
     padding: "16px 20px"
   queue-row-selected:
-    backgroundColor: "{colors.galley-sheet-hover}"
+    backgroundColor: "{colors.pencil-wash}"
     textColor: "{colors.ink}"
     rounded: "{rounded.control}"
     padding: "12px 8px"
@@ -276,10 +276,10 @@ components:
     rounded: "{rounded.control}"
     height: "42px"
   like-button:
-    backgroundColor: "transparent"
+    backgroundColor: "{colors.galley-sheet}"
     textColor: "{colors.ink}"
     rounded: "{rounded.pill}"
-    padding: "9px 12px"
+    padding: "9px 18px"
   like-button-hover:
     backgroundColor: "{colors.galley-sheet-hover}"
   follow-notice:
@@ -399,7 +399,7 @@ A pale sky ground with white sheets and navy ink (dark theme: night navy, navy s
 ### Primary
 - **Sky Pill** (`sky-pill` `--accent`, `sky-pill-hover` `--accent-hover`; `light-sky-pill-hover` in light theme): the fill of the primary button, the same sky in both themes, with navy text (`on-sky`, `--on-accent`) on it. It is a fill only and is never used as text on a ground. Hover lightens it in dark and deepens it in light. The key hint inside a primary takes `on-sky` too.
 - **Non-Repro Pencil Blue** (`pencil-blue` `--pencil`; `light-pencil-blue` in light theme, a deeper blue that reads on the pale ground): the coach's voice, as text and marks only. Numbered proof carets, margin-note labels, the current coach step, tally marks, the "ok" requirement status, the brand mark, links and the underline on highlighted expressions in the fluent rewrite. It is never a button fill.
-- **Sky wash** (`pencil-wash`; `light-pencil-wash`, stronger in light): the quiet tint under selection. Text selection, the current nav row, the selected palette row, the open conversation, the profile banner's placeholder ground and the hover of a quiet button. Ink stays on top of it.
+- **Sky wash** (`pencil-wash`; `light-pencil-wash`, stronger in light): the quiet tint under selection. Text selection, the current nav row, the active palette row (which also has a 1px sky edge, the only cue for what Enter will run), the open conversation, the selected moderation report and member, the profile banner's placeholder ground and the hover of a quiet button. Ink stays on top of it.
 
 ### Secondary
 - **Dusty Rose** (`dusty-rose`, with `dusty-rose-wash` behind it; `light-dusty-rose` and `light-dusty-rose-wash`): deleted text in a galley, struck through at 1.5px. A pastel chip in dark, a deep rose in light. Used for nothing else.
@@ -415,9 +415,9 @@ A pale sky ground with white sheets and navy ink (dark theme: night navy, navy s
 ### Neutral
 - **Ground** (`night-ground` / `light-ground`, a pale sky): app background and the fill of inputs, which sit "below" the sheet.
 - **Rail** (`night-rail` / `light-rail`): the sidebar, one step darker than the ground.
-- **Galley Sheet** (`galley-sheet` / `light-sheet`): raised surfaces: galleys, expression cards, the rewrite block, notices, the command palette, active and hovered nav rows. `galley-sheet-hover` is the next step for hover on a sheet and for a selected moderation report; every other selected state uses the sky wash.
+- **Galley Sheet** (`galley-sheet` / `light-sheet`): raised surfaces: galleys, expression cards, the rewrite block, notices, the command palette, active and hovered nav rows. `galley-sheet-hover` is the next step for hover on a sheet; every selected row uses the sky wash instead.
 - **Rule** (`rule`) and **Strong Rule** (`rule-strong`): 1px dividers and borders. Plain rules separate rows and sections; strong rules outline controls, chips, badges, keys and notices.
-- **Ink** (`ink`), **Ink Secondary** (`ink-secondary`), **Ink Tertiary** (`ink-tertiary`): primary text, supporting text (ledes, margin notes, meanings), and hints/metadata. Tertiary ink passes AA on both grounds.
+- **Ink** (`ink`), **Ink Secondary** (`ink-secondary`), **Ink Tertiary** (`ink-tertiary`): primary text, supporting text (ledes, margin notes, meanings), and hints/metadata. Tertiary ink passes AA on every ground and on the sky wash of a selected row.
 - **Focus Blue** (`focus-blue`, pale in dark; `light-focus-blue`, a mid blue in light): the 2px focus outline.
 - **Navy Scrim** (`navy-scrim`; `light-navy-scrim`): the veil behind the palette and the report dialog. Navy-black in dark, a light navy in light; never neutral grey or black.
 
@@ -474,7 +474,7 @@ The system is flat and tonal. Depth comes from three steps of surface (rail dark
 
 ### Shadow Vocabulary
 - **Float** (`box-shadow: 0 12px 32px -8px rgb(2 8 20 / 0.55), 0 2px 6px rgb(2 8 20 / 0.35)` in dark, a near-black navy because a navy lighter than the ground would glow; light theme uses navy `rgb(11 42 79 / 0.22)` and `/ 0.12`): the command palette, the report dialog and other floating menus, over the navy scrim.
-- **Inset ring** (`box-shadow: inset 0 0 0 1px` strong rule): a selection outline, not elevation, on the checked segment, the selected moderation report and the reported message in a moderation copy. The palette row and the open conversation no longer carry it; they take the sky wash.
+- **Inset ring** (`box-shadow: inset 0 0 0 1px` strong rule): a selection outline, not elevation, on the checked segment and the reported message in a moderation copy. The open conversation and the selected moderation report take the sky wash instead. The palette's active row takes the wash and the same 1px inset ring in a sky edge (accent mixed 60% into the strong rule), since it is the only cue for what Enter will run.
 - **Separation ring** (`box-shadow: 0 0 0 2px` ground, `0 0 0 4px` ink): a selection outline, not elevation, on the checked mascot in the picker; the same ring, always in ink, marks who is speaking in a voice room, easing in and out over 180ms. The profile avatar's 5px ring over the banner is ground-coloured padding, not a shadow.
 
 ### Named Rules
@@ -492,9 +492,9 @@ Pills that lift and press. Colour and border change over 200ms; movement is on t
 - **Primary:** sky-pill fill with navy `on-sky` text; hover lightens the fill (deepens in light) and lifts 1px. At most one per view.
 - **Secondary:** sheet fill with a strong-rule border and ink text; hover takes sheet-hover, gains an edge of sky mixed 60% into the strong rule, and lifts 1px.
 - **Quiet:** borderless secondary-ink text; hover takes the sky wash with ink text and does not lift.
-- **Press:** every button scales to 0.98 while pressed, declared after hover so the press wins. The like control lifts and presses the same way.
+- **Press:** every button scales to 0.98 while pressed, declared after hover so the press wins. The like control is a secondary button, so it lifts and presses the same way.
 - **Trailing icon:** an icon after the text nudges 4px right on hover. The rule exists but is dormant: no button has a trailing icon, and the GitHub mark, busy dot and key hint are never moved by it.
-- **Reduced motion:** lift, press and nudge are all removed; nothing moves. The colour fade still runs.
+- **Reduced motion:** lift, press and nudge are all removed; nothing moves. The colour fade still runs. With no squeeze, a press steps the fill past the hover instead (a mouse press starts on the hover fill): the primary goes back to the resting sky, the secondary to the rule tone, the quiet button to the strong rule.
 - **Focus / Disabled:** a 2px focus-blue outline offset 2px, following the pill. Disabled is 50% opacity with no lift; busy shows a pulsing 6px dot.
 
 ### Chips
@@ -519,7 +519,7 @@ Pills that lift and press. Colour and border change over 200ms; movement is on t
 ### Navigation
 - **Rail:** rail tone, 1px right rule, brand row with a pencil-blue mark, a "Search or jump to..." button with `Ctrl K`, then nav rows.
 - **Rows:** 14px secondary ink with a 1.6-stroke line icon, 7px by 12px padding, 6px radius. Hover takes the sheet fill with ink text; the current page takes the sky wash with ink text and weight 600. Counts sit right-aligned in mono.
-- **Command palette:** a 560px sheet at 14vh with the float shadow, a 17px borderless search input over a rule, rows with 6px radius; the selected row gets the sky wash. It opens and closes without animation.
+- **Command palette:** a 560px sheet at 14vh with the float shadow, a 17px borderless search input over a rule, rows with 6px radius; the active row gets the sky wash and a 1px inset sky edge, the only cue for what Enter will run. It opens and closes without animation.
 - **Messages row:** after People, with the chat line icon (a speech bubble) and the unread count, requests included, in the same right-aligned mono count as Review's due count; the palette's "Go to Messages" is `Ctrl 5`.
 - **Rooms row:** after Messages, with the rooms line icon (a microphone); the palette's "Go to Rooms" is `Ctrl 6`. While you are in a room, the row, the palette entry and `Ctrl 6` lead back to that room (`#/rooms/<id>`) instead of the list.
 - **Moderation row:** shown only to moderators, last in the rail, with the shield line icon.
@@ -565,7 +565,7 @@ The second floating layer after the palette: a 520px sheet with strong-rule bord
 Blocking, deleting an account and moderation decisions confirm inline, never in a modal. The confirmation is a neutral panel: sheet fill, 1px strong rule, 10px radius, 16px by 20px padding. The guard is the input, not a colour: the typed e-mail enables account deletion, a required reason enables a suspension or warning. The confirming action is a secondary button.
 
 ### Moderation queue
-Open reports as a ruled list: avatar, name in weight 600, reason and place in 13px secondary ink, date in tertiary ink. Hover takes the sheet fill; the selected row takes sheet-hover and an inset ring (the one selection that kept it). Each decision (dismiss, warn, suspend) is a section under a 1px top rule.
+Open reports as a ruled list: avatar, name in weight 600, reason and place in 13px secondary ink, date in tertiary ink. Hover takes the sheet fill; the selected row takes the sky wash, like every other selected row, with ink on top (the date in tertiary ink passes AA on it). The badge section's "Members found" list is the same list and selects the same way. Each decision (dismiss, warn, suspend) is a section under a 1px top rule.
 A message report adds "The conversation" as one more such section: the copied messages as a list (12px gaps), each with the sender in weight 600 and the date and time in 13px secondary ink, then the message in the chat bubble (theirs style, left, up to 68ch). The reported message takes the sheet fill and the inset ring with the control radius and a "Reported" flag in weight 600; nothing turns red. When no copy was kept, a muted line says so.
 A room report ("Voice room" as its place) adds "The room" the same way: the room's title, theme, host and opening time as a profile fact sheet, then who was in it as a ruled list (8px vertical padding, 14px): the name in weight 600 on the left and, right-aligned in secondary ink, when they joined and left ("23 October 2026, 17:13 to 17:13", or "…, still in the room"). A deleted account reads "Deleted account"; when no copy was kept, a muted line says so.
 
@@ -582,7 +582,7 @@ People as ruled rows, one link per row, in the same grammar as the moderation qu
 Above the member list: Search by name, English level, Area and Technology as ordinary fields with their labels. Text inputs and selects render at different natural heights, so the filter row forces both to 42px (2.625rem).
 
 ### Follow and like
-Under a profile's name, a wrapping row (8px by 16px gaps, 20px below). On someone else's profile, Follow is the profile's one primary action, a sky-pill button; once followed it becomes a secondary "Following" button. Their accessible names say what a press does: "Follow <name>" and "Stop following <name>". The like control is shaped like a secondary button (strong-rule outline, pill, 9px by 12px, weight 500, lifting 1px on hover and pressing to 0.98 like the buttons): a 16px heart line icon, filled in the text tone when liked (`aria-pressed`), and the count in tabular figures; hover takes sheet-hover. Then "N followers" and "N following" as 14px secondary-ink links in tabular figures that turn ink on hover. On your own profile only the counts show, with a 14px heart before the likes. Counts are plain facts; nothing is ranked or sorted by them.
+Under a profile's name, a wrapping row (8px by 16px gaps, 20px below). On someone else's profile, Follow is the profile's one primary action, a sky-pill button; once followed it becomes a secondary "Following" button. Their accessible names say what a press does: "Follow <name>" and "Stop following <name>". The like control is a secondary button, the same pill as "Following" and "Send message" (sheet fill, strong-rule outline, 9px by 18px, weight 500, lifting 1px on hover and pressing to 0.98 like the buttons): a 16px heart line icon with a 6px gap, filled in the text tone when liked (`aria-pressed`), and the count in tabular figures; hover takes sheet-hover. Then "N followers" and "N following" as 14px secondary-ink links in tabular figures that turn ink on hover. On your own profile only the counts show, with a 14px heart before the likes. Counts are plain facts; nothing is ranked or sorted by them.
 
 ### Follow notice
 A new follower is an info notice (sheet fill, strong rule, 10px radius, 16px by 20px) laid out as one row with 12px gaps: the follower's 32px picture (photo or mascot), then "<linked name> followed you." with the date under it in 13px secondary ink, then Mark as read.
@@ -651,7 +651,7 @@ Welcome, then GitHub or e-mail through the Join steps, or no account straight to
 
 ### Do:
 - **Do** keep pencil blue to the coach's marks and notes as text, and the sky pill to the one primary action per view.
-- **Do** use the sky wash for every selected state (current nav row, selected palette row, open conversation) and for the quiet-button hover; keep ink on top of it.
+- **Do** use the sky wash for every selected state (current nav row, active palette row with its 1px sky edge, open conversation, selected moderation report or member) and for the quiet-button hover; keep ink on top of it.
 - **Do** shape every button as a pill that lifts 1px on hover (primary and secondary) and presses to 0.98, and drop all of that movement under reduced motion.
 - **Do** put a navy scrim, never black or grey, behind the palette and dialogs, and a near-black navy float shadow in dark.
 - **Do** set the learner's text, expressions, keys and counts in JetBrains Mono, and everything else in Public Sans.
