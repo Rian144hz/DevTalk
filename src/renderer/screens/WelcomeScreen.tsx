@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { SocialStatus } from '../../shared/ipc-contract';
-import { Icon } from '../app/icons';
-import { Button, Notice } from '../design-system';
+import { Brand, Button, Notice } from '../design-system';
 import { signInFailure } from '../lib/first-run';
 import { useGitHubSignIn } from '../lib/useGitHubSignIn';
 import { GitHubButton, GitHubWaiting } from './GitHubSignIn';
@@ -30,7 +29,7 @@ export function WelcomeScreen({ configured, onSignedIn, onEmail, onLocal }: {
   return (
     <main className="onboarding welcome">
       <div className="onboarding-col">
-        <div className="brand"><Icon name="pencil" size={18} />DevTalk</div>
+        <Brand />
         <h1>Practise the English you use at work.</h1>
         <p className="lede">A coach marks your writing, and other developers talk with you.</p>
 

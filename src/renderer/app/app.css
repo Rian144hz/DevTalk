@@ -1,8 +1,12 @@
 /* App shell: sidebar rail + page. */
 .app { display: grid; grid-template-columns: var(--rail-width) minmax(0, 1fr); min-height: 100vh; }
 .rail { background: var(--bg-rail); border-right: 1px solid var(--rule); padding: var(--s5) var(--s3); display: flex; flex-direction: column; gap: var(--s1); position: sticky; top: 0; height: 100vh; }
-.brand { display: flex; align-items: center; gap: var(--s2); font-weight: 700; padding: var(--s1) var(--s3) var(--s4); }
-.brand .icon { color: var(--pencil); }
+/* The brand line: the small duck (24px, close to the lockup's proportions next to 15px type) and the name. The duck's
+   box has 15 of its 256 units free after the bill, so a 4px gap leaves the lockup's distance from the bill to the first
+   letter. In the lockup the duck sits a little above the middle of the capitals: centring the box puts it half a pixel
+   low, so it is lifted 1px. */
+.brand { display: flex; align-items: center; gap: var(--s1); font-weight: 700; padding: var(--s1) var(--s3) var(--s4); }
+.brand .duck-mark { translate: 0 -1px; }
 .jump { display: flex; align-items: center; justify-content: space-between; width: 100%; background: transparent; border: 1px solid var(--rule); border-radius: var(--r-control); padding: 7px var(--s3); color: var(--ink-3); font-size: var(--text-sm); margin-bottom: var(--s3); text-align: left; }
 .jump:hover { border-color: var(--rule-strong); color: var(--ink-2); }
 .nav { display: flex; flex-direction: column; gap: 2px; list-style: none; padding: 0; }

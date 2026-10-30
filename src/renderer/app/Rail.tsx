@@ -1,5 +1,6 @@
 import type { RouteName } from '../lib/router';
 import { PROVIDER_LABELS, type ProviderId } from '../../shared/providers';
+import { Brand } from '../design-system';
 import { Icon, type IconName } from './icons';
 
 const NAV: { route: RouteName; label: string; icon: IconName }[] = [
@@ -28,7 +29,7 @@ export function Rail(props: {
   const nav = props.moderator ? [...NAV, { route: 'moderation' as const, label: 'Moderation', icon: 'shield' as const }] : NAV;
   return (
     <aside className="rail">
-      <div className="brand"><Icon name="pencil" size={18} />DevTalk</div>
+      <Brand />
       <button className="jump" type="button" onClick={props.onOpenPalette} aria-keyshortcuts="Control+K">
         Search or jump to… <kbd>Ctrl K</kbd>
       </button>
