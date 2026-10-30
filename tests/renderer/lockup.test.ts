@@ -35,7 +35,7 @@ test('the duck sits about 4 % of its height above the middle of the capitals', (
   expect((capMiddle - duckMiddle) / (drawn.bottom - drawn.top)).toBeCloseTo(0.04, 2);
 });
 
-test('the duck stays above the baseline by its head and a little below it by its hull, never reaching the correction', () => {
+test('the duck\'s head rises above the capitals and its hull dips a little below the baseline', () => {
   expect(drawn.top).toBeLessThan(-CAP_HEIGHT);
   expect(drawn.bottom).toBeGreaterThan(0);
   expect(drawn.bottom).toBeLessThan(CAP_HEIGHT / 2);
