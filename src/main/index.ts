@@ -7,7 +7,10 @@ import { isCliMode, runCli } from './cli';
 import { DatabaseTooNewError } from './db/open';
 import { registerIpc } from './ipc/register';
 import { linuxPasswordStoreSwitch } from './vault/key-vault';
-import { fakeMediaSwitches, installPermissionHandlers, isAppUrl, secureWebPreferences } from './security';
+import { fakeMediaSwitches, installPermissionHandlers, isAppUrl } from './security';
+import { mainWindowOptions } from './window';
+// The window icon (Linux). electron-vite emits an asset outside `resources/` (its public folder, which it does not copy) into out/, which the package ships.
+import icon from '../../build/icon.png?asset';
 
 const DEV_URL = process.env['ELECTRON_RENDERER_URL'];
 const RENDERER_FILE = join(__dirname, '../renderer/index.html');
@@ -32,15 +35,7 @@ const QUIT_ROOM_WAIT_MS = 2000;
 
 /** `leaveRoom` runs when the page is gone or replaced (window closed, reload, crash): the room lives in the page. */
 function createMainWindow(leaveRoom: () => void): BrowserWindow {
-  const win = new BrowserWindow({
-    width: 1280,
-    height: 820,
-    minWidth: 900,
-    minHeight: 600,
-    show: false,
-    backgroundColor: '#0f1726',
-    webPreferences: secureWebPreferences(join(__dirname, '../preload/index.cjs')),
-  });
+  const win = new BrowserWindow(mainWindowOptions({ preload: join(__dirname, '../preload/index.cjs'), icon }));
 
   win.once('ready-to-show', () => win.show());
 

@@ -1,6 +1,8 @@
-// The DevTalk logo (the pencil duck) in the app: the brand line in the rail and on the first-run screens, in both themes.
-// The splash's duck is in start.spec.ts.
+// The DevTalk logo (the pencil duck) in the app: the brand line in the rail and on the first-run screens, in both themes,
+// the favicon and the window icon. The splash's duck is in start.spec.ts.
 import type { Page } from '@playwright/test';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { expect, onboard, test } from './fixtures';
 
 /** The brand line of the screen in view. */
@@ -73,4 +75,32 @@ test.describe('the first run', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Set up your coach' })).toBeVisible();
     await expectDuckAndName(brand(page));
   });
+});
+
+test('the favicon is the duck, served from the app itself and allowed by the CSP', async ({ page }) => {
+  const link = page.locator('head link[rel="icon"]');
+  await expect(link).toHaveCount(1);
+  await expect(link).toHaveAttribute('type', 'image/svg+xml');
+  // Loaded as an image from the page: it only works when the file ships in the build and the CSP's `img-src 'self'` lets it in.
+  const loaded = await page.evaluate(
+    (href) =>
+      new Promise<{ ok: boolean; width: number }>((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ ok: true, width: img.naturalWidth });
+        img.onerror = () => resolve({ ok: false, width: 0 });
+        img.src = href;
+      }),
+    await link.evaluate((el) => (el as HTMLLinkElement).href),
+  );
+  expect(loaded).toEqual({ ok: true, width: 256 });
+  const csp = await page.locator('head meta[http-equiv="Content-Security-Policy"]').getAttribute('content');
+  expect(csp).toContain("img-src 'self'");
+});
+
+// electron-builder ships `out/**` and nothing else from the build, so the window icon must be inside out/.
+test('the build puts the window icon in out/main/chunks, where the main process looks for it', () => {
+  const out = join(__dirname, '..', '..', 'out', 'main');
+  const icons = readdirSync(join(out, 'chunks')).filter((name) => /^icon-.+\.png$/.test(name));
+  expect(icons).toHaveLength(1);
+  expect(readFileSync(join(out, 'index.js'), 'utf8')).toContain(`./chunks/${icons[0]}`);
 });

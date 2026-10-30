@@ -2,6 +2,7 @@ appId: dev.devtalk.app
 productName: DevTalk
 directories:
   output: dist
+  buildResources: build
 files:
   - out/**
   - package.json
@@ -11,3 +12,4 @@ extraResources:
 linux:
   target: [AppImage]
   category: Education
+  icon: build/icon.png
