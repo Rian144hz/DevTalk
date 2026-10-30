@@ -119,14 +119,15 @@ test.describe('start', () => {
     await settledFrozen(page);
   };
 
-  test('the splash while it writes, while it marks, and at its end', async ({ page }) => {
+  test('the splash while the duck comes in, while it writes, while it marks, and at its end', async ({ page }) => {
     await reloadFrozen(page);
+    await shootThemes(page, 'splash-duck', atTime(page, 40), settledFrozen);
     await shootThemes(page, 'splash-writing', atTime(page, 420), settledFrozen);
     await shootThemes(page, 'splash-marking', atTime(page, 1050), settledFrozen);
     await shootThemes(page, 'splash-end', atTime(page, 1450), settledFrozen);
   });
 
-  test('the splash under reduced motion is the still name', async ({ page }) => {
+  test('the splash under reduced motion is the still lockup, the duck and the name', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await reloadFrozen(page);
     await shootThemes(page, 'splash-still', undefined, settledFrozen);

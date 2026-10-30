@@ -82,7 +82,7 @@
 
   /* Motion */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-write: cubic-bezier(0.37, 0, 0.63, 1); /* an even pace for a line being written (the splash pencil) */
+  --ease-write: cubic-bezier(0.37, 0, 0.63, 1); /* an even pace for a line being written (the splash name) */
   --dur-press: 120ms;
   --dur-ui: 180ms;
   --dur-panel: 240ms;

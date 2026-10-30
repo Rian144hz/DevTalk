@@ -37,29 +37,27 @@
 .palette-list li[aria-selected="true"] { background: var(--pencil-wash); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 60%, var(--rule-strong)); }
 .palette-empty { color: var(--ink-3); cursor: default; }
 
-/* Launch splash: the pencil writes the name, then marks one letter like a proof. Base styles are the finished frame;
-   the animations run from the start (fill both). Timeline: pencil in 0–180 ms; name written 80–780 ms; "d" struck
-   820–1000 ms; "D" written 960–1200 ms; hold; fade from --splash-show for --splash-fade (lib/splash.ts). */
+/* Launch splash: the duck writes the name from its pencil bill, then the name is marked like a proof. Base styles are
+   the finished frame; the animations run from the start (fill both). Timeline: duck in 0–180 ms; name written
+   80–780 ms; "d" struck 820–1000 ms; "D" written 960–1200 ms; hold; fade from --splash-show for --splash-fade
+   (lib/splash.ts). The lockup is laid out as in the logo kit (lib/lockup.ts). */
 .splash { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: var(--bg); cursor: default; user-select: none; animation: splash-out var(--splash-fade) var(--ease-out) var(--splash-show) both; }
-.splash-art { display: block; width: calc(clamp(64px, 6.5vw, 112px) * 4.58); height: auto; overflow: visible; }
-.splash-word { font: 700 100px var(--font-ui); letter-spacing: -0.01em; fill: var(--ink); }
-.splash-pen { color: var(--pencil); transform: translateX(var(--run)); }
-.splash-pen .icon { stroke-width: 1.25; } /* the rail's 1.6 is too heavy at 7.5× */
+.splash-art { display: block; width: calc(clamp(64px, 6.5vw, 112px) * 5.8); height: auto; overflow: visible; } /* 5.8 = the viewBox's 580 units / 100 */
+.splash-word { font: 700 100px var(--font-ui); letter-spacing: 0; fill: var(--ink); } /* the logo's name is untracked */
 .splash-del, .splash-strike { fill: var(--del); }
 .splash-del-wash { fill: var(--del-wash); }
 .splash-ins-wash { fill: var(--ins-wash); }
 .splash-ins-text { font: 700 54px var(--font-ui); fill: var(--ins); }
 .splash-strike { transform-box: fill-box; transform-origin: left center; }
-.splash-move .splash-word { animation: splash-reveal 700ms var(--ease-write) 80ms both; }
-.splash-move .splash-pen { animation: splash-travel 700ms var(--ease-write) 80ms both; }
-.splash-move .splash-pen-in { animation: splash-in var(--dur-ui) var(--ease-out) both; }
+.splash-move .splash-duck { animation: splash-duck-in var(--dur-ui) var(--ease-out) both; }
+.splash-move .splash-name { animation: splash-reveal 700ms var(--ease-write) 80ms both; }
 .splash-move .splash-del { animation: splash-ink var(--dur-ui) var(--ease-out) 820ms both; }
 .splash-move .splash-del-wash { animation: splash-in var(--dur-ui) var(--ease-out) 820ms both; }
 .splash-move .splash-strike { animation: splash-strike var(--dur-ui) var(--ease-out) 820ms both; }
 .splash-move .splash-ins { animation: splash-write var(--dur-panel) var(--ease-out) 960ms both; }
 @keyframes splash-out { to { opacity: 0; } }
 @keyframes splash-reveal { from { clip-path: inset(-10% 100% -10% 0); } to { clip-path: inset(-10% 0 -10% 0); } }
-@keyframes splash-travel { from { transform: translateX(0); } }
+@keyframes splash-duck-in { from { opacity: 0; transform: translateX(-24px); } }
 @keyframes splash-in { from { opacity: 0; } }
 @keyframes splash-ink { from { fill: var(--ink); } }
 @keyframes splash-strike { from { transform: scaleX(0); } }
