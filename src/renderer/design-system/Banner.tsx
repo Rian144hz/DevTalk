@@ -5,7 +5,7 @@ import { usePlayAnimations } from '../lib/motion';
 /**
  * A profile banner at 3:1, cropped to fill from the centre. Animated banners move only while "Play animated banners"
  * is on and the system does not ask to reduce motion; otherwise their first frame is shown, still. Without a
- * banner, a plain band in the rail colour keeps the layout.
+ * banner, a plain band in the sky wash keeps the layout.
  */
 export function Banner({ src }: { src: string | null }) {
   const play = usePlayAnimations();

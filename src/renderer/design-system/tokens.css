@@ -4,30 +4,36 @@
   color-scheme: dark;
 
   /* Neutrals (dark, default) */
-  --bg: #16181d;          /* app ground */
-  --bg-rail: #121419;     /* sidebar */
-  --sheet: #20232b;       /* raised galley sheet */
-  --sheet-hover: #262a33;
-  --rule: #2b2f39;        /* 1px rules */
-  --rule-strong: #3a3f4b;
-  --ink: #e8e6e1;
-  --ink-2: #b4b9c5;
-  --ink-3: #8c93a3;
+  --bg: #0f1726;          /* app ground */
+  --bg-rail: #0c1320;     /* sidebar */
+  --sheet: #162033;       /* raised galley sheet */
+  --sheet-hover: #1c2840;
+  --rule: #24324a;        /* 1px rules */
+  --rule-strong: #33445f;
+  --ink: #e6eef9;
+  --ink-2: #afc0d8;
+  --ink-3: #8fa0b9;
 
-  /* The coach's voice: proof marks, margin notes, primary action */
-  --pencil: #7fb2e5;
-  --pencil-ink: #0d1622;  /* text on a pencil fill */
-  --pencil-wash: rgb(127 178 229 / 0.12);
+  /* Primary action: the sky-blue fill and the navy text on it (never used as text on a ground) */
+  --accent: #8ec5ff;
+  --accent-hover: #a6d2ff;
+  --on-accent: #0b2a4f;
+
+  /* The coach's voice: proof marks, margin notes, links. Blue text and marks that read on the ground, not a fill. */
+  --pencil: #8ec5ff;
+  --pencil-wash: rgb(142 197 255 / 0.14);
 
   /* Diff marks — edits, not grades */
-  --del: #d99aa8;
-  --del-wash: rgb(217 154 168 / 0.12);
-  --ins: #8cc5a2;
-  --ins-wash: rgb(140 197 162 / 0.12);
+  --del: #f0a3b6;
+  --del-wash: rgb(240 163 182 / 0.14);
+  --ins: #8fd9ac;
+  --ins-wash: rgb(143 217 172 / 0.14);
 
   /* State */
-  --warn: #e0b26a;
-  --focus: #9cc6f0;
+  --warn: #e8c27a;
+  --warn-line: #c9a465;   /* edge of an error notice: a pastel amber, not a text colour */
+  --warn-wash: var(--sheet);
+  --focus: #d4e9ff;
 
   /* Badges: community violet, evolution copper, technical neutral (icons ≥ 3:1; labels stay in --ink) */
   --badge-community: #b4a7f5;
@@ -35,7 +41,7 @@
   --badge-neutral: var(--ink-2);
 
   /* Practice graph: its own green, never next to a diff; 0 is an empty day */
-  --graph-0: #22262e;
+  --graph-0: #1a2436;
   --graph-1: #1f4a31;
   --graph-2: #2e7a47;
   --graph-3: #43a862;
@@ -63,9 +69,11 @@
   --r-chip: 4px;
   --r-control: 6px;
   --r-sheet: 10px;
+  --r-pill: 999px;        /* buttons */
 
   /* Elevation: only floating layers (palette, menus) */
-  --shadow-float: 0 12px 32px -8px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.35);
+  --scrim: rgb(2 8 20 / 0.5);   /* behind a dialog or the palette: navy-black, never neutral grey */
+  --shadow-float: 0 12px 32px -8px rgb(2 8 20 / 0.55), 0 2px 6px rgb(2 8 20 / 0.35); /* near-black navy: a navy lighter than the ground would glow */
 
   /* Motion */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -79,32 +87,37 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #eef0f3;
-  --bg-rail: #e6e9ee;
+  --bg: #f5f9ff;
+  --bg-rail: #edf3fc;
   --sheet: #ffffff;
-  --sheet-hover: #f6f7f9;
-  --rule: #d5d9e0;
-  --rule-strong: #bcc2cc;
-  --ink: #1b1e24;
-  --ink-2: #454b57;
-  --ink-3: #5c6370;
-  --pencil: #2c66a8;
-  --pencil-ink: #ffffff;
-  --pencil-wash: rgb(44 102 168 / 0.09);
-  --del: #a23e58;
-  --del-wash: rgb(162 62 88 / 0.08);
-  --ins: #2d7a4e;
-  --ins-wash: rgb(45 122 78 / 0.09);
-  --warn: #8a5a00;
-  --focus: #2c66a8;
+  --sheet-hover: #f2f7fe;
+  --rule: #e0e8f3;
+  --rule-strong: #c7d4e6;
+  --ink: #0b2a4f;
+  --ink-2: #3a5274;
+  --ink-3: #556985;
+  --accent: #8ec5ff;
+  --accent-hover: #74b6ff;
+  --on-accent: #0b2a4f;
+  --pencil: #1f63b8;
+  --pencil-wash: rgb(142 197 255 / 0.22);
+  --del: #a3294b;
+  --del-wash: rgb(240 120 150 / 0.16);
+  --ins: #1d6b3e;
+  --ins-wash: rgb(70 190 120 / 0.16);
+  --warn: #7a5200;
+  --warn-line: #e8bc6a;
+  --warn-wash: #fff1d6;
+  --focus: #2f7de1;
   --badge-community: #5b46c4;
   --badge-evolution: #a4532a;
-  --graph-0: #e1e4e9;
+  --graph-0: #e3eaf4;
   --graph-1: #b5e2c1;
   --graph-2: #6dc58a;
   --graph-3: #3b9b5d;
   --graph-4: #236b3f;
-  --shadow-float: 0 12px 32px -8px rgb(20 24 32 / 0.22), 0 2px 6px rgb(20 24 32 / 0.12);
+  --scrim: rgb(11 42 79 / 0.24);
+  --shadow-float: 0 12px 32px -8px rgb(11 42 79 / 0.22), 0 2px 6px rgb(11 42 79 / 0.12);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,16 +1,28 @@
 /* Base components. Values come from tokens.css only. */
 
-/* Buttons */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); border-radius: var(--r-control); padding: 9px var(--s4); font-weight: 500; border: 1px solid transparent; transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-ui) ease, border-color var(--dur-ui) ease; white-space: nowrap; }
-.btn:active:not([disabled]) { transform: scale(0.97); }
-.btn-primary { background: var(--pencil); color: var(--pencil-ink); }
-.btn-primary kbd { color: var(--pencil-ink); border-color: color-mix(in srgb, var(--pencil-ink) 35%, transparent); }
-.btn-secondary { background: transparent; border-color: var(--rule-strong); color: var(--ink); }
-.btn-secondary:hover:not([disabled]) { background: var(--sheet-hover); }
+/* Buttons: pills. Primary and secondary lift 1px on hover, every kind squeezes when pressed, an icon after the text nudges right. */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); border-radius: var(--r-pill); padding: 9px 18px; font-weight: 500; border: 1px solid transparent; transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease, transform 200ms var(--ease-out); white-space: nowrap; text-decoration: none; }
+.btn:focus-visible { border-radius: var(--r-pill); }
+.btn-primary { background: var(--accent); color: var(--on-accent); }
+.btn-primary:hover:not([disabled]) { background: var(--accent-hover); transform: translateY(-1px); }
+.btn-primary kbd { color: var(--on-accent); border-color: color-mix(in srgb, var(--on-accent) 35%, transparent); }
+.btn-secondary { background: var(--sheet); border-color: var(--rule-strong); color: var(--ink); }
+.btn-secondary:hover:not([disabled]) { background: var(--sheet-hover); border-color: color-mix(in srgb, var(--accent) 60%, var(--rule-strong)); transform: translateY(-1px); }
 .btn-quiet { background: transparent; color: var(--ink-2); padding-inline: var(--s3); }
-.btn-quiet:hover:not([disabled]) { color: var(--ink); background: var(--sheet); }
+.btn-quiet:hover:not([disabled]) { color: var(--ink); background: var(--pencil-wash); }
+.btn:active:not([disabled]) { transform: scale(0.98); }
+.btn > svg:last-child:not(:first-child) { transition: translate 300ms var(--ease-out); } /* only an icon after the text moves; the GitHub mark, busy dot and key hint stay put */
+.btn:hover:not([disabled]) > svg:last-child:not(:first-child) { translate: 4px; }
 .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
 .btn[aria-busy="true"] { cursor: progress; }
+@media (prefers-reduced-motion: reduce) {
+  .btn, .btn > svg { transform: none !important; translate: none !important; }
+  /* With no squeeze, a press shows as one more step of fill past the hover (a mouse press starts on the hover fill): the primary
+     goes back to the resting sky, the secondary on to the rule tone, the quiet one on to the strong rule. */
+  .btn-primary:active:not([disabled]) { background: var(--accent); }
+  .btn-secondary:active:not([disabled]) { background: var(--rule); }
+  .btn-quiet:active:not([disabled]) { background: var(--rule-strong); }
+}
 .btn-busy-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: dt-pulse 1s ease-in-out infinite; }
 @keyframes dt-pulse { 50% { opacity: 0.3; } }
 
@@ -62,7 +74,7 @@ kbd { font: var(--text-xs) var(--font-mono); color: var(--ink-2); border: 1px so
 
 /* Notices and empty states */
 .notice { display: flex; justify-content: space-between; align-items: center; gap: var(--s4); padding: var(--s4) var(--s5); border: 1px solid var(--rule-strong); border-radius: var(--r-sheet); background: var(--sheet); }
-.notice[data-tone="error"] { border-color: color-mix(in srgb, var(--warn) 55%, var(--rule)); }
+.notice[data-tone="error"] { border-color: var(--warn-line); background: var(--warn-wash); }
 .notice-title { font-weight: 600; }
 .notice-detail { display: block; color: var(--ink-2); font-size: var(--text-sm); }
 .empty { padding: var(--s8) var(--s6); border: 1px dashed var(--rule-strong); border-radius: var(--r-sheet); display: flex; flex-direction: column; align-items: flex-start; gap: var(--s2); }
@@ -125,7 +137,7 @@ kbd { font: var(--text-xs) var(--font-mono); color: var(--ink-2); border: 1px so
 
 /* Modal dialog (reports): same sheet and float as the palette, no open/close animation */
 .dialog { margin: auto; width: min(520px, 92vw); max-height: 88vh; padding: 0; background: var(--sheet); color: var(--ink); border: 1px solid var(--rule-strong); border-radius: var(--r-sheet); box-shadow: var(--shadow-float); }
-.dialog::backdrop { background: rgb(0 0 0 / 0.35); }
+.dialog::backdrop { background: var(--scrim); }
 .dialog-body { padding: var(--s6); display: flex; flex-direction: column; gap: var(--s4); }
 .dialog-lede { color: var(--ink-2); margin-top: calc(var(--s2) * -1); }
 .dialog-actions { display: flex; justify-content: flex-end; gap: var(--s2); padding-top: var(--s2); }
@@ -188,9 +200,8 @@ kbd { font: var(--text-xs) var(--font-mono); color: var(--ink-2); border: 1px so
 
 /* Follow, like and the public counts under a profile's name */
 .social-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4); margin-bottom: var(--s5); }
-.like-button { display: inline-flex; align-items: center; gap: 6px; padding: 9px var(--s3); border: 1px solid var(--rule-strong); border-radius: var(--r-control); background: transparent; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
-.like-button:hover:not(:disabled) { background: var(--sheet-hover); }
+/* A secondary pill (.btn .btn-secondary) with a tighter icon gap and tabular figures; liked fills the heart */
+.like-button { gap: 6px; font-variant-numeric: tabular-nums; }
 .like-button[aria-pressed="true"] .icon { fill: currentColor; }
-.like-button:disabled { opacity: 0.5; }
 .social-count { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); font-size: var(--text-md); font-variant-numeric: tabular-nums; }
 a.social-count:hover { color: var(--ink); }

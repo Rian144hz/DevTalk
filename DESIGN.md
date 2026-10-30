@@ -2,48 +2,59 @@
 name: DevTalk
 description: A desktop English coach for developers that marks your writing like an editor's proof, with edits instead of grades.
 colors:
-  graphite-ground: "#16181d"
-  graphite-rail: "#121419"
-  galley-sheet: "#20232b"
-  galley-sheet-hover: "#262a33"
-  rule: "#2b2f39"
-  rule-strong: "#3a3f4b"
-  ink: "#e8e6e1"
-  ink-secondary: "#b4b9c5"
-  ink-tertiary: "#8c93a3"
-  pencil-blue: "#7fb2e5"
-  pencil-ink: "#0d1622"
-  pencil-wash: "rgb(127 178 229 / 0.12)"
-  dusty-rose: "#d99aa8"
-  dusty-rose-wash: "rgb(217 154 168 / 0.12)"
-  sage: "#8cc5a2"
-  sage-wash: "rgb(140 197 162 / 0.12)"
-  amber-warn: "#e0b26a"
-  focus-blue: "#9cc6f0"
+  night-ground: "#0f1726"
+  night-rail: "#0c1320"
+  galley-sheet: "#162033"
+  galley-sheet-hover: "#1c2840"
+  rule: "#24324a"
+  rule-strong: "#33445f"
+  ink: "#e6eef9"
+  ink-secondary: "#afc0d8"
+  ink-tertiary: "#8fa0b9"
+  sky-pill: "#8ec5ff"
+  sky-pill-hover: "#a6d2ff"
+  on-sky: "#0b2a4f"
+  pencil-blue: "#8ec5ff"
+  pencil-wash: "rgb(142 197 255 / 0.14)"
+  dusty-rose: "#f0a3b6"
+  dusty-rose-wash: "rgb(240 163 182 / 0.14)"
+  sage: "#8fd9ac"
+  sage-wash: "rgb(143 217 172 / 0.14)"
+  amber-warn: "#e8c27a"
+  warn-line: "#c9a465"
+  focus-blue: "#d4e9ff"
+  navy-scrim: "rgb(2 8 20 / 0.5)"
   community-violet: "#b4a7f5"
   evolution-copper: "#e39a6c"
-  graph-0: "#22262e"
+  graph-0: "#1a2436"
   graph-1: "#1f4a31"
   graph-2: "#2e7a47"
   graph-3: "#43a862"
   graph-4: "#6fd38a"
-  light-ground: "#eef0f3"
-  light-rail: "#e6e9ee"
+  light-ground: "#f5f9ff"
+  light-rail: "#edf3fc"
   light-sheet: "#ffffff"
-  light-sheet-hover: "#f6f7f9"
-  light-rule: "#d5d9e0"
-  light-rule-strong: "#bcc2cc"
-  light-ink: "#1b1e24"
-  light-ink-secondary: "#454b57"
-  light-ink-tertiary: "#5c6370"
-  light-pencil-blue: "#2c66a8"
-  light-pencil-ink: "#ffffff"
-  light-dusty-rose: "#a23e58"
-  light-sage: "#2d7a4e"
-  light-amber-warn: "#8a5a00"
+  light-sheet-hover: "#f2f7fe"
+  light-rule: "#e0e8f3"
+  light-rule-strong: "#c7d4e6"
+  light-ink: "#0b2a4f"
+  light-ink-secondary: "#3a5274"
+  light-ink-tertiary: "#556985"
+  light-sky-pill-hover: "#74b6ff"
+  light-pencil-blue: "#1f63b8"
+  light-pencil-wash: "rgb(142 197 255 / 0.22)"
+  light-dusty-rose: "#a3294b"
+  light-dusty-rose-wash: "rgb(240 120 150 / 0.16)"
+  light-sage: "#1d6b3e"
+  light-sage-wash: "rgb(70 190 120 / 0.16)"
+  light-amber-warn: "#7a5200"
+  light-warn-line: "#e8bc6a"
+  light-warn-wash: "#fff1d6"
+  light-focus-blue: "#2f7de1"
+  light-navy-scrim: "rgb(11 42 79 / 0.24)"
   light-community-violet: "#5b46c4"
   light-evolution-copper: "#a4532a"
-  light-graph-0: "#e1e4e9"
+  light-graph-0: "#e3eaf4"
   light-graph-1: "#b5e2c1"
   light-graph-2: "#6dc58a"
   light-graph-3: "#3b9b5d"
@@ -118,25 +129,27 @@ spacing:
   s14: "56px"
 components:
   button-primary:
-    backgroundColor: "{colors.pencil-blue}"
-    textColor: "{colors.pencil-ink}"
+    backgroundColor: "{colors.sky-pill}"
+    textColor: "{colors.on-sky}"
     typography: "{typography.body}"
-    rounded: "{rounded.control}"
-    padding: "9px 16px"
+    rounded: "{rounded.pill}"
+    padding: "9px 18px"
+  button-primary-hover:
+    backgroundColor: "{colors.sky-pill-hover}"
   button-secondary:
-    backgroundColor: "transparent"
+    backgroundColor: "{colors.galley-sheet}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.control}"
-    padding: "9px 16px"
+    rounded: "{rounded.pill}"
+    padding: "9px 18px"
   button-secondary-hover:
     backgroundColor: "{colors.galley-sheet-hover}"
   button-quiet:
     backgroundColor: "transparent"
     textColor: "{colors.ink-secondary}"
-    rounded: "{rounded.control}"
+    rounded: "{rounded.pill}"
     padding: "9px 12px"
   button-quiet-hover:
-    backgroundColor: "{colors.galley-sheet}"
+    backgroundColor: "{colors.pencil-wash}"
     textColor: "{colors.ink}"
   chip:
     backgroundColor: "transparent"
@@ -151,12 +164,12 @@ components:
     rounded: "{rounded.pill}"
     padding: "0 8px"
   input:
-    backgroundColor: "{colors.graphite-ground}"
+    backgroundColor: "{colors.night-ground}"
     textColor: "{colors.ink}"
     rounded: "{rounded.control}"
     padding: "8px 12px"
   textarea-answer:
-    backgroundColor: "{colors.graphite-ground}"
+    backgroundColor: "{colors.night-ground}"
     textColor: "{colors.ink}"
     typography: "{typography.galley}"
     rounded: "{rounded.control}"
@@ -178,10 +191,10 @@ components:
     rounded: "{rounded.control}"
     padding: "7px 12px"
   nav-item-active:
-    backgroundColor: "{colors.galley-sheet}"
+    backgroundColor: "{colors.pencil-wash}"
     textColor: "{colors.ink}"
   rail:
-    backgroundColor: "{colors.graphite-rail}"
+    backgroundColor: "{colors.night-rail}"
     width: "232px"
   avatar:
     backgroundColor: "{colors.galley-sheet-hover}"
@@ -194,7 +207,7 @@ components:
     rounded: "{rounded.chip}"
     padding: "2px 8px"
   textarea-short:
-    backgroundColor: "{colors.graphite-ground}"
+    backgroundColor: "{colors.night-ground}"
     textColor: "{colors.ink}"
     typography: "{typography.body}"
     rounded: "{rounded.control}"
@@ -219,7 +232,7 @@ components:
     rounded: "{rounded.sheet}"
     padding: "16px 20px"
   queue-row-selected:
-    backgroundColor: "{colors.galley-sheet-hover}"
+    backgroundColor: "{colors.pencil-wash}"
     textColor: "{colors.ink}"
     rounded: "{rounded.control}"
     padding: "12px 8px"
@@ -234,10 +247,10 @@ components:
     rounded: "{rounded.cell}"
     size: "10px"
   banner:
-    backgroundColor: "{colors.graphite-rail}"
+    backgroundColor: "{colors.pencil-wash}"
     rounded: "{rounded.sheet}"
   avatar-profile:
-    backgroundColor: "{colors.graphite-ground}"
+    backgroundColor: "{colors.night-ground}"
     rounded: "{rounded.pill}"
     width: "96px"
     padding: "5px"
@@ -258,15 +271,15 @@ components:
   member-row-hover:
     backgroundColor: "{colors.galley-sheet}"
   member-filter-field:
-    backgroundColor: "{colors.graphite-ground}"
+    backgroundColor: "{colors.night-ground}"
     textColor: "{colors.ink}"
     rounded: "{rounded.control}"
     height: "42px"
   like-button:
-    backgroundColor: "transparent"
+    backgroundColor: "{colors.galley-sheet}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.control}"
-    padding: "9px 12px"
+    rounded: "{rounded.pill}"
+    padding: "9px 18px"
   like-button-hover:
     backgroundColor: "{colors.galley-sheet-hover}"
   follow-notice:
@@ -280,7 +293,7 @@ components:
     rounded: "{rounded.control}"
     padding: "12px 8px"
   conversation-row-current:
-    backgroundColor: "{colors.galley-sheet-hover}"
+    backgroundColor: "{colors.pencil-wash}"
   chat-pane:
     backgroundColor: "{colors.galley-sheet}"
     textColor: "{colors.ink}"
@@ -299,14 +312,14 @@ components:
     rounded: "{rounded.sheet}"
     padding: "12px"
   chat-input:
-    backgroundColor: "{colors.graphite-ground}"
+    backgroundColor: "{colors.night-ground}"
     textColor: "{colors.ink}"
     typography: "{typography.chat}"
     rounded: "{rounded.control}"
     padding: "8px 12px"
     height: "64px"
   coach-check:
-    backgroundColor: "{colors.graphite-ground}"
+    backgroundColor: "{colors.night-ground}"
     textColor: "{colors.ink-secondary}"
     rounded: "{rounded.sheet}"
     padding: "12px"
@@ -320,7 +333,7 @@ components:
     textColor: "{colors.ink}"
     padding: "12px 8px"
   mic-meter:
-    backgroundColor: "{colors.graphite-ground}"
+    backgroundColor: "{colors.night-ground}"
     rounded: "{rounded.chip}"
     height: "8px"
     width: "480px"
@@ -342,19 +355,19 @@ components:
     rounded: "{rounded.sheet}"
     padding: "12px 16px"
   room-bar:
-    backgroundColor: "{colors.graphite-ground}"
+    backgroundColor: "{colors.night-ground}"
     padding: "16px 0 20px"
   button-github:
-    backgroundColor: "{colors.pencil-blue}"
-    textColor: "{colors.pencil-ink}"
+    backgroundColor: "{colors.sky-pill}"
+    textColor: "{colors.on-sky}"
     typography: "{typography.body}"
-    rounded: "{rounded.control}"
-    padding: "11px 16px"
+    rounded: "{rounded.pill}"
+    padding: "11px 18px"
   welcome-actions:
     padding: "24px 0 0"
     width: "560px"
   splash:
-    backgroundColor: "{colors.graphite-ground}"
+    backgroundColor: "{colors.night-ground}"
     textColor: "{colors.ink}"
     typography: "{typography.display}"
 ---
@@ -365,52 +378,55 @@ components:
 
 **Creative North Star: "Galley Proof"**
 
-Every answer the learner writes is a galley, and the coach marks it the way an editor marks a proof: in non-repro blue pencil, with numbered carets in the line and short notes in the margin beside the line they mark. Removals are struck through in dusty rose and insertions sit beside them in sage; these are edits, not grades. The interface around the galley is a quiet desktop tool: a graphite ground, raised sheets with 1px rules, sans-serif chrome, and monospace wherever the learner's own words or a reusable expression appear.
+Every answer the learner writes is a galley, and the coach marks it the way an editor marks a proof: in non-repro blue pencil, with numbered carets in the line and short notes in the margin beside the line they mark. Removals are struck through in dusty rose and insertions sit beside them in sage; these are edits, not grades. The interface around the galley is a quiet desktop tool: a pale sky ground (deep navy in dark), white sheets with 1px rules, sans-serif chrome, and monospace wherever the learner's own words or a reusable expression appear.
 
 Density is that of a working document rather than a dashboard. Content is set in one main column with a narrow side column; lists are ruled, not boxed; headings are sentence-case and plain. The system rejects the category default it was built against: a grey dashboard of stat cards with one violet accent. Progress is shown as facts, ruled lists and tally marks, never as metric tiles.
 
-Dark is the default theme; a light theme swaps to a cool white sheet on pale grey with a darker pencil. Both themes share every structural rule.
+Dark is the default theme, a night-navy ground with navy sheets and a sky-blue pill; the light theme is a pale sky ground with white sheets, navy ink and a deeper pencil blue for text. Both themes share every structural rule.
 
 **Key Characteristics:**
-- One accent, pencil blue, carrying only the coach's voice and the primary action.
+- One accent, sky blue: a pill fill for the primary action, and pencil blue for the coach's voice as text and marks.
 - Desaturated rose/sage diff marks on monospace text; never "wrong/right" colouring.
-- Flat raised sheets defined by 1px rules; shadow only on floating layers.
+- Flat raised sheets defined by 1px rules; shadow only on floating layers. Buttons are pills and the only things that move.
 - Margin notes aligned row by row to the line they annotate.
 - Sentence-case, untracked type throughout; no uppercase labels.
 - A few identifier colours (badge violet and copper, language brand colours, the graph green), each confined to one component.
 
 ## Colors
 
-A graphite (or pale cool-grey) document palette with one blue pencil and a pair of muted proof marks.
+A pale sky ground with white sheets and navy ink (dark theme: night navy, navy sheets, pale ink), one sky-blue pill, one blue pencil for text marks, and pastel chips for the proof marks and notices.
 
 ### Primary
-- **Non-Repro Pencil Blue** (`pencil-blue`; `light-pencil-blue` in light theme): the coach's voice. Numbered proof carets, margin-note labels, the primary button fill, the coach progress bar and current step, tally marks, the "ok" requirement status, the brand mark, links and the underline on highlighted expressions in the fluent rewrite. Its wash (`pencil-wash`) is the text-selection colour. Text on a pencil fill uses `pencil-ink`.
+- **Sky Pill** (`sky-pill` `--accent`, `sky-pill-hover` `--accent-hover`; `light-sky-pill-hover` in light theme): the fill of the primary button, the same sky in both themes, with navy text (`on-sky`, `--on-accent`) on it. It is a fill only and is never used as text on a ground. Hover lightens it in dark and deepens it in light. The key hint inside a primary takes `on-sky` too.
+- **Non-Repro Pencil Blue** (`pencil-blue` `--pencil`; `light-pencil-blue` in light theme, a deeper blue that reads on the pale ground): the coach's voice, as text and marks only. Numbered proof carets, margin-note labels, the current coach step, tally marks, the "ok" requirement status, the brand mark, links and the underline on highlighted expressions in the fluent rewrite. It is never a button fill.
+- **Sky wash** (`pencil-wash`; `light-pencil-wash`, stronger in light): the quiet tint under selection. Text selection, the current nav row, the active palette row (which also has a 1px sky edge, the only cue for what Enter will run), the open conversation, the selected moderation report and member, the profile banner's placeholder ground and the hover of a quiet button. Ink stays on top of it.
 
 ### Secondary
-- **Dusty Rose** (`dusty-rose`, with `dusty-rose-wash` behind it): deleted text in a galley, struck through at 1.5px. Used for nothing else.
-- **Sage** (`sage`, with `sage-wash`): inserted text in a galley, never underlined. Used for nothing else.
+- **Dusty Rose** (`dusty-rose`, with `dusty-rose-wash` behind it; `light-dusty-rose` and `light-dusty-rose-wash`): deleted text in a galley, struck through at 1.5px. A pastel chip in dark, a deep rose in light. Used for nothing else.
+- **Sage** (`sage`, with `sage-wash`; `light-sage` and `light-sage-wash`): inserted text in a galley, never underlined. Used for nothing else.
 
 ### Tertiary
-- **Proof Amber** (`amber-warn`; `light-amber-warn`): field errors, invalid-field borders, and the tinted border of error notices (mixed 55% into the rule colour). Problems with the app are amber; the learner's mistakes are never amber.
+- **Proof Amber** (`amber-warn`; `light-amber-warn`): field errors, invalid-field borders and the counter past its limit. An error notice is a pastel chip: its edge is `warn-line` (`light-warn-line`) and its fill `light-warn-wash`, a pale cream in light; in dark the wash is the sheet itself. Problems with the app are amber; the learner's mistakes are never amber.
 - **Community Violet** (`community-violet`; `light-community-violet`): the icon and tint of community member badges, and nothing else.
 - **Evolution Copper** (`evolution-copper`; `light-evolution-copper`): the icon and tint of evolution (milestone) member badges, and nothing else. Technical badges use secondary ink (`--badge-neutral`) in the same role.
 - **Language brand colours** (outside the token set): a language badge takes its Simple Icons brand colour, mixed towards white (dark theme) or black (light theme) in 1% steps until it reaches 3:1 against both the ground and the sheet of that theme; no brand colour means secondary ink. Both theme values are set on the badge so a theme switch needs no re-render.
 - **Graph Green** (`graph-0` to `graph-4`; `light-graph-0` to `light-graph-4`): the practice graph's own five-step ramp, from the empty day (`graph-0`, a near-ground grey) to the busiest. It is a different green from sage and lives only in the graph.
 
 ### Neutral
-- **Graphite Ground** (`graphite-ground` / `light-ground`): app background and the fill of inputs, which sit "below" the sheet.
-- **Graphite Rail** (`graphite-rail` / `light-rail`): the sidebar, one step darker than the ground.
-- **Galley Sheet** (`galley-sheet` / `light-sheet`): raised surfaces: galleys, expression cards, the rewrite block, notices, the command palette, active and hovered nav rows. `galley-sheet-hover` is the next step for hover and selected states on a sheet.
+- **Ground** (`night-ground` / `light-ground`, a pale sky): app background and the fill of inputs, which sit "below" the sheet.
+- **Rail** (`night-rail` / `light-rail`): the sidebar, one step darker than the ground.
+- **Galley Sheet** (`galley-sheet` / `light-sheet`): raised surfaces: galleys, expression cards, the rewrite block, notices, the command palette, active and hovered nav rows. `galley-sheet-hover` is the next step for hover on a sheet; every selected row uses the sky wash instead.
 - **Rule** (`rule`) and **Strong Rule** (`rule-strong`): 1px dividers and borders. Plain rules separate rows and sections; strong rules outline controls, chips, badges, keys and notices.
-- **Ink** (`ink`), **Ink Secondary** (`ink-secondary`), **Ink Tertiary** (`ink-tertiary`): primary text, supporting text (ledes, margin notes, meanings), and hints/metadata. Tertiary ink passes AA on both grounds.
-- **Focus Blue** (`focus-blue`; equals the pencil in light theme): the 2px focus outline.
+- **Ink** (`ink`), **Ink Secondary** (`ink-secondary`), **Ink Tertiary** (`ink-tertiary`): primary text, supporting text (ledes, margin notes, meanings), and hints/metadata. Tertiary ink passes AA on every ground and on the sky wash of a selected row.
+- **Focus Blue** (`focus-blue`, pale in dark; `light-focus-blue`, a mid blue in light): the 2px focus outline.
+- **Navy Scrim** (`navy-scrim`; `light-navy-scrim`): the veil behind the palette and the report dialog. Navy-black in dark, a light navy in light; never neutral grey or black.
 
 ### Named Rules
-**The Blue Pencil Rule.** Pencil blue belongs to the coach and to the one primary action on a screen. It never decorates headings, backgrounds or icons that the coach did not "write".
+**The Blue Pencil Rule.** Pencil blue is text and marks, and belongs to the coach; the sky pill belongs to the one primary action on a screen. Neither decorates headings, backgrounds or icons that the coach did not "write". The sky wash may only tint a selection or a hover.
 
 **The Edits, Not Grades Rule.** Rose and sage appear only as a pair of diff marks inside the learner's text. They are never status colours, never fills, never "correct/incorrect" signals; app errors use amber.
 
-**The One Home Rule.** Every colour outside the neutrals has exactly one home: blue for the coach and the primary action, amber for app problems, rose and sage for the diff, violet for community badges, copper for evolution badges, brand colours for language badges, graph green for the graph. The graph green is never shown next to a diff.
+**The One Home Rule.** Every colour outside the neutrals has exactly one home: blue for the coach (pencil) and the primary action (sky pill), amber for app problems, rose and sage for the diff, violet for community badges, copper for evolution badges, brand colours for language badges, graph green for the graph. The graph green is never shown next to a diff.
 
 ## Typography
 
@@ -457,26 +473,29 @@ The first run uses the Onboarding column (560px, 640px for embedded Join steps) 
 The system is flat and tonal. Depth comes from three steps of surface (rail darker than ground, ground darker than sheet) and from 1px rules. Inputs sit on the ground colour so they read as recessed into a sheet. Shadow is used for exactly one thing: layers that float above the page.
 
 ### Shadow Vocabulary
-- **Float** (`box-shadow: 0 12px 32px -8px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.35)`; light theme uses `rgb(20 24 32 / 0.22)` and `/ 0.12`): the command palette, the report dialog and other floating menus, over a 35% black backdrop.
-- **Inset ring** (`box-shadow: inset 0 0 0 1px` strong rule): a selection outline, not elevation, on the checked segment, the selected palette row, the selected moderation report, the current conversation row and the reported message in a moderation copy.
+- **Float** (`box-shadow: 0 12px 32px -8px rgb(2 8 20 / 0.55), 0 2px 6px rgb(2 8 20 / 0.35)` in dark, a near-black navy because a navy lighter than the ground would glow; light theme uses navy `rgb(11 42 79 / 0.22)` and `/ 0.12`): the command palette, the report dialog and other floating menus, over the navy scrim.
+- **Inset ring** (`box-shadow: inset 0 0 0 1px` strong rule): a selection outline, not elevation, on the checked segment and the reported message in a moderation copy. The open conversation and the selected moderation report take the sky wash instead. The palette's active row takes the wash and the same 1px inset ring in a sky edge (accent mixed 60% into the strong rule), since it is the only cue for what Enter will run.
 - **Separation ring** (`box-shadow: 0 0 0 2px` ground, `0 0 0 4px` ink): a selection outline, not elevation, on the checked mascot in the picker; the same ring, always in ink, marks who is speaking in a voice room, easing in and out over 180ms. The profile avatar's 5px ring over the banner is ground-coloured padding, not a shadow.
 
 ### Named Rules
-**The Float-Only Rule.** Sheets, cards and buttons cast no shadow. If it is not floating over the page, it has no shadow.
+**The Float-Only Rule.** Sheets, cards and buttons cast no shadow; a button's lift is movement, not a shadow. If it is not floating over the page, it has no shadow.
 
 ## Shapes
 
-Three radii, sized to the object: 4px for small inline things (chips, keys, segmented options), 6px for controls (buttons, inputs, nav rows, focus outlines), 10px for sheets (galleys, cards, notices, palette). Badges are full pills. Diff marks get a 2px corner on their wash, and practice-graph cells and legend squares share that 2px cell radius. Member badges are full pills; the banner takes the sheet radius; avatars and mascots are circles. Borders are always 1px; dashed borders mean "absent or open": the empty state, the "chunk" type badge and a deleted message. The numbered proof caret is a 16px circle outlined in pencil.
+Three radii, sized to the object, plus the pill: 4px for small inline things (chips, keys, segmented options), 6px for controls (inputs, nav rows), 10px for sheets (galleys, cards, notices, palette). Buttons, the like control and badges are full pills (`--r-pill`, 999px); a button's focus outline follows its pill. Diff marks get a 2px corner on their wash, and practice-graph cells and legend squares share that 2px cell radius. Member badges are full pills; the banner takes the sheet radius; avatars and mascots are circles. Borders are always 1px; dashed borders mean "absent or open": the empty state, the "chunk" type badge and a deleted message. The numbered proof caret is a 16px circle outlined in pencil.
 
 ## Components
 
 ### Buttons
-Calm and compact; the press is the only movement.
-- **Shape:** gently rounded (6px), 9px by 16px padding, weight 500, optional trailing `kbd` hint.
-- **Primary:** pencil fill with pencil-ink text; at most one per view.
-- **Secondary:** transparent with a strong-rule border; hover fills with the sheet-hover tone.
-- **Quiet:** borderless secondary-ink text; hover raises to sheet with ink text.
-- **Hover / Focus / Active:** colour changes over 180ms; press scales to 0.97 over 120ms on a strong ease-out. Focus is a 2px focus-blue outline offset 2px. Disabled is 50% opacity; busy shows a pulsing 6px dot.
+Pills that lift and press. Colour and border change over 200ms; movement is on the strong ease-out.
+- **Shape:** full pill (`--r-pill`), 9px by 18px padding (quiet 9px by 12px), weight 500, optional trailing `kbd` hint.
+- **Primary:** sky-pill fill with navy `on-sky` text; hover lightens the fill (deepens in light) and lifts 1px. At most one per view.
+- **Secondary:** sheet fill with a strong-rule border and ink text; hover takes sheet-hover, gains an edge of sky mixed 60% into the strong rule, and lifts 1px.
+- **Quiet:** borderless secondary-ink text; hover takes the sky wash with ink text and does not lift.
+- **Press:** every button scales to 0.98 while pressed, declared after hover so the press wins. The like control is a secondary button, so it lifts and presses the same way.
+- **Trailing icon:** an icon after the text nudges 4px right on hover. The rule exists but is dormant: no button has a trailing icon, and the GitHub mark, busy dot and key hint are never moved by it.
+- **Reduced motion:** lift, press and nudge are all removed; nothing moves. The colour fade still runs. With no squeeze, a press steps the fill past the hover instead (a mouse press starts on the hover fill): the primary goes back to the resting sky, the secondary to the rule tone, the quiet button to the strong rule.
+- **Focus / Disabled:** a 2px focus-blue outline offset 2px, following the pill. Disabled is 50% opacity with no lift; busy shows a pulsing 6px dot.
 
 ### Chips
 - **Style:** mono 13px expression text in a 1px strong-rule outline, 4px radius, no fill. Inside requirement lists and the due list it drops its border and padding to read as plain mono.
@@ -498,9 +517,9 @@ Calm and compact; the press is the only movement.
 - **Checkboxes and radios:** native 16px controls with an ink accent, never pencil. Radio rows are 6px by 8px with a 6px radius, sheet-hover on hover, and the 2px focus outline on the whole row.
 
 ### Navigation
-- **Rail:** darker rail tone, 1px right rule, brand row with a pencil-blue mark, a "Search or jump to..." button with `Ctrl K`, then nav rows.
-- **Rows:** 14px secondary ink with a 1.6-stroke line icon, 7px by 12px padding, 6px radius. Hover and current page both take the sheet fill with ink text; current adds weight 600. Counts sit right-aligned in mono.
-- **Command palette:** a 560px sheet at 14vh with the float shadow, a 17px borderless search input over a rule, rows with 6px radius; the selected row gets sheet-hover and an inset ring. It opens and closes without animation.
+- **Rail:** rail tone, 1px right rule, brand row with a pencil-blue mark, a "Search or jump to..." button with `Ctrl K`, then nav rows.
+- **Rows:** 14px secondary ink with a 1.6-stroke line icon, 7px by 12px padding, 6px radius. Hover takes the sheet fill with ink text; the current page takes the sky wash with ink text and weight 600. Counts sit right-aligned in mono.
+- **Command palette:** a 560px sheet at 14vh with the float shadow, a 17px borderless search input over a rule, rows with 6px radius; the active row gets the sky wash and a 1px inset sky edge, the only cue for what Enter will run. It opens and closes without animation.
 - **Messages row:** after People, with the chat line icon (a speech bubble) and the unread count, requests included, in the same right-aligned mono count as Review's due count; the palette's "Go to Messages" is `Ctrl 5`.
 - **Rooms row:** after Messages, with the rooms line icon (a microphone); the palette's "Go to Rooms" is `Ctrl 6`. While you are in a room, the row, the palette entry and `Ctrl 6` lead back to that room (`#/rooms/<id>`) instead of the list.
 - **Moderation row:** shown only to moderators, last in the rail, with the shield line icon.
@@ -534,19 +553,19 @@ A member's badges as a wrapping row of pills (6px gap) under the profile head, i
 Practice per day over the last 53 weeks, on Progress and on the People profile. From top: a secondary-ink facts line in tabular figures; month labels and a Mon/Wed/Fri day column in 12px tertiary ink; the grid of 2px-radius cells in the five graph-green steps; then a footer with the day's text line in 13px secondary ink (a polite live region, with an idle hint until a day is chosen) and a "Less ... More" legend of five cells at the grid's right edge. Hovering a cell outlines it 1px in ink. The grid is one tab stop; arrow keys, Home and End move between days, the selected day gets the 2px focus outline offset 1px and its text is announced. No diff appears on the same screen.
 
 ### Banner
-A profile cover at 3:1 with the sheet radius, cropped to fill from the centre, at the top of the People profile; without a banner, a plain 6:1 band in the rail tone keeps the layout. Animated banners move only while Settings › "Play animated banners" is on and the system does not ask to reduce motion; otherwise the first frame is shown still, and if it cannot be decoded nothing is drawn. The banner is decorative and hidden from assistive technology.
+A profile cover at 3:1 with the sheet radius, cropped to fill from the centre, at the top of the People profile; without a banner, a plain 6:1 band in the sky wash keeps the layout. Animated banners move only while Settings › "Play animated banners" is on and the system does not ask to reduce motion; otherwise the first frame is shown still, and if it cannot be decoded nothing is drawn. The banner is decorative and hidden from assistive technology.
 
 ### Profile fact sheet
 A profile is a ruled definition list, not a card: a 180px term column (140px below 1040px) in 14px secondary ink beside the value, every row ruled top and bottom. The moderation report detail uses the same sheet.
 
 ### Report dialog
-The second floating layer after the palette: a 520px sheet with strong-rule border, the float shadow and a 35% black backdrop, opened and closed without animation. Heading, secondary-ink lede, radio rows for the reason, an optional short textarea, then Cancel (quiet) and Send report (primary) right-aligned.
+The second floating layer after the palette: a 520px sheet with strong-rule border, the float shadow and the navy scrim, opened and closed without animation. Heading, secondary-ink lede, radio rows for the reason, an optional short textarea, then Cancel (quiet) and Send report (primary) right-aligned.
 
 ### Block button and destructive confirmations
 Blocking, deleting an account and moderation decisions confirm inline, never in a modal. The confirmation is a neutral panel: sheet fill, 1px strong rule, 10px radius, 16px by 20px padding. The guard is the input, not a colour: the typed e-mail enables account deletion, a required reason enables a suspension or warning. The confirming action is a secondary button.
 
 ### Moderation queue
-Open reports as a ruled list: avatar, name in weight 600, reason and place in 13px secondary ink, date in tertiary ink. Hover takes the sheet fill; the selected row takes sheet-hover and an inset ring, like the palette selection. Each decision (dismiss, warn, suspend) is a section under a 1px top rule.
+Open reports as a ruled list: avatar, name in weight 600, reason and place in 13px secondary ink, date in tertiary ink. Hover takes the sheet fill; the selected row takes the sky wash, like every other selected row, with ink on top (the date in tertiary ink passes AA on it). The badge section's "Members found" list is the same list and selects the same way. Each decision (dismiss, warn, suspend) is a section under a 1px top rule.
 A message report adds "The conversation" as one more such section: the copied messages as a list (12px gaps), each with the sender in weight 600 and the date and time in 13px secondary ink, then the message in the chat bubble (theirs style, left, up to 68ch). The reported message takes the sheet fill and the inset ring with the control radius and a "Reported" flag in weight 600; nothing turns red. When no copy was kept, a muted line says so.
 A room report ("Voice room" as its place) adds "The room" the same way: the room's title, theme, host and opening time as a profile fact sheet, then who was in it as a ruled list (8px vertical padding, 14px): the name in weight 600 on the left and, right-aligned in secondary ink, when they joined and left ("23 October 2026, 17:13 to 17:13", or "…, still in the room"). A deleted account reads "Deleted account"; when no copy was kept, a muted line says so.
 
@@ -563,7 +582,7 @@ People as ruled rows, one link per row, in the same grammar as the moderation qu
 Above the member list: Search by name, English level, Area and Technology as ordinary fields with their labels. Text inputs and selects render at different natural heights, so the filter row forces both to 42px (2.625rem).
 
 ### Follow and like
-Under a profile's name, a wrapping row (8px by 16px gaps, 20px below). On someone else's profile, Follow is the profile's one primary action, a pencil-filled button; once followed it becomes a secondary "Following" button. Their accessible names say what a press does: "Follow <name>" and "Stop following <name>". The like control is shaped like a secondary control (strong-rule outline, control radius, 9px by 12px, weight 500): a 16px heart line icon, filled in the text tone when liked (`aria-pressed`), and the count in tabular figures; hover takes sheet-hover. Then "N followers" and "N following" as 14px secondary-ink links in tabular figures that turn ink on hover. On your own profile only the counts show, with a 14px heart before the likes. Counts are plain facts; nothing is ranked or sorted by them.
+Under a profile's name, a wrapping row (8px by 16px gaps, 20px below). On someone else's profile, Follow is the profile's one primary action, a sky-pill button; once followed it becomes a secondary "Following" button. Their accessible names say what a press does: "Follow <name>" and "Stop following <name>". The like control is a secondary button, the same pill as "Following" and "Send message" (sheet fill, strong-rule outline, 9px by 18px, weight 500, lifting 1px on hover and pressing to 0.98 like the buttons): a 16px heart line icon with a 6px gap, filled in the text tone when liked (`aria-pressed`), and the count in tabular figures; hover takes sheet-hover. Then "N followers" and "N following" as 14px secondary-ink links in tabular figures that turn ink on hover. On your own profile only the counts show, with a 14px heart before the likes. Counts are plain facts; nothing is ranked or sorted by them.
 
 ### Follow notice
 A new follower is an info notice (sheet fill, strong rule, 10px radius, 16px by 20px) laid out as one row with 12px gaps: the follower's 32px picture (photo or mascot), then "<linked name> followed you." with the date under it in 13px secondary ink, then Mark as read.
@@ -575,7 +594,7 @@ A new follower is an info notice (sheet fill, strong rule, 10px radius, 16px by 
 Another member's profile reuses the profile sheet (banner, head, badges, fact sheet, graph) with Follow and like under the name. Report (quiet) and Block (secondary, confirmed inline) sit in a footer under a 1px top rule, 24px above and 16px inside it. A profile that is gone, suspended or blocking you is an empty state, "This profile is not available.", with a secondary "Back to Members".
 
 ### Conversation list
-Messages opens with Requests, then Conversations (the second heading shows only when there are requests), each a 15px weight 600 heading over ruled rows in the member list's grammar: a 40px avatar or mascot, the name in weight 600 over a one-line preview in 13px secondary ink, cut with an ellipsis; on the right the time (12px tertiary ink, tabular figures) over the unread count in 12px mono weight 600, ink. A deleted last message reads "Message deleted" in tertiary ink; a request you sent reads "Waiting for <name>". Rows are 12px by 8px with the control radius; hover takes the sheet; the open conversation (`aria-current="page"`) takes sheet-hover and the inset ring, like the palette selection.
+Messages opens with Requests, then Conversations (the second heading shows only when there are requests), each a 15px weight 600 heading over ruled rows in the member list's grammar: a 40px avatar or mascot, the name in weight 600 over a one-line preview in 13px secondary ink, cut with an ellipsis; on the right the time (12px tertiary ink, tabular figures) over the unread count in 12px mono weight 600, ink. A deleted last message reads "Message deleted" in tertiary ink; a request you sent reads "Waiting for <name>". Rows are 12px by 8px with the control radius; hover takes the sheet; the open conversation (`aria-current="page"`) takes the sky wash, like the current nav row and the palette selection.
 
 ### Conversation pane and message bubbles
 The open conversation is a sheet with a 1px rule and the sheet radius: a head row (32px avatar, the name at 15px weight 600 linking to the profile) over a rule, the thread on the ground colour, and the composer under a rule. Days are separated by a 12px weight 500 tertiary label centred between two 1px rules. Messages are bubbles in JetBrains Mono 14px at 1.6, `pre-wrap`, with an 8px by 12px padding and the sheet radius: theirs on the left on the sheet with the rule, yours on the right on sheet-hover with the strong rule. A bubble is at most 75% of the thread (and 68ch); below 1040px, 90%. The time sits under each bubble in 12px tertiary ink, tabular figures. A deleted message keeps its place as a dashed, transparent outline with "Message deleted" in tertiary Public Sans. Older messages load with a secondary "Load earlier" at the top.
@@ -604,7 +623,7 @@ The head is the room's title (h1) with the lede "Interview, B2, 4 / 6. Host: Ria
 - **Idea card:** a sheet in the side column (16px by 20px): "Idea card", the prompt at 17px weight 400 with 1.5 leading, and Next card (secondary). Anyone in the room can turn it; everyone sees the same card.
 - **Timer:** the same sheet: "Timer", then while idle "A guide for everyone in the room. Start one when someone speaks." in 13px secondary ink; while running "<n> s left" at 17px weight 600 with only the number in mono (20px); then "Time is up." 60 s and 90 s are secondary; Stop (quiet) shows while it runs. The timer is shared.
 - **Notices:** info notices for "Reconnecting…" and "The host muted you. You can unmute when you are ready."; everyone the call could not reach is named in one error notice ("Could not connect to Bia and Caio. Your network may block calls."), never one per person. They stack 8px apart, capped at 760px.
-- **Bottom bar:** sticky on the ground colour under a 1px top rule, 12px gaps: Mute or Unmute (secondary, with the mic or mic-off icon and the `Ctrl M` hint; Ctrl+M works anywhere in the room), Leave (secondary) and, for the host, End room (quiet). The bar is there even while the room loads or cannot be read, because the microphone is live. End room confirms inline in the bar as a neutral panel in a row: "End the room for everyone? The call stops for all.", End room (secondary), Cancel (quiet); Escape cancels and focus returns to End room. There is no pencil primary inside a room, on purpose: speaking is the main act, not a button.
+- **Bottom bar:** sticky on the ground colour under a 1px top rule, 12px gaps: Mute or Unmute (secondary, with the mic or mic-off icon and the `Ctrl M` hint; Ctrl+M works anywhere in the room), Leave (secondary) and, for the host, End room (quiet). The bar is there even while the room loads or cannot be read, because the microphone is live. End room confirms inline in the bar as a neutral panel in a row: "End the room for everyone? The call stops for all.", End room (secondary), Cancel (quiet); Escape cancels and focus returns to End room. There is no sky-pill primary inside a room, on purpose: speaking is the main act, not a button.
 
 ### Person options
 Options opens an inline neutral panel under the person's row (sheet fill, strong rule, sheet radius, 12px by 16px, inset 8px), labelled "Options for <name>", scrolled into view above the bar. The first group is for you: Mute for me (Unmute for me once set) and Report as quiet buttons, then Block <name> as a secondary button that confirms inline like any block; blocking someone in a room makes you leave it. When your role allows, a second group follows under a 1px rule with 12px above it, all secondary: Mute for everyone, Make moderator (or Remove moderator role), Make host, Remove. Make host and Remove swap the panel for an inline neutral confirmation ("Make Hugo the host? You stop being the host.", "Remove Hugo from this room? Hugo cannot come back to this room."): the confirming action secondary, Cancel quiet. A done action reports in 13px secondary ink ("You muted Hugo. Hugo can unmute when ready."); a failure shows as an amber field error. Escape closes the panel or cancels the confirmation, and focus returns to the button that opened it (Options, Make host or Remove).
@@ -623,7 +642,7 @@ The first screen of a first run, in the coach setup's column: the pencil and "De
 - **No status:** while the community status is unknown (up to 3s) the screen waits; a slow answer is treated as no community.
 
 ### GitHub button
-"Continue with GitHub" is the primary button with the GitHub mark (Simple Icons, CC0, 16px) before the label, drawn in `currentColor` so it takes the pencil-ink text colour in both themes. The mark is never brand-coloured and never alone; it sits only on this button. It is the one primary of a sign-in screen (Welcome, Join step 1) and follows every button rule above.
+"Continue with GitHub" is the primary button with the GitHub mark (Simple Icons, CC0, 16px) before the label, drawn in `currentColor` so it takes the navy `on-sky` text colour in both themes. The mark is never brand-coloured and never alone; it sits only on this button. It is the one primary of a sign-in screen (Welcome, Join step 1) and follows every button rule above.
 
 ### First-run flow and provenance hints
 Welcome, then GitHub or e-mail through the Join steps, or no account straight to the coach setup, which ends the first run. A signed-in account that already accepted the documents and has a profile skips to the coach setup. Where GitHub supplied a value, the field says so in its hint and the value is only a suggestion, saved with the form: the photo reads "From your GitHub account" in place of the upload hint, and the Display name hint reads "From your GitHub account. How other members see you." until the name is edited, then returns to the plain hint. The provenance is a hint in tertiary ink, not a badge or icon, and goes away as soon as the person changes the field.
@@ -631,12 +650,15 @@ Welcome, then GitHub or e-mail through the Join steps, or no account straight to
 ## Do's and Don'ts
 
 ### Do:
-- **Do** keep pencil blue to the coach's marks, notes, progress and the one primary action per view.
+- **Do** keep pencil blue to the coach's marks and notes as text, and the sky pill to the one primary action per view.
+- **Do** use the sky wash for every selected state (current nav row, active palette row with its 1px sky edge, open conversation, selected moderation report or member) and for the quiet-button hover; keep ink on top of it.
+- **Do** shape every button as a pill that lifts 1px on hover (primary and secondary) and presses to 0.98, and drop all of that movement under reduced motion.
+- **Do** put a navy scrim, never black or grey, behind the palette and dialogs, and a near-black navy float shadow in dark.
 - **Do** set the learner's text, expressions, keys and counts in JetBrains Mono, and everything else in Public Sans.
 - **Do** align every margin note to the galley line it marks, numbered to match its caret.
 - **Do** separate rows and sections with 1px rules and a top border rather than wrapping them in cards.
 - **Do** use the three-step tonal stack (rail, ground, sheet) for depth, and the float shadow only for overlays.
-- **Do** honour reduced motion: all durations drop to 0ms and looping animations stop.
+- **Do** honour reduced motion: all durations drop to 0ms, looping animations stop, and buttons neither lift, press nor nudge.
 - **Do** confirm destructive actions inline in a neutral panel, guarded by a typed e-mail or a required reason.
 - **Do** let the icon carry a member badge's colour and keep its label in ink.
 - **Do** show an animated banner's first frame, still, under reduced motion or when "Play animated banners" is off.
@@ -658,9 +680,11 @@ Welcome, then GitHub or e-mail through the Join steps, or no account straight to
 ### Don't:
 - **Don't** build a dashboard of stat cards or metric tiles; progress is facts, ruled lists and tallies.
 - **Don't** use rose or sage outside the diff, or label anything "wrong" or "correct".
-- **Don't** add a second accent colour or tint headings with the pencil. Badge violet and copper, language brand colours and the graph green are identifiers confined to their component, not accents.
+- **Don't** add a second accent colour, tint headings with the pencil, or set pencil blue or the sky pill as the fill of a second button. Use the sky pill only as a fill under `on-sky` text, never as text on a ground. Badge violet and copper, language brand colours and the graph green are identifiers confined to their component, not accents.
 - **Don't** use violet, copper or the graph green outside member badges and the practice graph, or show the graph beside a diff.
-- **Don't** add shadows to sheets, cards or buttons.
+- **Don't** add shadows to sheets, cards or buttons; a button lifts, it does not cast.
+- **Don't** use a neutral grey or pure black veil behind a dialog, or a hard-edged red or saturated amber fill for a notice; warn is a pastel chip.
+- **Don't** rely on the trailing-icon nudge as a design device until a button actually has a trailing icon; it is dormant.
 - **Don't** uppercase or letter-space labels, or put small category labels above headings.
 - **Don't** animate the command palette or the report dialog open or closed.
 - **Don't** colour destructive actions amber or red; amber stays for problems with the app.
@@ -672,7 +696,7 @@ Welcome, then GitHub or e-mail through the Join steps, or no account straight to
 - **Don't** colour unread: the count is plain mono ink, in the rail and the conversation list, and unread rows are not bolded or tinted.
 - **Don't** tell a sender their request was declined; a decline is silent.
 - **Don't** colour the speaking ring, the microphone meter or the muted icon; speaking is ink, never pencil, sage or a status colour.
-- **Don't** put a pencil primary inside a room; speaking is the main act, so the bar and the person options use secondary and quiet buttons only.
+- **Don't** put a sky-pill primary inside a room; speaking is the main act, so the bar and the person options use secondary and quiet buttons only.
 - **Don't** show recording affordances in a room: no record button, recording dot, saved audio or playback; a voice is never recorded.
 - **Don't** list one "could not connect" notice per person; name everyone unreachable in one notice.
 - **Don't** add a tagline, progress bar or button to the splash, or run it longer than 1.5s plus the fade.

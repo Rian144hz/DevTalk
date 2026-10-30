@@ -30,7 +30,7 @@ export function SocialActions({ userId, name, stats, self, busy, onFollow, onLik
       {self ? (
         <span className="social-count"><Icon name="heart" size={14} /> {likesText(stats.likes)}</span>
       ) : (
-        <button type="button" className="like-button" aria-pressed={stats.iLike} disabled={busy} onClick={onLike}
+        <button type="button" className="btn btn-secondary like-button" aria-pressed={stats.iLike} disabled={busy} onClick={onLike}
           aria-label={`${stats.iLike ? 'Unlike' : 'Like'} ${name}'s profile, ${likesText(stats.likes)}`}>
           <Icon name="heart" size={16} />
           <span className="num">{stats.likes}</span>

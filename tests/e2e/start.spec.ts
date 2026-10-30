@@ -84,7 +84,7 @@ test('the first run follows the system theme from the first frame', async ({ pag
   await page.reload();
   await expect(splash(page)).toBeVisible();
   expect(await page.evaluate(() => (window as unknown as { themeFirstSet?: unknown }).themeFirstSet)).toEqual({ theme: 'light', bodyExisted: false });
-  await expect(splash(page)).toHaveCSS('background-color', 'rgb(238, 240, 243)');
+  await expect(splash(page)).toHaveCSS('background-color', 'rgb(245, 249, 255)');
   await expect(firstRun(page)).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 });
@@ -104,7 +104,7 @@ test('an app that is set up shows the splash on the next launch in its own theme
     app = await launchApp({ dataDir });
     page = await app.firstWindow();
     await expect(splash(page)).toBeVisible();
-    await expect(splash(page)).toHaveCSS('background-color', 'rgb(238, 240, 243)');
+    await expect(splash(page)).toHaveCSS('background-color', 'rgb(245, 249, 255)');
     await expect(today(page)).toHaveCount(0);
     await expect(splash(page)).toBeHidden({ timeout: 3000 });
     await expect(today(page)).toBeVisible();

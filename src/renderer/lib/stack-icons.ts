@@ -37,9 +37,9 @@ export const KNOWN_STACKS: string[] = [
 ].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
 
 /** The grounds a badge sits on in each theme (--bg and --sheet in tokens.css). */
-export const THEME_GROUNDS = { dark: ['#16181d', '#20232b'], light: ['#eef0f3', '#ffffff'] } as const;
+export const THEME_GROUNDS = { dark: ['#0f1726', '#162033'], light: ['#f5f9ff', '#ffffff'] } as const;
 /** --ink-2 in each theme: badges without a brand colour. */
-const NEUTRAL = { dark: '#B4B9C5', light: '#454B57' } as const;
+const NEUTRAL = { dark: '#AFC0D8', light: '#3A5274' } as const;
 
 /** The brand colour of a stack tag, adjusted to read at 3:1 on both grounds of the theme; neutral when it has none. */
 export function languageColour(tag: string, theme: 'dark' | 'light'): string {
