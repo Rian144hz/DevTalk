@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
+  <title id="title">DevTalk — pencil duck</title>
+  <path fill="#000" d="M22 104 C44 118 66 128 92 132 L150 134 C196 132 226 150 226 176 C226 206 196 224 150 224 L86 224 C48 224 26 204 24 172 C22 146 18 124 22 104 Z"/>
+  <path fill="#000" fill-rule="evenodd" d="M100 92 A50 50 0 1 1 200 92 A50 50 0 1 1 100 92 Z M157 82 A9 9 0 1 0 175 82 A9 9 0 1 0 157 82 Z"/>
+  <path fill="#000" d="M190 73 L232 86.3 L232 97.7 L190 111 Z"/>
+  <path fill="#000" d="M238 88.2 L250 92 L238 95.8 Z"/>
+</svg>

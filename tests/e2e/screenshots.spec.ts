@@ -381,6 +381,14 @@ test.describe('moderation', () => {
       await shoot(page, 'people-extras', theme);
       await page.locator('.profile-graph').scrollIntoViewIfNeeded();
       await shoot(page, 'people-graph', theme);
+      // The whole profile in one tall picture, head, badges and graph, for the README.
+      await page.setViewportSize({ width: 1440, height: 1100 });
+      await page.evaluate(() => {
+        document.querySelectorAll('main').forEach((m) => m.scrollTo(0, 0));
+        document.scrollingElement?.scrollTo(0, 0);
+      });
+      await settled(page);
+      await page.screenshot({ path: `${OUT}/people-profile-${theme}-1440.png` });
     }
   });
 });

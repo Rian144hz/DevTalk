@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
+  <title id="title">DevTalk — drawn bubble</title>
+  <path fill="none" stroke="#000" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" d="M66 158 L82 158 A48 48 0 0 1 34 110 L34 74 A48 48 0 0 1 82 26 L182 26 A48 48 0 0 1 230 74 L230 110 A48 48 0 0 1 182 158 L122 158"/>
+  <path fill="#000" d="M121.1 174 L98.4 199.3 L76.1 179.2 L98.9 154 Z"/>
+  <path fill="#000" d="M98.4 199.3 L82.7 206.7 L70.4 195.6 L76.1 179.2 Z"/>
+  <path fill="#000" d="M76.9 209.5 L63.2 216 L68.2 201.7 Z"/>
+</svg>
