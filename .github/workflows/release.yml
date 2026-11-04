@@ -1,0 +1,105 @@
+# Builds DevTalk's Windows installer (NSIS .exe) and Linux AppImage on GitHub's own runners.
+#
+#   Actions > Release > Run workflow   a test build; the files appear under the run's "Artifacts".
+#   Pushing a tag such as v0.1.0       the same build, then a GitHub Release with both files attached.
+#                                      The tag must be "v" + the version in package.json.
+#
+# The repository secrets MAIN_VITE_SUPABASE_URL and MAIN_VITE_SUPABASE_PUBLISHABLE_KEY switch the community on in the
+# build. Without them the build still succeeds and the app runs without the community, like a checkout without .env.
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build for ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: Windows
+            builder_flag: --win
+            artifact: DevTalk-windows
+            files: dist/DevTalk-Setup-*.exe
+          - os: ubuntu-latest
+            label: Linux
+            builder_flag: --linux
+            artifact: DevTalk-linux
+            files: dist/DevTalk-*.AppImage
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Node 22 comes with npm 10; the repo is set up for npm 11 (the allowScripts list in package.json).
+      - name: Install npm 11
+        run: npm install --global npm@11
+
+      - name: Check the tag matches package.json
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::The tag $GITHUB_REF_NAME does not match version $version in package.json. Raise the version, or tag v$version."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The only step that sees the Supabase values. Both are public by design (the URL and the publishable key); an empty
+      # value, which is what a missing secret gives, means the app is built without the community.
+      - name: Build the app
+        run: npx electron-vite build
+        env:
+          MAIN_VITE_SUPABASE_URL: ${{ secrets.MAIN_VITE_SUPABASE_URL }}
+          MAIN_VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.MAIN_VITE_SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: Package the app
+        run: npx electron-builder ${{ matrix.builder_flag }} --publish never
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+
+  release:
+    name: GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-files
+          merge-multiple: true
+
+      - name: Create the release and attach both files
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          ls -l release-files
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" release-files/* --clobber
+          else
+            gh release create "$TAG" release-files/* --title "DevTalk ${TAG#v}" --generate-notes --verify-tag
+          fi

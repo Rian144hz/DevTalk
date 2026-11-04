@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { app, BrowserWindow, dialog, session, shell } from 'electron';
 import { PROGRESS_EVENT } from '../shared/ipc-contract';
+import { appUserModelId } from './app-id';
 import { createAppContext, type AppContext } from './app-context';
 import { isCliMode, runCli } from './cli';
 import { DatabaseTooNewError } from './db/open';
@@ -22,6 +23,10 @@ if (process.platform === 'linux') {
   const store = linuxPasswordStoreSwitch(process.env, process.argv);
   if (store) app.commandLine.appendSwitch('password-store', store);
 }
+
+// Windows: the taskbar button, the pinned shortcut and the Start menu entry are one app (see app-id.ts).
+const userModelId = appUserModelId(process.platform);
+if (userModelId) app.setAppUserModelId(userModelId);
 
 // Dev/e2e only: keep test data out of the real profile directory.
 const overrideUserData = process.env['DEVTALK_USER_DATA'];

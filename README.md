@@ -12,6 +12,18 @@ developers practise with you in chat and voice rooms.
 Built with Electron, React and TypeScript. The coach works on its own, with no account. The community is optional and
 runs on Supabase.
 
+## Download
+
+Get the latest build from the [Releases page](https://github.com/Rian144hz/DevTalk/releases/latest):
+
+- **Windows 10 or 11 (64-bit):** `DevTalk-Setup-<version>.exe`. Double-click it. It installs for your own account, so it
+  does not ask for an administrator password, and it opens DevTalk when it is done.
+- **Linux (64-bit):** `DevTalk-<version>.AppImage`. Make it executable (`chmod +x DevTalk-*.AppImage`), then run it.
+
+The Windows installer is not signed, because a signing certificate costs money. When you open it, Windows SmartScreen
+shows a blue "Windows protected your PC" box. That is expected: click **More info**, then **Run anyway**. You only see
+this for the installer; DevTalk itself starts normally afterwards.
+
 ## Screenshots
 
 ![Feedback on an answer: struck and inserted words in the text, notes in the margin (light theme)](docs/screenshots/feedback-light.png)
@@ -60,8 +72,8 @@ runs on Supabase.
 ## Privacy and security
 
 - What you write to practise stays on your computer. The only exception is the coach you choose, which receives it.
-- Your coach API key is stored encrypted by the system keyring (Electron `safeStorage`). It is never in the code, the
-  repository or the built app.
+- Your coach API key is stored encrypted by the system (Electron `safeStorage`: the keyring on Linux, Windows data
+  protection on Windows). It is never in the code, the repository or the built app.
 - Coach calls run in the main process. The window runs with `contextIsolation` and `sandbox` on and `nodeIntegration`
   off, and the preload exposes a small typed API, checked with zod on every call.
 - The app holds only Supabase's publishable key, and row-level security protects every table. The secret key exists
@@ -86,10 +98,16 @@ read both in `docs/superpowers/`. The visual system is documented in [`DESIGN.md
 
 ## Requirements
 
-- Linux (the first target; macOS and Windows should work but are untested)
+To use the downloaded app:
+
+- Windows 10 or 11 (64-bit), or Linux (64-bit). There is no macOS build yet.
+- A place to keep the API key safely. On Windows there is nothing to set up: Windows data protection (DPAPI) encrypts it for your account. On Linux you need a system keyring: GNOME Keyring, KWallet or another Secret Service (KeePassXC works too). On desktops Electron does not recognise (sway, i3, Hyprland) DevTalk asks the Secret Service directly.
+
+To run it from source:
+
+- Windows 10 or 11, or Linux
 - Node.js 22 or newer and npm 11
-- A system keyring for the API key: GNOME Keyring, KWallet or another Secret Service (KeePassXC works too). On desktops Electron does not recognise (sway, i3, Hyprland) DevTalk asks the Secret Service directly.
-- Build tools for the native SQLite module: `make`, `g++`, `python3`
+- A compiler is normally not needed: the SQLite module ships ready-made binaries for Windows, Linux and macOS. If `npm install` does have to build it, you need `make`, `g++` and `python3` on Linux, or Visual Studio Build Tools ("Desktop development with C++") and Python 3 on Windows
 
 ## Install
 
@@ -169,7 +187,7 @@ The community (accounts, profiles, blocks, reports, moderation) runs on a free S
     - In Supabase, open Authentication › URL Configuration › Redirect URLs and add exactly these three addresses (the app uses the first one that is free while you sign in): `http://127.0.0.1:53682/callback`, `http://127.0.0.1:53683/callback` and `http://127.0.0.1:53684/callback`. Keep the **Site URL** on the same page at a local address (the default `http://localhost:3000` is fine) and never at a public web page: when a redirect is not allowed, Supabase sends the sign-in code to the Site URL.
     - Run the app and test **Continue with GitHub** (on the welcome screen at the first start, or in People › Join): your browser opens, you approve, and you come back to DevTalk with a profile suggested from your GitHub name and photo. The e-mail code sign-in now uses PKCE too, so test it once as well. The terms, privacy policy and code of conduct have a new version (2026-10-26), so every member accepts them again.
 
-Check it end to end (a zenity dialog asks for your e-mail and the code):
+Check it end to end (a zenity dialog asks for your e-mail and the code, so this helper is for Linux):
 
 ```bash
 npm run cli -- --social-smoke
@@ -203,12 +221,24 @@ npm run typecheck
 
 Set `DEVTALK_FAKE_LLM=1` to use the fixture coach and `DEVTALK_USER_DATA=<dir>` to keep test data out of your real profile. Both are ignored in packaged builds. The fixture coach still expects a key for cloud providers (any text works).
 
+## Release builds
+
+The installers are built by GitHub Actions (`.github/workflows/release.yml`) on a Windows and a Linux runner. For the owner:
+
+1. **Once:** in the repository open Settings › Secrets and variables › Actions › New repository secret, and add `MAIN_VITE_SUPABASE_URL` (the project URL) and `MAIN_VITE_SUPABASE_PUBLISHABLE_KEY` (the **publishable** key, never the secret one: the build stops if it finds a secret key). Without them the build still works, but the app runs without the community, as it does without `.env`.
+2. **A test build:** open Actions › Release › Run workflow. When it ends, the installer and the AppImage are under the run's **Artifacts**. The Run workflow button appears once the workflow file is on `main`.
+3. **A release:** raise `version` in `package.json` and commit it, then push a tag with the same number, for example `git tag v0.1.0` and `git push origin v0.1.0`. The workflow builds both files and attaches them to a new GitHub Release. It stops if the tag and `version` differ, because the file names come from `version`.
+
+`npm run dist:win` and `npm run dist:linux` make the same files on your own computer, in `dist/` (build the Windows installer on Windows).
+
 ## Where things live
 
-- Your practice data: `~/.config/devtalk/devtalk.sqlite` (local SQLite)
-- API keys: `~/.config/devtalk/api-key-<provider>.bin`, encrypted by the system keyring
-- Community session: `~/.config/devtalk/social-session.bin`, encrypted by the system keyring
-- What the practice sync already sent (day counts and milestones, never text): `~/.config/devtalk/practice-sync.json`
+DevTalk keeps its data in one folder: `~/.config/devtalk/` on Linux, `%APPDATA%\devtalk\` on Windows (paste that into the Explorer address bar).
+
+- Your practice data: `devtalk.sqlite` (local SQLite)
+- API keys: `api-key-<provider>.bin`, encrypted by the system keyring (DPAPI on Windows)
+- Community session: `social-session.bin`, encrypted the same way
+- What the practice sync already sent (day counts and milestones, never text): `practice-sync.json`
 - Database migrations and the delete-account function: `supabase/`
 - Legal documents shown in the app: `docs/legal/`
 - Coach prompts: `prompts/coach.md` and `prompts/challenge.md` — edit them freely; they are read on every request
