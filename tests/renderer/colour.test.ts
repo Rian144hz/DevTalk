@@ -153,4 +153,25 @@ describe.each(['dark', 'light'] as const)('sky-blue tokens, %s theme', (theme) =
     expect(THEME_GROUNDS[theme].map((g) => g.toLowerCase())).toEqual([at('--bg'), at('--sheet')]);
     expect(languageColour('my-company-lib', theme).toLowerCase()).toBe(at('--ink-2'));
   });
+
+  // The pencil duck is a graphic that carries the brand (rail, welcome and setup screens, splash): its blue must read
+  // at 3:1 (graphics contrast) on every ground it sits on.
+  test('the logo tokens exist and the duck reads at 3:1 on the ground, the rail and the sheet', () => {
+    for (const token of ['--logo-duck', '--logo-beak', '--logo-lead']) expect(declared(block, token), token).not.toBeNull();
+    for (const ground of ['--bg', '--bg-rail', '--sheet']) pass(at('--logo-duck'), at(ground), 3, `--logo-duck on ${ground}`);
+  });
+});
+
+// The logo tokens are the kit's colours (docs/design/logo/kit): the light symbol for light grounds, the "on dark" one for dark.
+describe.each([['light', 'devtalk-symbol.svg'], ['dark', 'devtalk-symbol-on-dark.svg']] as const)('logo tokens, %s theme', (theme, file) => {
+  const svg = readFileSync(join(__dirname, '../../docs/design/logo/kit', file), 'utf8');
+  const fillOf = (id: string) => new RegExp(`id="${id}"[^>]*fill="(#[0-9a-f]{6})"`, 'i').exec(svg)![1]!.toLowerCase();
+
+  test('the duck, the beak and the lead match the kit', () => {
+    const block = THEME_BLOCKS[theme];
+    expect(declared(block, '--logo-duck')).toBe(fillOf('hull'));
+    expect(declared(block, '--logo-duck')).toBe(fillOf('head'));
+    expect(declared(block, '--logo-beak')).toBe(fillOf('bill'));
+    expect(declared(block, '--logo-lead')).toBe(fillOf('lead'));
+  });
 });

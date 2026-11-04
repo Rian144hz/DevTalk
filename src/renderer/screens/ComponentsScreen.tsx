@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { buildGalley } from '../../core/feedback/galley';
 import type { Expression } from '../../core/domain/types';
 import {
-  Avatar, BadgeRow, BlockButton, Button, Chip, CoachProgress, EmptyState, ExpressionCard, Galley, Notice, PasswordField, ReportDialog,
-  PracticeGraph, Segmented, Select, Skeleton, StackList, Tally, TextArea, TextField, TypeBadge,
+  Avatar, BadgeRow, BlockButton, Brand, Button, Chip, CoachProgress, DuckMark, EmptyState, ExpressionCard, Galley, Notice, PasswordField,
+  ReportDialog, PracticeGraph, Segmented, Select, Skeleton, StackList, Tally, TextArea, TextField, TypeBadge,
 } from '../design-system';
 import { addDays, streaks, type DayActivity } from '../../core/progress/practice';
 import type { Badge } from '../../core/social/types';
@@ -60,6 +60,11 @@ export function ComponentsScreen() {
         <Segmented label="Theme" value={theme} options={[{ value: 'dark', label: 'Dark' }, { value: 'light', label: 'Light' }]}
           onChange={(t) => { setTheme(t); document.documentElement.dataset['theme'] = t; }} />
       </header>
+
+      <section className="gallery-row">
+        <DuckMark variant="full" size={96} /><DuckMark variant="full" size={48} /><DuckMark variant="small" size={32} /><DuckMark variant="small" size={16} />
+        <Brand />
+      </section>
 
       <section className="gallery-row">
         <Button variant="primary" shortcut="Enter">Write it</Button>

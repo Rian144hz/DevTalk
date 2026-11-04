@@ -109,6 +109,12 @@ kbd { font: var(--text-xs) var(--font-mono); color: var(--ink-2); border: 1px so
 .ruled { list-style: none; padding: 0; }
 .ruled > * + * { border-top: 1px solid var(--rule); }
 
+/* The pencil duck: every fill is a logo token, so it follows the theme. Never recoloured, mirrored or rotated. */
+.duck-mark { flex: none; }
+.duck-bill { fill: var(--logo-beak); }
+.duck-lead { fill: var(--logo-lead); }
+.duck-hull, .duck-head { fill: var(--logo-duck); }
+
 /* Stack tags: a technology's logo in the text colour, then its name */
 .stack-list { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: var(--s2); }
 .stack-tag { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-md); color: var(--ink); border: 1px solid var(--rule-strong); border-radius: var(--r-chip); padding: 2px var(--s2); overflow-wrap: anywhere; }

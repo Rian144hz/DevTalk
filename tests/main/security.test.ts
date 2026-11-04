@@ -19,6 +19,11 @@ test('CSP forbids remote scripts and eval', () => {
   expect(CONTENT_SECURITY_POLICY).not.toContain('unsafe-eval');
 });
 
+test('CSP lets images come from the app itself and data: URLs only (the favicon, the avatars)', () => {
+  expect(CONTENT_SECURITY_POLICY).toContain("img-src 'self' data:");
+  expect(CONTENT_SECURITY_POLICY).not.toMatch(/img-src[^;]*(https?:|\*)/);
+});
+
 test('dev CSP only relaxes inline scripts for the React Refresh preamble', () => {
   const dev = devContentSecurityPolicy();
   expect(dev).toContain("script-src 'self' 'unsafe-inline'");

@@ -47,6 +47,11 @@
   --graph-3: #43a862;
   --graph-4: #6fd38a;
 
+  /* The pencil duck (docs/design/logo/kit): the body, the pencil's wood and its lead. The duck reads at 3:1 on every ground. */
+  --logo-duck: #8ec5ff;
+  --logo-beak: #ffa23f;
+  --logo-lead: #e6eef9;
+
   /* Type */
   --font-ui: "Public Sans Variable", "Public Sans", system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
@@ -77,7 +82,7 @@
 
   /* Motion */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-write: cubic-bezier(0.37, 0, 0.63, 1); /* an even pace for a line being written (the splash pencil) */
+  --ease-write: cubic-bezier(0.37, 0, 0.63, 1); /* an even pace for a line being written (the splash name) */
   --dur-press: 120ms;
   --dur-ui: 180ms;
   --dur-panel: 240ms;
@@ -116,6 +121,9 @@
   --graph-2: #6dc58a;
   --graph-3: #3b9b5d;
   --graph-4: #236b3f;
+  --logo-duck: #2f7de1;
+  --logo-beak: #ffa23f;
+  --logo-lead: #0b2a4f;
   --scrim: rgb(11 42 79 / 0.24);
   --shadow-float: 0 12px 32px -8px rgb(11 42 79 / 0.22), 0 2px 6px rgb(11 42 79 / 0.12);
 }

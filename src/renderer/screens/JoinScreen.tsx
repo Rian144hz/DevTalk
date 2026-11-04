@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNod
 import type { ProfileDraft } from '../../core/social/types';
 import type { SocialStatus } from '../../shared/ipc-contract';
 import { useAppData } from '../app/AppData';
-import { Icon } from '../app/icons';
-import { Button, EmptyState, Notice, Skeleton, TextField } from '../design-system';
+import { Brand, Button, EmptyState, Notice, Skeleton, TextField } from '../design-system';
 import { AppErrorException, api, unwrap } from '../lib/api';
 import { joinStepLabel, signInFailure } from '../lib/first-run';
 import { secondsUntilResend } from '../lib/resend';
@@ -55,7 +54,7 @@ function JoinFrame({ embedded, busy, children }: { embedded: boolean; busy?: boo
   return (
     <main className="onboarding join-embedded" aria-busy={busy || undefined}>
       <div className="onboarding-col">
-        <div className="brand"><Icon name="pencil" size={18} />DevTalk</div>
+        <Brand />
         {children}
       </div>
     </main>

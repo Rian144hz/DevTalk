@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
+  <title id="title">DevTalk app icon</title>
+  <rect width="256" height="256" fill="#0B2A4F"/>
+  <g id="symbol">
+    <path id="bill" fill="#FFA23F" d="M161.66 93.04 L187.4 103.5 L187.4 116.9 L161.66 127.36 Z"/>
+    <path id="lead" fill="#E6EEF9" d="M192.02 105.37 L203.9 110.2 L192.02 115.03 Z"/>
+    <path id="hull" fill="#8EC5FF" d="M58.7 112.84 C73.22 126.04 95.66 131.32 119.42 130 L151.1 130 C180.14 131.32 193.34 148.48 193.34 164.32 C193.34 180.16 176.18 190.72 151.1 190.72 L98.3 190.72 C71.9 190.72 57.38 177.52 56.06 157.72 C55.4 140.56 54.74 124.72 58.7 112.84 Z"/>
+    <path id="head" fill="#8EC5FF" fill-rule="evenodd" d="M99.62 102.28 A35.64 35.64 0 1 1 170.9 102.28 A35.64 35.64 0 1 1 99.62 102.28 Z M137.9 94.36 A6.6 6.6 0 1 0 151.1 94.36 A6.6 6.6 0 1 0 137.9 94.36 Z"/>
+  </g>
+</svg>

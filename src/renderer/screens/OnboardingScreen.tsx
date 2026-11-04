@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import type { Level } from '../../core/domain/types';
 import { DEFAULT_MODELS, type ProviderId } from '../../shared/providers';
-import { Icon } from '../app/icons';
 import { useAppData } from '../app/AppData';
 import { AppErrorException, api, unwrap } from '../lib/api';
-import { Button, Notice, PasswordField, Segmented, Select } from '../design-system';
+import { Brand, Button, Notice, PasswordField, Segmented, Select } from '../design-system';
 import { CURRENT_LEVELS, KEY_LINKS, LANGUAGE_OPTIONS, PROVIDER_OPTIONS, TARGET_ERROR, TARGET_LEVELS, isTargetAbove } from './forms';
 
 export function OnboardingScreen() {
@@ -46,7 +45,7 @@ export function OnboardingScreen() {
   return (
     <main className="onboarding">
       <div className="onboarding-col">
-        <div className="brand"><Icon name="pencil" size={18} />DevTalk</div>
+        <Brand />
         <h1>Set up your coach</h1>
         <p className="lede">Step {step} of 3. You can change all of this later in Settings.</p>
 

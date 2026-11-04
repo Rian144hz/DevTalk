@@ -31,6 +31,9 @@ colors:
   graph-2: "#2e7a47"
   graph-3: "#43a862"
   graph-4: "#6fd38a"
+  logo-duck: "#8ec5ff"
+  logo-beak: "#ffa23f"
+  logo-lead: "#e6eef9"
   light-ground: "#f5f9ff"
   light-rail: "#edf3fc"
   light-sheet: "#ffffff"
@@ -59,6 +62,8 @@ colors:
   light-graph-2: "#6dc58a"
   light-graph-3: "#3b9b5d"
   light-graph-4: "#236b3f"
+  light-logo-duck: "#2f7de1"
+  light-logo-lead: "#0b2a4f"
 typography:
   display:
     fontFamily: "Public Sans Variable, Public Sans, system-ui, sans-serif"
@@ -398,7 +403,7 @@ A pale sky ground with white sheets and navy ink (dark theme: night navy, navy s
 
 ### Primary
 - **Sky Pill** (`sky-pill` `--accent`, `sky-pill-hover` `--accent-hover`; `light-sky-pill-hover` in light theme): the fill of the primary button, the same sky in both themes, with navy text (`on-sky`, `--on-accent`) on it. It is a fill only and is never used as text on a ground. Hover lightens it in dark and deepens it in light. The key hint inside a primary takes `on-sky` too.
-- **Non-Repro Pencil Blue** (`pencil-blue` `--pencil`; `light-pencil-blue` in light theme, a deeper blue that reads on the pale ground): the coach's voice, as text and marks only. Numbered proof carets, margin-note labels, the current coach step, tally marks, the "ok" requirement status, the brand mark, links and the underline on highlighted expressions in the fluent rewrite. It is never a button fill.
+- **Non-Repro Pencil Blue** (`pencil-blue` `--pencil`; `light-pencil-blue` in light theme, a deeper blue that reads on the pale ground): the coach's voice, as text and marks only. Numbered proof carets, margin-note labels, the current coach step, tally marks, the "ok" requirement status, links and the underline on highlighted expressions in the fluent rewrite. It is never a button fill.
 - **Sky wash** (`pencil-wash`; `light-pencil-wash`, stronger in light): the quiet tint under selection. Text selection, the current nav row, the active palette row (which also has a 1px sky edge, the only cue for what Enter will run), the open conversation, the selected moderation report and member, the profile banner's placeholder ground and the hover of a quiet button. Ink stays on top of it.
 
 ### Secondary
@@ -411,6 +416,7 @@ A pale sky ground with white sheets and navy ink (dark theme: night navy, navy s
 - **Evolution Copper** (`evolution-copper`; `light-evolution-copper`): the icon and tint of evolution (milestone) member badges, and nothing else. Technical badges use secondary ink (`--badge-neutral`) in the same role.
 - **Language brand colours** (outside the token set): a language badge takes its Simple Icons brand colour, mixed towards white (dark theme) or black (light theme) in 1% steps until it reaches 3:1 against both the ground and the sheet of that theme; no brand colour means secondary ink. Both theme values are set on the badge so a theme switch needs no re-render.
 - **Graph Green** (`graph-0` to `graph-4`; `light-graph-0` to `light-graph-4`): the practice graph's own five-step ramp, from the empty day (`graph-0`, a near-ground grey) to the busiest. It is a different green from sage and lives only in the graph.
+- **Logo colours** (`logo-duck` `--logo-duck`, `logo-beak` `--logo-beak`, `logo-lead` `--logo-lead`; `light-logo-duck` and `light-logo-lead` in light theme): the pencil duck's body (sky in dark, a duck blue in light, 3:1 on the ground, the rail and the sheet), the wood of its pencil bill and its lead (light ink in dark, navy in light). They colour the duck and nothing else, and the duck is never recoloured. See Logo below.
 
 ### Neutral
 - **Ground** (`night-ground` / `light-ground`, a pale sky): app background and the fill of inputs, which sit "below" the sheet.
@@ -426,7 +432,7 @@ A pale sky ground with white sheets and navy ink (dark theme: night navy, navy s
 
 **The Edits, Not Grades Rule.** Rose and sage appear only as a pair of diff marks inside the learner's text. They are never status colours, never fills, never "correct/incorrect" signals; app errors use amber.
 
-**The One Home Rule.** Every colour outside the neutrals has exactly one home: blue for the coach (pencil) and the primary action (sky pill), amber for app problems, rose and sage for the diff, violet for community badges, copper for evolution badges, brand colours for language badges, graph green for the graph. The graph green is never shown next to a diff.
+**The One Home Rule.** Every colour outside the neutrals has exactly one home: blue for the coach (pencil) and the primary action (sky pill), amber for app problems, rose and sage for the diff, violet for community badges, copper for evolution badges, brand colours for language badges, graph green for the graph, the logo colours for the duck. The graph green is never shown next to a diff.
 
 ## Typography
 
@@ -466,7 +472,7 @@ Messages is the one full-height page: the page fills the window (100vh) and its 
 
 Rooms keeps the 760px column on its list page: the head, notices, empty states, the create and join sheets and the room list are capped at 760px, with 20px below each block. A room is a full-height page (at least 100vh, no bottom padding): a fluid people column beside a 320px side column holding the idea card over the timer 20px apart, with a 40px gap, capped at 1100px; its notices keep the 760px cap. At 1040px and below the side column moves above the people as two equal columns with a 16px gap, and the people follow 20px below, so a long list never pushes the card and timer out of a short window. The control bar is sticky at the bottom of the page, capped at 1100px, 32px below the room; while a room is open the document's bottom scroll padding is 88px (56px + 32px), so a focused control or a panel that scrolls into view stops above the bar instead of under it. On windows 720px tall or less the room head's spacing drops to 16px and the bar's top margin to 20px, with 16px padding top and bottom.
 
-The first run uses the Onboarding column (560px, 640px for embedded Join steps) and adds one offset rule. The welcome page is not centred: its top padding is `clamp(56px, 18vh, 176px)` and bottom 24px, so the heading sits a little above the middle and stays put as the actions swap between states, and the error state still fits a 960 by 640 window. Under the lede a 1px rule and 24px padding open the actions (32px above the rule), stacked 12px apart at the full column width. The splash is the one full-bleed screen: fixed over everything, centred on the theme ground, with the lockup 4.58 times a `clamp(64px, 6.5vw, 112px)` unit wide.
+The first run uses the Onboarding column (560px, 640px for embedded Join steps) and adds one offset rule. The welcome page is not centred: its top padding is `clamp(56px, 18vh, 176px)` and bottom 24px, so the heading sits a little above the middle and stays put as the actions swap between states, and the error state still fits a 960 by 640 window. Under the lede a 1px rule and 24px padding open the actions (32px above the rule), stacked 12px apart at the full column width. The splash is the one full-bleed screen: fixed over everything, centred on the theme ground, with the lockup 5.8 times a `clamp(64px, 6.5vw, 112px)` unit wide.
 
 ## Elevation & Depth
 
@@ -517,7 +523,7 @@ Pills that lift and press. Colour and border change over 200ms; movement is on t
 - **Checkboxes and radios:** native 16px controls with an ink accent, never pencil. Radio rows are 6px by 8px with a 6px radius, sheet-hover on hover, and the 2px focus outline on the whole row.
 
 ### Navigation
-- **Rail:** rail tone, 1px right rule, brand row with a pencil-blue mark, a "Search or jump to..." button with `Ctrl K`, then nav rows.
+- **Rail:** rail tone, 1px right rule, brand row (the small duck, 24px, beside "DevTalk" in 15px bold), a "Search or jump to..." button with `Ctrl K`, then nav rows.
 - **Rows:** 14px secondary ink with a 1.6-stroke line icon, 7px by 12px padding, 6px radius. Hover takes the sheet fill with ink text; the current page takes the sky wash with ink text and weight 600. Counts sit right-aligned in mono.
 - **Command palette:** a 560px sheet at 14vh with the float shadow, a 17px borderless search input over a rule, rows with 6px radius; the active row gets the sky wash and a 1px inset sky edge, the only cue for what Enter will run. It opens and closes without animation.
 - **Messages row:** after People, with the chat line icon (a speech bubble) and the unread count, requests included, in the same right-aligned mono count as Review's due count; the palette's "Go to Messages" is `Ctrl 5`.
@@ -629,14 +635,14 @@ The head is the room's title (h1) with the lede "Interview, B2, 4 / 6. Host: Ria
 Options opens an inline neutral panel under the person's row (sheet fill, strong rule, sheet radius, 12px by 16px, inset 8px), labelled "Options for <name>", scrolled into view above the bar. The first group is for you: Mute for me (Unmute for me once set) and Report as quiet buttons, then Block <name> as a secondary button that confirms inline like any block; blocking someone in a room makes you leave it. When your role allows, a second group follows under a 1px rule with 12px above it, all secondary: Mute for everyone, Make moderator (or Remove moderator role), Make host, Remove. Make host and Remove swap the panel for an inline neutral confirmation ("Make Hugo the host? You stop being the host.", "Remove Hugo from this room? Hugo cannot come back to this room."): the confirming action secondary, Cancel quiet. A done action reports in 13px secondary ink ("You muted Hugo. Hugo can unmute when ready."); a failure shows as an amber field error. Escape closes the panel or cancels the confirmation, and focus returns to the button that opened it (Options, Make host or Remove).
 
 ### Splash
-The launch screen, shown on every launch over everything on the theme ground (the blocking `theme-boot.js` sets the theme before the first paint, so the first frame is already the right ground). A pencil writes "DevTalk" left to right in display-weight Public Sans 700 (-0.01em, ink) as a lowercase "devTalk"; then it is marked like a proof: the "d" turns dusty rose with a rose strike and wash, and a sage "D" with its wash is written above it. The pencil is the rail's pencil mark in pencil blue, 120 units, its tip on the baseline and ending 12 units past the "k". Nothing else is on screen: no tagline, no progress, no button.
-- **Timing** (from `lib/splash.ts`, the only source): shown 1500ms, then a 250ms fade on the strong ease-out, after which the next screen appears. Inside the 1500ms: pencil in 0 to 180ms, name written 80 to 780ms (700ms on the even `--ease-write`, `cubic-bezier(0.37, 0, 0.63, 1)`), "d" struck 820 to 1000ms (`--dur-ui`), "D" written 960 to 1200ms (`--dur-panel`, rising 6px), then a hold.
-- **Reduced motion:** the finished name stays still, "DevTalk" with the pencil after it, no marks and no fade: 300ms, then the next screen.
+The launch screen, shown on every launch over everything on the theme ground (the blocking `theme-boot.js` sets the theme before the first paint, so the first frame is already the right ground). The duck sits at the left, where it is in the official horizontal lockup, and slides in; its pencil bill then writes "DevTalk" left to right in display-weight Public Sans 700 (untracked, as in the logo, ink) as a lowercase "devTalk"; then the name is marked like a proof: the "d" turns dusty rose with a rose strike and wash, and a sage "D" with its wash is written above it. The duck is the logo's full symbol in the logo colours, laid out as in the lockup (`lib/lockup.ts`): its 256-unit box is 2.38 times the cap height, its bill tip stands 0.46 cap heights before the first letter, and its middle sits a little above the middle of the capitals. The finished lockup, duck and name, is centred on screen, with the correction above the name. Nothing else is on screen: no tagline, no progress, no button.
+- **Timing** (from `lib/splash.ts`, the only source): shown 1500ms, then a 250ms fade on the strong ease-out, after which the next screen appears. Inside the 1500ms: the duck in 0 to 180ms (`--dur-ui`, sliding in from 24 units to the left with a fade), name written 80 to 780ms (700ms on the even `--ease-write`, `cubic-bezier(0.37, 0, 0.63, 1)`, uncovered from the bill tip), "d" struck 820 to 1000ms (`--dur-ui`), "D" written 960 to 1200ms (`--dur-panel`, rising 6px), then a hold.
+- **Reduced motion:** the still lockup, the duck and "DevTalk" with no marks and no fade: 300ms, then the next screen.
 - **Skip:** a click, Enter, Space or Escape ends it at once; the keys are caught before anything under it. It is a labelled image ("DevTalk"), not a control.
 - **Marks:** the rose and sage are the diff's own marks applied to the name, the one place they appear outside a correction; they stay the diff pair in both themes.
 
 ### Welcome (first run)
-The first screen of a first run, in the coach setup's column: the pencil and "DevTalk" brand line, a 20ch heading ("Practise the English you use at work."), a lede, then the actions under a 1px rule. One primary per view: when the community is configured it is "Continue with GitHub", then "Continue with e-mail" as a secondary, then "Practise without an account" as a quiet button; when the build has no community only "Practise without an account" shows, and it becomes the primary. Buttons span the column at 11px vertical padding.
+The first screen of a first run, in the coach setup's column: the duck and "DevTalk" brand line, a 20ch heading ("Practise the English you use at work."), a lede, then the actions under a 1px rule. One primary per view: when the community is configured it is "Continue with GitHub", then "Continue with e-mail" as a secondary, then "Practise without an account" as a quiet button; when the build has no community only "Practise without an account" shows, and it becomes the primary. Buttons span the column at 11px vertical padding.
 - **Waiting:** the three buttons are replaced by a quiet 14px spinner (a rule-strong ring with a secondary-ink arc, turning 0.9s, still under reduced motion) and "Finish signing in with GitHub in your browser." with "Then come back here." under it in secondary ink, and a secondary Cancel right after the text, focused. Escape cancels. On Cancel or a failure, focus returns to the first button.
 - **Error:** an error Notice above the buttons, titled "Sign-in was not finished." with the main process' words as detail; when the answer is only "Sign-in was not finished. Try again." it stands alone as the title. A member's own Cancel shows no notice.
 - **No status:** while the community status is unknown (up to 3s) the screen waits; a slow answer is treated as no community.
@@ -646,6 +652,10 @@ The first screen of a first run, in the coach setup's column: the pencil and "De
 
 ### First-run flow and provenance hints
 Welcome, then GitHub or e-mail through the Join steps, or no account straight to the coach setup, which ends the first run. A signed-in account that already accepted the documents and has a profile skips to the coach setup. Where GitHub supplied a value, the field says so in its hint and the value is only a suggestion, saved with the form: the photo reads "From your GitHub account" in place of the upload hint, and the Display name hint reads "From your GitHub account. How other members see you." until the name is edited, then returns to the plain hint. The provenance is a hint in tertiary ink, not a badge or icon, and goes away as soon as the person changes the field.
+
+## Logo
+
+The mark is the pencil duck: a rubber duck whose bill is a sharpened pencil. It appears in the rail and at the top of the first-run screens (the small cut, 24px, beside "DevTalk" as text, so the accessible name stays "DevTalk"), on the splash (the full cut), as the app icon and as the favicon. In the app it is the `DuckMark` component, drawn in the logo colours, which follow the theme. Never mirror, rotate, stretch or recolour the duck, and never set it beside the app's mascots. The usage rules (versions, clear space, minimum sizes, colours and what not to do) are in `docs/design/logo/guidelines.md`, and the files are in `docs/design/logo/kit/`.
 
 ## Do's and Don'ts
 
@@ -673,7 +683,7 @@ Welcome, then GitHub or e-mail through the Join steps, or no account straight to
 - **Do** name the two mutes apart: "Mute for me" silences someone only for you; "Mute for everyone" is a room action in its own ruled group.
 - **Do** say a room is never recorded where the microphone is asked for, and show the microphone level in secondary ink.
 - **Do** make the sign-in screen's one primary the GitHub button when the community is configured, and "Practise without an account" when it is not.
-- **Do** let the splash be skipped by click, Enter, Space or Escape, and show only the still name under reduced motion.
+- **Do** let the splash be skipped by click, Enter, Space or Escape, and show only the still lockup under reduced motion.
 - **Do** say where a prefilled value came from ("From your GitHub account") in its hint, until the person changes it.
 - **Do** count the join steps by the path taken: 3 steps after GitHub, 4 by e-mail.
 

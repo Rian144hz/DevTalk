@@ -1,0 +1,34 @@
+{
+  "brand": "DevTalk",
+  "tagline": "Practise the English you use at work",
+  "brief": "A desktop app for developers who read English well but freeze when they have to speak or write it. An AI coach marks every answer like an editor, and other developers practise with you in chat and voice rooms.",
+  "adjectives": ["friendly", "light", "precise", "conversational", "encouraging"],
+  "criteria": "Success: reads at 16 px, works in one colour, distinct from Disqus, Expo and Duolingo, feels precise but warm, and can move in the launch animation.",
+  "mockups": ["app-icon", "readme", "terminal", "website", "sticker", "favicon-tab"],
+  "nav": ["Practice", "Review", "People", "Rooms"],
+  "brand_color": "#2F7DE1",
+  "tile_color": "#0B2A4F",
+  "greyscale": false,
+  "final": true,
+  "round": 2,
+  "designer": "DevTalk",
+  "concepts": [
+    {
+      "name": "Pencil duck",
+      "symbol": "devtalk-symbol.svg",
+      "lockup": "devtalk-horizontal.svg",
+      "stacked": "devtalk-stacked.svg",
+      "symbol_on_tile": "devtalk-symbol-on-dark.svg",
+      "symbol_on_dark": "devtalk-symbol-on-dark.svg",
+      "lockup_on_dark": "devtalk-horizontal-on-dark.svg",
+      "stacked_on_dark": "devtalk-stacked-on-dark.svg",
+      "idea": "A rubber duck whose bill is a sharpened pencil: you explain, it marks.",
+      "rationale": [
+        "Rubber duck debugging is how developers talk through a problem; DevTalk is that, in English",
+        "The pencil bill keeps the coach's editor marks from the launch animation",
+        "A blue duck is unexpected in its own category and reads at 16 px"
+      ]
+    }
+  ],
+  "recommendation": "Pencil duck — friendly like the new sky-blue app, specific to developers, and strong from the favicon to the splash."
+}

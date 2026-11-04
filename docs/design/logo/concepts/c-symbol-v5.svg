@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
+  <title id="title">DevTalk — pencil D</title>
+  <g transform="translate(1.0 -2.6)">
+  <path fill="#000" d="M93 26 L127 26 A67 67 0 0 1 127 160 L93 160 L93 128 L127 128 A35 35 0 0 0 127 58 L93 58 Z"/>
+  <path fill="#000" d="M 60 26 L 96 26 L 96 160 L 60 160 Z"/>
+  <path fill="#000" d="M 60 164 L 96 164 L 83.6 210.2 L 72.4 210.2 Z"/>
+  <path fill="#000" d="M 73.7 215.2 L 82.3 215.2 L 78 231.2 Z"/>
+  </g>
+</svg>

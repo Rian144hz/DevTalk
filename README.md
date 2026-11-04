@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/design/logo/kit/devtalk-horizontal-on-dark.svg">
+  <img src="docs/design/logo/kit/devtalk-horizontal.svg" alt="DevTalk" width="360">
+</picture>
+
 # DevTalk
 
 **Practise the English you use at work.** DevTalk is a desktop app for developers who read English well but want to
@@ -6,6 +11,16 @@ developers practise with you in chat and voice rooms.
 
 Built with Electron, React and TypeScript. The coach works on its own, with no account. The community is optional and
 runs on Supabase.
+
+## Screenshots
+
+![Feedback on an answer: struck and inserted words in the text, notes in the margin (light theme)](docs/screenshots/feedback-light.png)
+
+![A private chat where a member suggests a correction, shown as a word diff (dark theme)](docs/screenshots/chat-dark.png)
+
+![A voice room with its people, an idea card and a timer (light theme)](docs/screenshots/room-light.png)
+
+![A member profile with badges and the practice graph (dark theme)](docs/screenshots/profile-dark.png)
 
 ## What it does
 
@@ -38,7 +53,7 @@ runs on Supabase.
 
 ### The app
 
-- An animated splash on every launch and a welcome screen on the first run.
+- An animated splash on every launch, where the DevTalk duck writes the name, and a welcome screen on the first run.
 - Light and dark themes that follow your system.
 - A command palette (**Ctrl+K**) and keyboard shortcuts for every screen.
 
