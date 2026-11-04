@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
+  <title id="title">DevTalk (on dark)</title>
+  <g id="symbol">
+    <path id="bill" fill="#FFA23F" d="M177 72 L216 87.84 L216 108.16 L177 124 Z"/>
+    <path id="lead" fill="#E6EEF9" d="M223 90.69 L241 98 L223 105.31 Z"/>
+    <path id="hull" fill="#8EC5FF" d="M21 102 C43 122 77 130 113 128 L161 128 C205 130 225 156 225 180 C225 204 199 220 161 220 L81 220 C41 220 19 200 17 170 C16 144 15 120 21 102 Z"/>
+    <path id="head" fill="#8EC5FF" fill-rule="evenodd" d="M83 86 A54 54 0 1 1 191 86 A54 54 0 1 1 83 86 Z M141 74 A10 10 0 1 0 161 74 A10 10 0 1 0 141 74 Z"/>
+  </g>
+</svg>
