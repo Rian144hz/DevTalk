@@ -13,3 +13,13 @@ linux:
   target: [AppImage]
   category: Education
   icon: build/icon.png
+  artifactName: DevTalk-${version}.${ext}
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.png
+  artifactName: DevTalk-Setup-${version}.${ext}
+nsis:
+  oneClick: true
+  perMachine: false
