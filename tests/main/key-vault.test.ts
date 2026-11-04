@@ -73,6 +73,12 @@ describe('isKeyringUsable', () => {
     expect(isKeyringUsable(ss(true, 'unknown'), 'darwin')).toBe(true);
     expect(isKeyringUsable(ss(false, 'gnome_libsecret'), 'linux')).toBe(false);
   });
+  test('Windows keeps the key with DPAPI and never asks for a Linux keyring', () => {
+    // Electron reports no storage backend on Windows, and a Linux backend name means nothing there.
+    expect(isKeyringUsable({ isEncryptionAvailable: () => true }, 'win32')).toBe(true);
+    expect(isKeyringUsable(ss(true, 'basic_text'), 'win32')).toBe(true);
+    expect(isKeyringUsable(ss(false, 'unknown'), 'win32')).toBe(false);
+  });
 });
 
 describe('linuxPasswordStoreSwitch', () => {

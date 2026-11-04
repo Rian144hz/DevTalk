@@ -88,6 +88,12 @@ describe('readSocialConfig', () => {
     expect(readSocialConfig({ MAIN_VITE_SUPABASE_URL: url, MAIN_VITE_SUPABASE_PUBLISHABLE_KEY: 'whatever' })).toBeNull();
   });
 
+  test('empty values read as not configured: what a CI build gets when its repository secrets are not set', () => {
+    expect(readSocialConfig({ MAIN_VITE_SUPABASE_URL: '', MAIN_VITE_SUPABASE_PUBLISHABLE_KEY: '' })).toBeNull();
+    expect(readSocialConfig({ MAIN_VITE_SUPABASE_URL: url, MAIN_VITE_SUPABASE_PUBLISHABLE_KEY: '' })).toBeNull();
+    expect(readSocialConfig({ MAIN_VITE_SUPABASE_URL: '  ', MAIN_VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_abc' })).toBeNull();
+  });
+
   test('trims a trailing slash from the URL', () => {
     expect(readSocialConfig({ MAIN_VITE_SUPABASE_URL: `${url}/`, MAIN_VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_abc' })?.url).toBe(url);
   });
@@ -104,6 +110,10 @@ describe('findShippedSecrets (build guard)', () => {
         SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_not_bundled',
       }).sort(),
     ).toEqual(['MAIN_VITE_SUPABASE_PUBLISHABLE_KEY', 'VITE_OTHER']);
+  });
+
+  test('empty values (unset CI secrets) do not stop a build', () => {
+    expect(findShippedSecrets({ MAIN_VITE_SUPABASE_URL: '', MAIN_VITE_SUPABASE_PUBLISHABLE_KEY: '' })).toEqual([]);
   });
 
   test('a publishable key or an anon JWT is fine', () => {
