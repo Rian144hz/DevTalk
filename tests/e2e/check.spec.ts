@@ -232,6 +232,12 @@ test('each kind of secret is marked where it is', async ({ page }) => {
     ["const db = { PASSWD = 'hunter2' };", "PASSWD = 'hunter2'"],
     ['aws (AKIAABCDEFGHIJKLMNOP) is old', 'AKIAABCDEFGHIJKLMNOP'],
     ['header eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk end', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk'],
+    // a name that says what it holds, then its value: the whole name, sign and value is marked
+    ['Config: client_secret=abc123xyz in the deploy.', 'client_secret=abc123xyz'],
+    ['Body {"apiKey": "AbC123dEf456"} ok', '"apiKey": "AbC123dEf456"'],
+    ['database:\n  password: hunter2\n  host: db', 'password: hunter2'],
+    ['Set db.password = s3cr3t! before Friday.', 'db.password = s3cr3t!'],
+    ['Send the header X-API-Key: 7f3a9c21d4 to the proxy', 'X-API-Key: 7f3a9c21d4'],
   ];
   for (const [text, secret] of cases) {
     await write(page, text);
@@ -255,7 +261,9 @@ test('a key far down a long text is scrolled into view when it is selected', asy
 test('ordinary prose is not stopped', async ({ page }) => {
   await openCheck(page);
   const prose = 'A risk-free, task-based plan for the desk-top and disk-bound jobs. Reset your password and rotate the token before Friday. ' +
-    'Set password= the way the docs say, and use `token=` in the URL. My sk-learn notes say ghp_ is the prefix of a GitHub token.';
+    'Set password= the way the docs say, and use `token=` in the URL. My sk-learn notes say ghp_ is the prefix of a GitHub token. ' +
+    'Password: please use the one I sent you. The token: we refresh it daily. Secret sauce, token-based auth, and the access token expired yesterday. ' +
+    'Set max_tokens=1000 for the model, and keep `token=` and `password=` out of the logs.';
   await field(page).fill(prose);
   await expect(page.getByRole('alert')).toHaveCount(0);
   await expect(field(page)).not.toHaveAttribute('aria-invalid', 'true');
