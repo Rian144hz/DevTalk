@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react';
-import type { Expression } from '../../core/domain/types';
+import type { ExpressionDraft } from '../../core/domain/types';
 import { TypeBadge } from './TypeBadge';
 
-/** `concealed` hides meaning and example (Review, before the learner reveals them). */
-export function ExpressionCard({ expression, foot, concealed = false }: { expression: Expression; foot?: ReactNode; concealed?: boolean }) {
+/**
+ * `concealed` hides meaning and example (Review, before the learner reveals them). A saved expression and a suggestion
+ * that is not in Review yet (no id) look the same.
+ */
+export function ExpressionCard({ expression, foot, concealed = false }: { expression: ExpressionDraft & { id?: number }; foot?: ReactNode; concealed?: boolean }) {
   return (
     <article className="expr" aria-label={expression.text}>
       <div className="expr-top">

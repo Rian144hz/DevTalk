@@ -1,6 +1,7 @@
 // Types and channel names shared by main, preload and renderer. No runtime dependencies:
 // the sandboxed preload bundles this file and cannot load node_modules.
-import type { Challenge, Expression } from '../core/domain/types';
+import type { CheckResult, CheckType } from '../core/check/types';
+import type { Challenge, Expression, ExpressionDraft } from '../core/domain/types';
 import type { LLMErrorKind } from '../core/llm/errors';
 import type { ProgressStage } from '../core/llm/structured';
 import type { HistoryItem, ProfileInput, StoredFeedback, StoredProfile, Theme } from '../core/ports';
@@ -95,6 +96,11 @@ export interface Channels {
   'feedback:get': { in: { feedbackId: number }; out: FeedbackView };
   'review:queue': { in: Record<string, never>; out: ReviewQueue };
   'review:rate': { in: { expressionId: number; rating: ReviewRating }; out: { card: SrsCard } };
+  /** Puts one suggested expression into Review (a checked text keeps nothing else). `isNew` is false when it was already there. */
+  'review:keep': { in: ExpressionDraft; out: { expression: Expression; isNew: boolean } };
+  /** The coach checks a real text and keeps its tone; the text and the result are not stored. */
+  'check:run': { in: { requestId: string; type: CheckType; text: string }; out: CheckResult };
+  'check:cancel': { in: { requestId: string }; out: null };
   'progress:summary': { in: Record<string, never>; out: ProgressSummary };
   'progress:history': { in: { before: string | null; limit?: number }; out: HistoryItem[] };
   /** The local practice graph (this machine's time zone), shown even without a community account. */
@@ -196,7 +202,8 @@ export type InvokeChannel = keyof Channels;
 
 export const INVOKE_CHANNELS = [
   'profile:get', 'profile:save', 'keys:status', 'keys:set', 'keys:clear', 'challenges:next', 'challenges:cancel',
-  'challenges:pending', 'feedback:submit', 'feedback:cancel', 'feedback:get', 'review:queue', 'review:rate', 'progress:summary', 'progress:history',
+  'challenges:pending', 'feedback:submit', 'feedback:cancel', 'feedback:get', 'review:queue', 'review:rate', 'review:keep',
+  'check:run', 'check:cancel', 'progress:summary', 'progress:history',
   'progress:graph', 'settings:get', 'settings:set', 'llm:check',
   'social:status', 'social:sendCode', 'social:verifyCode', 'social:acceptDocuments', 'social:getProfile', 'social:saveProfile',
   'social:setAvatar', 'social:removeAvatar', 'social:avatar', 'social:notices', 'social:readNotice', 'social:signOut',
@@ -239,7 +246,13 @@ export interface DevtalkApi {
     get(feedbackId: number): R<'feedback:get'>;
   };
   llm: { onProgress(cb: (e: ProgressEvent) => void): () => void };
-  review: { queue(): R<'review:queue'>; rate(input: Channels['review:rate']['in']): R<'review:rate'> };
+  review: {
+    queue(): R<'review:queue'>;
+    rate(input: Channels['review:rate']['in']): R<'review:rate'>;
+    keep(draft: ExpressionDraft): R<'review:keep'>;
+  };
+  /** Check text: nothing is stored; only the expressions the person keeps go to Review. */
+  check: { run(input: Channels['check:run']['in']): R<'check:run'>; cancel(requestId: string): R<'check:cancel'> };
   progress: {
     summary(): R<'progress:summary'>;
     history(input: Channels['progress:history']['in']): R<'progress:history'>;

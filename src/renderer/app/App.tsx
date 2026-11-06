@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_MODELS, type ProviderId } from '../../shared/providers';
+import { routeForShortcut, shortcutLabel } from '../lib/nav';
 import { useRoute } from '../lib/useRoute';
 import { startTheme, useThemeEffect } from '../lib/useTheme';
 import type { RouteName } from '../lib/router';
@@ -16,6 +17,7 @@ import { ComponentsScreen } from '../screens/ComponentsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { PracticeScreen } from '../screens/PracticeScreen';
+import { CheckScreen } from '../screens/CheckScreen';
 import { FeedbackRoute } from '../screens/FeedbackScreen';
 import { ReviewScreen } from '../screens/ReviewScreen';
 import { ProgressScreen } from '../screens/ProgressScreen';
@@ -41,11 +43,11 @@ function Placeholder({ title }: { title: string }) {
 const SCREEN_TITLES: Record<RouteName, string> = {
   onboarding: 'Set up your coach', home: 'Today', practice: 'Practice', feedback: 'Feedback', review: 'Review',
   progress: 'Progress', settings: 'Settings', people: 'People', messages: 'Messages', rooms: 'Rooms', components: 'Components',
-  join: 'Join the community', legal: 'Terms and privacy', moderation: 'Moderation',
+  join: 'Join the community', legal: 'Terms and privacy', moderation: 'Moderation', check: 'Check',
 };
 
-/** Ctrl+1…Ctrl+8 follow the sidebar order. */
-const SHORTCUT_ROUTES: RouteName[] = ['home', 'practice', 'review', 'people', 'messages', 'rooms', 'progress', 'settings'];
+/** A palette row's shortcut hint, from the sidebar list (the same one Ctrl+digit follows). */
+const hint = (route: RouteName) => shortcutLabel(route) ?? undefined;
 
 /** `started`: the launch splash is over. The first screen also waits for the profile, whichever ends last. */
 function Shell({ started }: { started: boolean }) {
@@ -85,16 +87,17 @@ function Shell({ started }: { started: boolean }) {
     const go = (name: RouteName) => () => navigate(name === 'rooms' && roomRef.current ? { name, roomId: roomRef.current } : { name });
     const theme = (t: Theme) => () => void api().settings.set({ theme: t }).then(() => refresh());
     return [
-      { id: 'go-home', label: 'Go to Home', keywords: ['today'], shortcut: 'Ctrl 1', run: go('home') },
-      { id: 'go-practice', label: 'Go to Practice', keywords: ['write', 'answer'], shortcut: 'Ctrl 2', run: go('practice') },
-      { id: 'go-review', label: 'Go to Review', keywords: ['cards', 'expressions'], shortcut: 'Ctrl 3', run: go('review') },
-      { id: 'go-people', label: 'Go to People', keywords: ['partners', 'members'], shortcut: 'Ctrl 4', run: go('people') },
-      { id: 'go-messages', label: 'Go to Messages', keywords: ['chat', 'conversations', 'requests'], shortcut: 'Ctrl 5', run: go('messages') },
+      { id: 'go-home', label: 'Go to Home', keywords: ['today'], shortcut: hint('home'), run: go('home') },
+      { id: 'go-practice', label: 'Go to Practice', keywords: ['write', 'answer'], shortcut: hint('practice'), run: go('practice') },
+      { id: 'go-check', label: 'Go to Check', keywords: ['text', 'correct', 'email', 'slack', 'pull request', 'commit'], shortcut: hint('check'), run: go('check') },
+      { id: 'go-review', label: 'Go to Review', keywords: ['cards', 'expressions'], shortcut: hint('review'), run: go('review') },
+      { id: 'go-people', label: 'Go to People', keywords: ['partners', 'members'], shortcut: hint('people'), run: go('people') },
+      { id: 'go-messages', label: 'Go to Messages', keywords: ['chat', 'conversations', 'requests'], shortcut: hint('messages'), run: go('messages') },
       { id: 'go-members', label: 'Go to Members', keywords: ['people', 'members', 'find', 'directory'], run: go('people') },
       { id: 'go-following', label: 'Go to Following', keywords: ['people', 'follow'], run: () => navigate({ name: 'people', sub: 'following' }) },
-      { id: 'go-rooms', label: 'Go to Rooms', keywords: ['voice', 'talk', 'speak', 'call', 'audio'], shortcut: 'Ctrl 6', run: go('rooms') },
-      { id: 'go-progress', label: 'Go to Progress', keywords: ['history', 'stats'], shortcut: 'Ctrl 7', run: go('progress') },
-      { id: 'go-settings', label: 'Go to Settings', keywords: ['preferences', 'key', 'model', 'coach'], shortcut: 'Ctrl 8', run: go('settings') },
+      { id: 'go-rooms', label: 'Go to Rooms', keywords: ['voice', 'talk', 'speak', 'call', 'audio'], shortcut: hint('rooms'), run: go('rooms') },
+      { id: 'go-progress', label: 'Go to Progress', keywords: ['history', 'stats'], shortcut: hint('progress'), run: go('progress') },
+      { id: 'go-settings', label: 'Go to Settings', keywords: ['preferences', 'key', 'model', 'coach'], shortcut: hint('settings'), run: go('settings') },
       { id: 'new-challenge', label: 'Get a new challenge', keywords: ['practice'], run: go('practice') },
       { id: 'start-review', label: 'Start review', keywords: ['cards'], run: go('review') },
       { id: 'theme-dark', label: 'Switch to dark theme', keywords: ['appearance'], run: theme('dark') },
@@ -113,9 +116,8 @@ function Shell({ started }: { started: boolean }) {
         setPaletteOpen((o) => !o);
         return;
       }
-      const n = Number(e.key);
-      const target = SHORTCUT_ROUTES[n - 1];
-      if (Number.isInteger(n) && target) {
+      const target = routeForShortcut(e.key);
+      if (target) {
         e.preventDefault();
         setPaletteOpen(false);
         navigate(target === 'rooms' && roomRef.current ? { name: target, roomId: roomRef.current } : { name: target });
@@ -148,6 +150,7 @@ function Shell({ started }: { started: boolean }) {
       {name === 'components' && GALLERY ? <ComponentsScreen />
         : name === 'home' ? <HomeScreen key={route.id ?? 0} />
         : name === 'practice' ? <PracticeScreen />
+        : name === 'check' ? <CheckScreen />
         : name === 'feedback' && route.id ? <FeedbackRoute id={route.id} onNext={() => { window.location.hash = '#/practice'; }} />
         : name === 'review' ? <ReviewScreen />
         : name === 'progress' ? <ProgressScreen />

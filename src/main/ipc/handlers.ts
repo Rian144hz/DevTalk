@@ -1,16 +1,25 @@
 import { ChallengeGenerator } from '../../core/challenges/generator';
 import { FeedbackEngine } from '../../core/feedback/engine';
+import { normalizeExpression } from '../../core/domain/text';
 import { LEVELS } from '../../core/domain/types';
 import type { LLMProvider } from '../../core/llm/provider';
 import type { ProgressStage } from '../../core/llm/structured';
 import type { Clock, StoredProfile, StudyStore } from '../../core/ports';
 import { addDays, bucketByDay, localDay, streaks } from '../../core/progress/practice';
 import { buildProgressSummary } from '../../core/progress/summary';
-import { previewDue, rate, REVIEW_RATINGS } from '../../core/srs/srs';
+import { newCard, previewDue, rate, REVIEW_RATINGS } from '../../core/srs/srs';
 import type { InvokeChannel, Settings } from '../../shared/ipc-contract';
 import { DEFAULT_PROVIDER, type ProviderId } from '../../shared/providers';
 import type { KeyVault } from '../vault/key-vault';
 import { AppFailure, handle, type HandlerMap } from './handle';
+import { createInFlight, type InFlight } from './in-flight';
+
+/** The prompt files, read on every use. Each feature that calls the coach adds its own. */
+export interface Templates {
+  coach: string;
+  challenge: string;
+  check: string;
+}
 
 export interface HandlerDeps {
   store: StudyStore;
@@ -21,7 +30,7 @@ export interface HandlerDeps {
   makeProvider: (apiKey: string | null, profile: StoredProfile) => LLMProvider;
   /** Reachability check for the chosen coach (Ollama: running and model installed). */
   checkProvider: (profile: StoredProfile) => Promise<{ ok: boolean; detail: string }>;
-  templates: () => { coach: string; challenge: string };
+  templates: () => Templates;
   /** Tie-breaker for the challenge category (fixture mode makes it deterministic). */
   rng?: () => number;
   emitProgress: (requestId: string, stage: ProgressStage) => void;
@@ -29,6 +38,8 @@ export interface HandlerDeps {
   onActivity?: (kind: 'answer' | 'review' | 'level', detail?: string) => void;
   /** IANA time zone of this machine (practice days are local days). */
   timeZone?: () => string;
+  /** The cancellable coach calls, shared by every handler group. Without it `createHandlers` keeps its own. */
+  inFlight?: InFlight;
 }
 
 /** Channels served by the community backend; chat:check uses the coach and stays here. */
@@ -36,43 +47,39 @@ export type SocialChannel = Exclude<
   Extract<InvokeChannel, `social:${string}` | `safety:${string}` | `moderation:${string}` | `chat:${string}` | `rooms:${string}`>,
   'chat:check'
 >;
-export type CoreChannel = Exclude<InvokeChannel, SocialChannel>;
+/** Each feature's own channels, served by its own handler group (the daily and simulate groups come with their features). */
+export type CheckChannel = Extract<InvokeChannel, `check:${string}`>;
+export type DailyChannel = Extract<InvokeChannel, `daily:${string}`>;
+export type SimulateChannel = Extract<InvokeChannel, `simulate:${string}`>;
+export type CoreChannel = Exclude<InvokeChannel, SocialChannel | CheckChannel | DailyChannel | SimulateChannel>;
 export type Handlers = HandlerMap<InvokeChannel>;
 
 const GRAPH_DAYS = 53 * 7;
 
 const settingsOf = (p: StoredProfile): Settings => ({ provider: p.provider as ProviderId, model: p.model, theme: p.theme });
 
+/** The saved profile; the coach cannot be asked before onboarding. */
+export function requireProfile(store: StudyStore): StoredProfile {
+  const profile = store.getProfile();
+  if (!profile) throw new AppFailure('not_found', 'Finish onboarding first.');
+  return profile;
+}
+
+/** The coach the profile chose, with that provider's key (fails with no_key when it needs one and there is none). */
+export function providerFor(deps: Pick<HandlerDeps, 'vaults' | 'makeProvider'>, profile: StoredProfile): LLMProvider {
+  return deps.makeProvider(deps.vaults(profile.provider as ProviderId).get(), profile);
+}
+
 export function createHandlers(deps: HandlerDeps): HandlerMap<CoreChannel> {
   const { store, clock } = deps;
   /** The provider a keys:* call refers to: the explicit one, else the profile's, else the default. */
   const keyVault = (provider?: ProviderId) => deps.vaults(provider ?? (store.getProfile()?.provider as ProviderId | undefined) ?? DEFAULT_PROVIDER);
-  const inFlight = new Map<string, AbortController>();
-
-  function requireProfile(): StoredProfile {
-    const profile = store.getProfile();
-    if (!profile) throw new AppFailure('not_found', 'Finish onboarding first.');
-    return profile;
-  }
-
-  /** Runs an LLM-backed job that can be cancelled by requestId. */
-  async function cancellable<T>(requestId: string, job: (signal: AbortSignal, onProgress: (s: ProgressStage) => void) => Promise<T>): Promise<T> {
-    if (inFlight.has(requestId)) throw new AppFailure('busy');
-    const controller = new AbortController();
-    inFlight.set(requestId, controller);
-    try {
-      return await job(controller.signal, (stage) => deps.emitProgress(requestId, stage));
-    } finally {
-      inFlight.delete(requestId);
-    }
-  }
+  const inFlight = deps.inFlight ?? createInFlight(deps.emitProgress);
 
   const cancel = ({ requestId }: { requestId: string }) => {
-    inFlight.get(requestId)?.abort();
+    inFlight.cancel(requestId);
     return null;
   };
-
-  const providerFor = (profile: StoredProfile) => deps.makeProvider(deps.vaults(profile.provider as ProviderId).get(), profile);
 
   return {
     'profile:get': handle('profile:get', () => store.getProfile()),
@@ -94,21 +101,21 @@ export function createHandlers(deps: HandlerDeps): HandlerMap<CoreChannel> {
     }),
 
     'challenges:next': handle('challenges:next', ({ requestId }) => {
-      const profile = requireProfile();
-      const provider = providerFor(profile);
+      const profile = requireProfile(store);
+      const provider = providerFor(deps, profile);
       const generator = new ChallengeGenerator({ provider, store, clock, challengeTemplate: deps.templates().challenge, rng: deps.rng });
-      return cancellable(requestId, (signal, onProgress) => generator.next(profile, signal, onProgress));
+      return inFlight.run(requestId, (signal, onProgress) => generator.next(profile, signal, onProgress));
     }),
     'challenges:cancel': handle('challenges:cancel', cancel),
     'challenges:pending': handle('challenges:pending', () => store.pendingChallenge()),
 
     'feedback:submit': handle('feedback:submit', ({ requestId, challengeId, text }) => {
-      const profile = requireProfile();
+      const profile = requireProfile(store);
       const challenge = challengeId === null ? null : store.getChallenge(challengeId);
       if (challengeId !== null && !challenge) throw new AppFailure('not_found', 'That challenge no longer exists.');
-      const provider = providerFor(profile);
+      const provider = providerFor(deps, profile);
       const engine = new FeedbackEngine({ provider, store, clock, coachTemplate: deps.templates().coach });
-      return cancellable(requestId, async (signal, onProgress) => {
+      return inFlight.run(requestId, async (signal, onProgress) => {
         const result = await engine.review(
           { text, source: 'typed', context: challenge ? { kind: 'challenge', challenge } : { kind: 'free' }, learner: profile },
           signal,
@@ -145,6 +152,13 @@ export function createHandlers(deps: HandlerDeps): HandlerMap<CoreChannel> {
       deps.onActivity?.('review');
       return { card: next.card };
     }),
+    'review:keep': handle('review:keep', (draft) => {
+      const normalizedText = normalizeExpression(draft.text);
+      // Nothing but punctuation is nothing to keep.
+      if (!normalizedText) throw new AppFailure('validation', 'Write an expression to keep.');
+      const now = clock.now();
+      return store.saveExpression({ ...draft, normalizedText }, newCard(now), now);
+    }),
 
     'progress:summary': handle('progress:summary', () => buildProgressSummary(store, clock.now())),
     'progress:history': handle('progress:history', ({ before, limit }) => store.history({ before, limit })),
@@ -159,8 +173,8 @@ export function createHandlers(deps: HandlerDeps): HandlerMap<CoreChannel> {
     }),
 
     'chat:check': handle('chat:check', async ({ text }) => {
-      const profile = requireProfile();
-      const engine = new FeedbackEngine({ provider: providerFor(profile), store, clock, coachTemplate: deps.templates().coach });
+      const profile = requireProfile(store);
+      const engine = new FeedbackEngine({ provider: providerFor(deps, profile), store, clock, coachTemplate: deps.templates().coach });
       const result = await engine.check(
         { text: text.trim(), context: { kind: 'free', situation: 'a chat message to another developer' }, learner: profile },
         new AbortController().signal,
@@ -175,9 +189,9 @@ export function createHandlers(deps: HandlerDeps): HandlerMap<CoreChannel> {
       const p = store.getProfile();
       return p ? settingsOf(p) : null;
     }),
-    'llm:check': handle('llm:check', () => deps.checkProvider(requireProfile())),
+    'llm:check': handle('llm:check', () => deps.checkProvider(requireProfile(store))),
     'settings:set': handle('settings:set', (partial) => {
-      const { onboardedAt: _, ...p } = requireProfile();
+      const { onboardedAt: _, ...p } = requireProfile(store);
       store.saveProfile({ ...p, ...partial }, clock.now());
       return settingsOf(store.getProfile()!);
     }),

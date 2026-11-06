@@ -1,7 +1,7 @@
 // Hash routes. Pure: parse/format only; the React hook lives in useRoute.ts.
 export const ROUTE_NAMES = [
   'onboarding', 'home', 'practice', 'feedback', 'review', 'progress', 'settings', 'people', 'messages', 'rooms', 'components',
-  'join', 'legal', 'moderation',
+  'join', 'legal', 'moderation', 'check',
 ] as const;
 export type RouteName = (typeof ROUTE_NAMES)[number];
 export interface Route {

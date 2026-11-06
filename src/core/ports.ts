@@ -1,5 +1,5 @@
 import type { ChallengeCategory, ExpressionType, MistakeCategory, TextSource } from './domain/categories';
-import type { Challenge, Expression, LearnerProfile } from './domain/types';
+import type { Challenge, Expression, ExpressionDraft, LearnerProfile } from './domain/types';
 import type { SrsCard, SrsLog } from './srs/srs';
 
 export interface Clock {
@@ -74,6 +74,12 @@ export interface StudyStore {
   recentChallenges(limit: number): { category: ChallengeCategory; summary: string }[];
   /** Atomic: either everything is stored or nothing is. */
   saveFeedback(input: SaveFeedbackInput): SavedFeedback;
+  /**
+   * Keeps one expression for Review without any answer or feedback ("Keep in Review" on a checked text). The same
+   * `normalizedText` as an expression that exists is not stored again: that one is returned with `isNew` false and
+   * its card is left alone. `initialCard` is used only for a new expression.
+   */
+  saveExpression(e: ExpressionDraft & { normalizedText: string }, initialCard: SrsCard, now: Date): { expression: Expression; isNew: boolean };
   /** Cards with due <= now, most overdue first. */
   dueCards(now: Date, opts: { excludeNew: boolean; limit: number }): DueCard[];
   getCard(expressionId: number): SrsCard | null;

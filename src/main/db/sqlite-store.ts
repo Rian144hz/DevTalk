@@ -1,5 +1,5 @@
 import type { ChallengeCategory, ExpressionType, MistakeCategory } from '../../core/domain/categories';
-import type { Challenge, Expression, Level } from '../../core/domain/types';
+import type { Challenge, Expression, ExpressionDraft, Level } from '../../core/domain/types';
 import type {
   DueCard,
   HistoryItem,
@@ -188,6 +188,23 @@ export class SqliteStudyStore implements StudyStore {
         return { expression: toExpression(row), isNew: inserted !== undefined };
       });
       return { feedbackId, attemptId, expressions };
+    })();
+  }
+
+  saveExpression(e: ExpressionDraft & { normalizedText: string }, initialCard: SrsCard, now: Date): { expression: Expression; isNew: boolean } {
+    return this.db.transaction(() => {
+      // Same rule as the new expressions of a feedback, with no feedback to link: a card only for a new one.
+      const inserted = this.db
+        .prepare(
+          `INSERT INTO expressions (text, normalized_text, type, meaning, example, origin_feedback_id, created_at)
+           VALUES (?, ?, ?, ?, ?, NULL, ?) ON CONFLICT(normalized_text) DO NOTHING RETURNING id`,
+        )
+        .get(e.text, e.normalizedText, e.type, e.meaning, e.example, now.toISOString()) as { id: number } | undefined;
+      if (inserted) this.db.prepare(UPSERT_CARD).run(cardParams(inserted.id, initialCard));
+      const row = this.db
+        .prepare('SELECT id, text, type, meaning, example FROM expressions WHERE normalized_text = ?')
+        .get(e.normalizedText) as ExpressionRow;
+      return { expression: toExpression(row), isNew: inserted !== undefined };
     })();
   }
 

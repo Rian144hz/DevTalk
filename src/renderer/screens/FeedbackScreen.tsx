@@ -17,10 +17,10 @@ export type FeedbackMode =
   | { kind: 'error'; text: string; challenge: Challenge | null; error: AppError; onRetry(): void; onEdit(): void }
   | { kind: 'ready'; view: FeedbackView };
 
-const editsLabel = (n: number) => (n === 0 ? 'No edits' : n === 1 ? '1 edit' : `${n} edits`);
+export const editsLabel = (n: number) => (n === 0 ? 'No edits' : n === 1 ? '1 edit' : `${n} edits`);
 
 /** Underlines each new expression inside the rewrite (case-insensitive, first occurrence). */
-function markExpressions(text: string, phrases: string[]) {
+export function markExpressions(text: string, phrases: string[]) {
   const lower = text.toLowerCase();
   const hits = phrases
     .map((p) => ({ p, i: lower.indexOf(p.toLowerCase()) }))
@@ -109,7 +109,7 @@ export function FeedbackScreen({ mode, onNext }: { mode: FeedbackMode; onNext():
   );
 }
 
-function CopyButton({ text }: { text: string }) {
+export function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   useEffect(() => {
     if (!copied) return;

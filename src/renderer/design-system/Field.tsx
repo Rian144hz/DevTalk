@@ -1,4 +1,4 @@
-import { useId, useRef, type InputHTMLAttributes, type KeyboardEvent, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { useId, useRef, type InputHTMLAttributes, type KeyboardEvent, type Ref, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 
 interface FieldText {
   label: string;
@@ -34,7 +34,7 @@ export const PasswordField = (props: FieldText & InputHTMLAttributes<HTMLInputEl
   <TextField {...props} type="password" autoComplete="off" spellCheck={false} />
 );
 
-export function TextArea({ label, hint, error, className, ...rest }: FieldText & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function TextArea({ label, hint, error, className, ...rest }: FieldText & TextareaHTMLAttributes<HTMLTextAreaElement> & { ref?: Ref<HTMLTextAreaElement> }) {
   const id = useId();
   return (
     <Wrap id={id} label={label} hint={hint} error={error}>

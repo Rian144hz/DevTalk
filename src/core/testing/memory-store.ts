@@ -1,5 +1,5 @@
 import type { ChallengeCategory, MistakeCategory, TextSource } from '../domain/categories';
-import type { Challenge, Expression } from '../domain/types';
+import type { Challenge, Expression, ExpressionDraft } from '../domain/types';
 import type {
   DueCard,
   HistoryItem,
@@ -103,16 +103,13 @@ export class MemoryStudyStore implements StudyStore {
     for (const c of input.corrections) this.corrections.push({ feedbackId, ...c, createdAt });
     for (const c of input.checks) this.checks.push({ feedbackId, ...c });
 
-    const expressions = input.newExpressions.map((e) => {
-      const existing = this.expressions.find((x) => x.normalizedText === e.normalizedText);
-      if (existing) return { expression: stripNormalized(existing), isNew: false };
-      const created = { id: this.nextId++, text: e.text, type: e.type, meaning: e.meaning, example: e.example, normalizedText: e.normalizedText };
-      this.expressions.push(created);
-      this.cards.set(created.id, { ...input.initialCard });
-      return { expression: stripNormalized(created), isNew: true };
-    });
+    const expressions = input.newExpressions.map((e) => this.upsertExpression(e, input.initialCard));
     feedback.expressionIds = expressions.map((e) => e.expression.id);
     return { feedbackId, attemptId, expressions };
+  }
+
+  saveExpression(e: ExpressionDraft & { normalizedText: string }, initialCard: SrsCard, _now: Date): { expression: Expression; isNew: boolean } {
+    return this.upsertExpression(e, initialCard);
   }
 
   getFeedback(feedbackId: number): StoredFeedback | null {
@@ -216,6 +213,16 @@ export class MemoryStudyStore implements StudyStore {
           correctionCount: this.corrections.filter((c) => c.feedbackId === f.id).length,
         };
       });
+  }
+
+  /** The expression with this normalized text, created with a card from `initialCard` when there is none yet. */
+  private upsertExpression(e: ExpressionDraft & { normalizedText: string }, initialCard: SrsCard): { expression: Expression; isNew: boolean } {
+    const existing = this.expressions.find((x) => x.normalizedText === e.normalizedText);
+    if (existing) return { expression: stripNormalized(existing), isNew: false };
+    const created = { id: this.nextId++, text: e.text, type: e.type, meaning: e.meaning, example: e.example, normalizedText: e.normalizedText };
+    this.expressions.push(created);
+    this.cards.set(created.id, { ...initialCard });
+    return { expression: stripNormalized(created), isNew: true };
   }
 
   private expressionById(id: number): Expression {

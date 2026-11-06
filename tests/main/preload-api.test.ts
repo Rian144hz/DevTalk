@@ -4,7 +4,7 @@ import { CHAT_EVENT, PROGRESS_EVENT, ROOM_EVENT } from '../../src/shared/ipc-con
 test('exposes exactly the spec groups', () => {
   const api = buildApi(async () => ({ ok: true, data: null }), () => () => {});
   expect(Object.keys(api).sort()).toEqual([
-    'challenges', 'chat', 'feedback', 'keys', 'llm', 'llmCheck', 'moderation', 'profile', 'progress', 'review', 'rooms', 'safety', 'settings', 'social',
+    'challenges', 'chat', 'check', 'feedback', 'keys', 'llm', 'llmCheck', 'moderation', 'profile', 'progress', 'review', 'rooms', 'safety', 'settings', 'social',
   ]);
 });
 
@@ -35,6 +35,22 @@ test('methods invoke the right channel with the right payload', async () => {
     ['settings:set', { theme: 'dark' }],
     ['feedback:get', { feedbackId: 7 }],
     ['challenges:pending', {}],
+  ]);
+});
+
+test('check.run, check.cancel and review.keep call their channels', async () => {
+  const calls: [string, unknown][] = [];
+  const api = buildApi(async (channel, payload) => {
+    calls.push([channel, payload]);
+    return { ok: true, data: null };
+  }, () => () => {});
+  await api.check.run({ requestId: 'k1', type: 'slack', text: 'Hi team' });
+  await api.check.cancel('k1');
+  await api.review.keep({ text: 'track down', type: 'phrasal_verb', meaning: 'find', example: 'We track down bugs.' });
+  expect(calls).toEqual([
+    ['check:run', { requestId: 'k1', type: 'slack', text: 'Hi team' }],
+    ['check:cancel', { requestId: 'k1' }],
+    ['review:keep', { text: 'track down', type: 'phrasal_verb', meaning: 'find', example: 'We track down bugs.' }],
   ]);
 });
 

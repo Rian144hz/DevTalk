@@ -11,6 +11,7 @@ import type { KeyVault } from '../../src/main/vault/key-vault';
 const templates = () => ({
   coach: readFileSync(join(__dirname, '../../prompts/coach.md'), 'utf8'),
   challenge: readFileSync(join(__dirname, '../../prompts/challenge.md'), 'utf8'),
+  check: readFileSync(join(__dirname, '../../prompts/check.md'), 'utf8'),
 });
 const t0 = new Date('2026-10-13T12:00:00.000Z');
 const profile = {
@@ -159,6 +160,40 @@ test('review:rate moves the card and review:queue no longer returns it', async (
   if (!after.ok) throw new Error('queue failed');
   expect(after.data.items.map((d) => d.expression.id)).not.toContain(item.expression.id);
   expect(await h['review:rate']({ expressionId: 9999, rating: 'good' })).toMatchObject({ ok: false, error: { kind: 'not_found' } });
+});
+
+test('the templates helper reads check.md next to the coach and challenge prompts', () => {
+  const t = templates();
+  expect(Object.keys(t).sort()).toEqual(['challenge', 'check', 'coach']);
+  expect(t.check).toContain('{text_type}');
+  expect(t.check).toContain('{type_tone}');
+});
+
+test('review:keep puts the expression in review:queue; keeping it again is isNew false; text that is blank after normalising is a validation error', async () => {
+  const activity: string[] = [];
+  const { h, store } = setup({ activity });
+  const draft = { text: 'Push back on', type: 'phrasal_verb', meaning: 'm', example: 'We push back on it.' };
+  expect(await h['review:keep'](draft)).toMatchObject({
+    ok: true, data: { isNew: true, expression: { text: 'Push back on', type: 'phrasal_verb', meaning: 'm', example: 'We push back on it.' } },
+  });
+  const queue = await h['review:queue']({});
+  if (!queue.ok) throw new Error('queue failed');
+  expect(queue.data.items.map((i) => i.expression.text)).toEqual(['Push back on']);
+  expect(queue.data.items[0]!.card.state).toBe('new');
+  // The same expression in another case, with edge punctuation and spaces: not new, and the first spelling is kept.
+  expect(await h['review:keep']({ ...draft, text: '  push BACK on.  ', meaning: 'x' })).toMatchObject({
+    ok: true, data: { isNew: false, expression: { text: 'Push back on', meaning: 'm' } },
+  });
+  expect(store.expressionCount()).toBe(1);
+  // Nothing but punctuation is nothing to keep; so is a blank text, an unknown type or an extra field.
+  expect(await h['review:keep']({ ...draft, text: ' ... ' })).toMatchObject({ ok: false, error: { kind: 'validation' } });
+  expect(await h['review:keep']({ ...draft, text: '   ' })).toMatchObject({ ok: false, error: { kind: 'validation' } });
+  expect(await h['review:keep']({ ...draft, type: 'idiom' })).toMatchObject({ ok: false, error: { kind: 'validation' } });
+  expect(await h['review:keep']({ ...draft, meaning: '' })).toMatchObject({ ok: false, error: { kind: 'validation' } });
+  expect(await h['review:keep']({ ...draft, extra: 1 })).toMatchObject({ ok: false, error: { kind: 'validation' } });
+  expect(store.expressionCount()).toBe(1);
+  // Keeping is not a review or an answer.
+  expect(activity).toEqual([]);
 });
 
 test('review:queue reports when the next card is due', async () => {

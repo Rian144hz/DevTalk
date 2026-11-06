@@ -1,3 +1,4 @@
+import { CHECK_TYPE_LABELS } from '../../core/check/types';
 import { LLMError } from '../../core/llm/errors';
 import type { LLMProvider, LLMRequest } from '../../core/llm/provider';
 
@@ -60,9 +61,12 @@ export function createFixtureProvider(opts: { delayMs?: number } = {}): LLMProvi
       if (opts.delayMs) await sleep(opts.delayMs, req.signal);
       if (req.signal.aborted) throw new LLMError('cancelled', 'Request cancelled');
       turn++;
-      // e2e switch: an answer that mentions a "rate limit" behaves like a provider that hit its quota.
-      if (req.schemaName === 'feedback' && /rate limit/i.test(req.user)) throw new LLMError('rate_limited', 'Fixture rate limit');
-      return req.schemaName === 'challenge' ? challengeReply(req) : feedbackReply(req, turn);
+      // e2e switch: an answer or a text that mentions a "rate limit" behaves like a provider that hit its quota.
+      if ((req.schemaName === 'feedback' || req.schemaName === 'check') && /rate limit/i.test(req.user)) {
+        throw new LLMError('rate_limited', 'Fixture rate limit');
+      }
+      if (req.schemaName === 'challenge') return challengeReply(req);
+      return req.schemaName === 'check' ? checkReply(req, turn) : feedbackReply(req, turn);
     },
   };
 }
@@ -74,6 +78,26 @@ function challengeReply(req: LLMRequest): string {
     category,
     ...(SITUATIONS[category] ?? SITUATIONS['daily_update']!),
     required_expressions: required.map((expression) => ({ expression, hint: `Use "${expression}" when you describe the main problem.` })),
+  });
+}
+
+/** Opens the way the type of text does: a greeting in a chat, a letter in an e-mail, none elsewhere. */
+const CHECK_OPENINGS: Record<string, string> = {
+  [CHECK_TYPE_LABELS.slack]: 'Hey team, yesterday',
+  [CHECK_TYPE_LABELS.email]: 'Hello Maya, yesterday',
+};
+
+function checkReply(req: LLMRequest, turn: number): string {
+  const type = /^Text type: (.*)$/m.exec(req.user)?.[1] ?? '';
+  const first = (turn * 2) % EXPRESSIONS.length;
+  return JSON.stringify({
+    corrections: [
+      { original: 'have fixed', corrected: 'fixed', explanation: 'Com "yesterday" usamos o passado simples, não o present perfect.', category: 'verb_tense' },
+      { original: 'discuss about', corrected: 'discuss', explanation: '"Discuss" não leva preposição.', category: 'prepositions' },
+    ],
+    natural_rewrite:
+      `${CHECK_OPENINGS[type] ?? 'Yesterday'} I tracked down the root cause of the flaky test: two tests were sharing the same database row. I fixed it by giving each test its own fixture, and we need to discuss the shared data.`,
+    new_expressions: [EXPRESSIONS[first]!, EXPRESSIONS[(first + 1) % EXPRESSIONS.length]!],
   });
 }
 

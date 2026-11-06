@@ -8,6 +8,13 @@ test('parses known routes with optional ids', () => {
   expect(parseHash('#/feedback/abc')).toEqual({ name: 'feedback' });
 });
 
+test('#/check parses to { name: "check" }', () => {
+  expect(parseHash('#/check')).toEqual({ name: 'check' });
+  expect(parseHash('#/check/extra')).toEqual({ name: 'check' });
+  expect(toHash({ name: 'check' })).toBe('#/check');
+  expect(parseHash(toHash({ name: 'check' }))).toEqual({ name: 'check' });
+});
+
 test('round-trips', () => {
   for (const r of [{ name: 'home' }, { name: 'feedback', id: 3 }, { name: 'settings' }] as const) {
     expect(parseHash(toHash(r))).toEqual(r);

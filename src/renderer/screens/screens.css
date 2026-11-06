@@ -60,6 +60,13 @@
 .answer { max-width: 860px; display: flex; flex-direction: column; gap: var(--s4); }
 .answer-actions { display: flex; justify-content: flex-end; }
 
+/* Check text: the form, then the result below it. The note under the field is quiet; the result is the practice feedback's parts. */
+.check-form { max-width: 860px; display: flex; flex-direction: column; gap: var(--s4); }
+.check-note { font-size: var(--text-sm); color: var(--ink-3); max-width: var(--measure); }
+.check-status { max-width: 860px; margin-top: var(--s6); }
+.check-result { display: flex; flex-direction: column; gap: var(--s6); margin-top: var(--s8); padding-top: var(--s6); border-top: 1px solid var(--rule); min-width: 0; }
+.check-result .expr-foot { margin-top: auto; } /* the Keep buttons line up along the bottom of the cards */
+
 /* Feedback */
 .fb { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: var(--s10); align-items: start; }
 .fb-main { display: flex; flex-direction: column; gap: var(--s6); min-width: 0; }

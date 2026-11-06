@@ -84,6 +84,39 @@ export function runStudyStoreContract(name: string, makeStore: () => StudyStore)
       expect(store.expressionCount()).toBe(2);
     });
 
+    test('saveExpression adds an expression with a due card (isNew true); the same text in another case or with edge punctuation is isNew false and keeps the first spelling; history and mistake counts do not move', () => {
+      const draft = { text: 'Push back on', normalizedText: 'push back on', type: 'phrasal_verb' as const, meaning: 'm', example: 'e' };
+      const first = store.saveExpression(draft, newCard(t0), t0);
+      expect(first.isNew).toBe(true);
+      expect(first.expression).toMatchObject({ text: 'Push back on', type: 'phrasal_verb', meaning: 'm', example: 'e' });
+      expect(store.getCard(first.expression.id)).toMatchObject({ state: 'new' });
+      expect(store.dueCards(t0, { excludeNew: false, limit: 10 }).map((d) => d.expression.text)).toEqual(['Push back on']);
+      expect(store.expressionCount()).toBe(1);
+
+      const again = store.saveExpression({ ...draft, text: ' push back on. ', meaning: 'other', example: 'other' }, newCard(at(1)), at(1));
+      expect(again).toEqual({ expression: first.expression, isNew: false });
+      expect(store.expressionCount()).toBe(1);
+      // The card of a kept expression is the first one: a second Keep does not reset it.
+      const r = rate(store.getCard(first.expression.id)!, 'good', at(2));
+      store.saveReview(first.expression.id, r.card, r.log);
+      store.saveExpression(draft, newCard(at(3)), at(3));
+      expect(store.getCard(first.expression.id)).toEqual(r.card);
+
+      // Keeping is not practice: no answer, no mistake.
+      expect(store.history({ before: null, limit: 10 })).toEqual([]);
+      expect(store.mistakeCounts(null)).toEqual([]);
+      expect(store.activityTimestamps(at(-1)).answers).toEqual([]);
+    });
+
+    test('saveExpression finds an expression an earlier feedback created', () => {
+      const seeded = store.saveFeedback(feedbackInput());
+      const existing = seeded.expressions[0]!.expression;
+      const kept = store.saveExpression({ text: 'PUSH BACK ON', normalizedText: 'push back on', type: 'chunk', meaning: 'x', example: 'y' }, newCard(at(1)), at(1));
+      expect(kept).toEqual({ expression: existing, isNew: false });
+      expect(store.expressionCount()).toBe(2);
+      expect(store.getFeedback(seeded.feedbackId)!.expressions.map((e) => e.text)).toEqual(['Push back on', 'root cause']);
+    });
+
     test('mistake counts sorted desc and filtered by date', () => {
       store.saveFeedback(feedbackInput({ now: at(-40) }));
       store.saveFeedback(

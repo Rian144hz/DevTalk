@@ -1,7 +1,8 @@
 import type { ReactElement } from 'react';
+import type { IconName } from './icon-names';
 
-// One stroke icon set (16px grid, 1.6 stroke), drawn for DevTalk.
-const PATHS: Record<string, ReactElement> = {
+// One stroke icon set (16px grid, 1.6 stroke), drawn for DevTalk. Every name in icon-names.ts has a drawing here.
+const PATHS: Record<IconName, ReactElement> = {
   home: <><path d="M2.5 7.2 8 2.5l5.5 4.7V13.5h-11z" /><path d="M6.5 13.5v-4h3v4" /></>,
   practice: <><path d="M3 13l1.2-3.6L11 2.6l2.4 2.4-6.8 6.8z" /><path d="M9.6 4l2.4 2.4" /></>,
   review: <><rect x="2.5" y="3" width="11" height="10" rx="1.5" /><path d="M5 6.5h6M5 9.5h4" /></>,
@@ -21,7 +22,7 @@ const PATHS: Record<string, ReactElement> = {
   copy: <><rect x="5.5" y="5.5" width="8" height="8" rx="1.2" /><path d="M10.5 5.5V3.5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2" /></>,
 };
 
-export type IconName = keyof typeof PATHS;
+export type { IconName };
 
 export function Icon({ name, size = 16, label }: { name: IconName; size?: number; label?: string }) {
   return (

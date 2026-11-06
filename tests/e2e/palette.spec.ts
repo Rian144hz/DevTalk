@@ -41,8 +41,8 @@ test('the active row has the sky wash and a sky edge that move with the arrow ke
   }
 });
 
-test('Ctrl+3 opens Review and Ctrl+1 goes back to Today', async ({ page }) => {
-  await page.keyboard.press('Control+3');
+test('Ctrl+4 opens Review and Ctrl+1 goes back to Today', async ({ page }) => {
+  await page.keyboard.press('Control+4');
   await expect(page.getByRole('heading', { level: 1, name: 'Review' })).toBeVisible();
   await page.keyboard.press('Control+1');
   await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toBeVisible();

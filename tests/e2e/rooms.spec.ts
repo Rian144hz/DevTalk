@@ -38,12 +38,12 @@ test('the list, the microphone check and the room: people, card, timer, mute, a 
   await expect(personRow(page, 'Bia')).toContainText('Host');
   await expect(personRow(page, 'Caio')).toBeVisible();
   await expect(personRow(page, 'Rian')).toContainText('You');
-  // Inside a room, Rooms in the rail, Ctrl+6 and "Go to Rooms" bring you back to the room, not the list.
+  // Inside a room, Rooms in the rail, Ctrl+7 and "Go to Rooms" bring you back to the room, not the list.
   await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Rooms' }).click();
   await expect(page).toHaveURL(new RegExp(`#/rooms/${room}$`));
   await expect(personRow(page, 'Bia')).toBeVisible();
   await expect(muteButton(page)).toBeVisible();
-  await page.keyboard.press('Control+6');
+  await page.keyboard.press('Control+7');
   await expect(page).toHaveURL(new RegExp(`#/rooms/${room}$`));
   await page.keyboard.press('Control+k');
   await page.keyboard.type('Go to Rooms');

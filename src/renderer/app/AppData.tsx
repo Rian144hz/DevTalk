@@ -13,7 +13,7 @@ interface AppData {
   unread: number;
   /** Screens that load the conversations tell the rail at once (reading clears the count). */
   setUnread(n: number): void;
-  /** The voice room the person is in; Rooms in the rail, the palette and Ctrl+6 go back to it instead of the list. */
+  /** The voice room the person is in; Rooms in the rail, the palette and its Ctrl+digit shortcut go back to it instead of the list. */
   room: string | null;
   setRoom(roomId: string | null): void;
 }

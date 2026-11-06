@@ -1,18 +1,8 @@
+import { NAV_ITEMS, type NavItem } from '../lib/nav';
 import type { RouteName } from '../lib/router';
 import { PROVIDER_LABELS, type ProviderId } from '../../shared/providers';
 import { Brand } from '../design-system';
-import { Icon, type IconName } from './icons';
-
-const NAV: { route: RouteName; label: string; icon: IconName }[] = [
-  { route: 'home', label: 'Home', icon: 'home' },
-  { route: 'practice', label: 'Practice', icon: 'practice' },
-  { route: 'review', label: 'Review', icon: 'review' },
-  { route: 'people', label: 'People', icon: 'people' },
-  { route: 'messages', label: 'Messages', icon: 'chat' },
-  { route: 'rooms', label: 'Rooms', icon: 'rooms' },
-  { route: 'progress', label: 'Progress', icon: 'progress' },
-  { route: 'settings', label: 'Settings', icon: 'settings' },
-];
+import { Icon } from './icons';
 
 export function Rail(props: {
   active: RouteName;
@@ -26,7 +16,8 @@ export function Rail(props: {
   room?: string | null;
   onOpenPalette(): void;
 }) {
-  const nav = props.moderator ? [...NAV, { route: 'moderation' as const, label: 'Moderation', icon: 'shield' as const }] : NAV;
+  // Moderators get one more row at the end; it has no shortcut.
+  const nav: readonly NavItem[] = props.moderator ? [...NAV_ITEMS, { route: 'moderation', label: 'Moderation', icon: 'shield' }] : NAV_ITEMS;
   return (
     <aside className="rail">
       <Brand />

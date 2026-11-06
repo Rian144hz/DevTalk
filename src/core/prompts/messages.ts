@@ -19,7 +19,7 @@ export const CHALLENGE_SCHEMA_EXAMPLE = `{
 
 export type FeedbackContext = { kind: 'challenge'; challenge: Challenge } | { kind: 'free'; situation?: string };
 
-function learnerVars(learner: LearnerProfile): Record<string, string> {
+export function learnerVars(learner: LearnerProfile): Record<string, string> {
   return {
     native_language: learner.nativeLanguage,
     current_level: learner.currentLevel,
@@ -55,6 +55,11 @@ export function challengePromptVars(args: {
 
 const DELIMITER = '"""';
 
+/** The text between triple quotes. A triple quote inside it is replaced, so it cannot close the block. */
+export function fenced(text: string): string {
+  return [DELIMITER, text.split(DELIMITER).join('“””'), DELIMITER].join('\n');
+}
+
 export function buildFeedbackUserMessage(input: { text: string; context: FeedbackContext }): string {
   const { context } = input;
   const header =
@@ -71,7 +76,5 @@ export function buildFeedbackUserMessage(input: { text: string; context: Feedbac
           }`,
         ]
       : [`Context: ${context.situation ?? 'a chat message to another developer'}`, 'Required expressions: none'];
-  // The learner's text must not be able to close the quoted block.
-  const text = input.text.split(DELIMITER).join('“””');
-  return [...header, '', "Learner's answer:", DELIMITER, text, DELIMITER].join('\n');
+  return [...header, '', "Learner's answer:", fenced(input.text)].join('\n');
 }

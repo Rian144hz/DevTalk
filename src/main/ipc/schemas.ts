@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import type { InvokeChannel } from '../../shared/ipc-contract';
+import { CHECK_TEXT_MAX, CHECK_TYPES, checkText } from '../../core/check/types';
+import { EXPRESSION_TYPES } from '../../core/domain/categories';
 import { LEVELS } from '../../core/domain/types';
 import { PROVIDERS } from '../../shared/providers';
 import { MANUAL_BADGES } from '../../core/social/badges';
@@ -33,6 +35,12 @@ const chatBody = z
   .string()
   .max(CHAT_TEXT_MAX * 2)
   .refine((s) => chatText(s) !== null, `Write 1 to ${CHAT_TEXT_MAX} characters.`);
+// The length cap only keeps a giant string out of the trim; checkText decides (the same count as the chat). A key in the
+// text is refused by the handler, which owns the exact message.
+const checkBody = z
+  .string()
+  .max(CHECK_TEXT_MAX * 2)
+  .refine((s) => checkText(s) !== null, `Write 1 to ${CHECK_TEXT_MAX} characters.`);
 const conversationId = z.string().min(1).max(64);
 const messageId = z.number().int().positive();
 const roomId = z.string().min(1).max(64);
@@ -91,6 +99,16 @@ export const INPUT_SCHEMAS = {
   'feedback:get': z.object({ feedbackId: z.number().int().positive() }).strict(),
   'review:queue': empty,
   'review:rate': z.object({ expressionId: z.number().int().positive(), rating: z.enum(['again', 'hard', 'good', 'easy']) }).strict(),
+  'review:keep': z
+    .object({
+      text: z.string().trim().min(1).max(300),
+      type: z.enum(EXPRESSION_TYPES),
+      meaning: z.string().trim().min(1).max(1000),
+      example: z.string().trim().min(1).max(1000),
+    })
+    .strict(),
+  'check:run': z.object({ requestId: z.string().min(1).max(100), type: z.enum(CHECK_TYPES), text: checkBody }).strict(),
+  'check:cancel': requestId,
   'progress:summary': empty,
   'progress:history': z.object({ before: z.string().nullable(), limit: z.number().int().min(1).max(100).default(20) }).strict(),
   'progress:graph': empty,

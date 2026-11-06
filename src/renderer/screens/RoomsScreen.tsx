@@ -314,7 +314,7 @@ export function RoomsScreen() {
     if (s && parseHash(window.location.hash).roomId !== s.roomId) exit(null);
   }, [route.roomId, session, exit]);
 
-  // The rail, the palette and Ctrl+6 lead back to the room you are in.
+  // The rail, the palette and the Rooms shortcut (Ctrl+digit, see lib/nav.ts) lead back to the room you are in.
   useEffect(() => {
     setRoom(session?.roomId ?? null);
     return () => setRoom(null);

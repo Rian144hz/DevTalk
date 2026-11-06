@@ -10,12 +10,16 @@ export interface LearnerProfile {
   explanationLanguage: string;
 }
 
-export interface Expression {
-  id: number;
+/** An expression the coach suggested that is not in Review yet (no id until the person keeps it). */
+export interface ExpressionDraft {
   text: string;
   type: ExpressionType;
   meaning: string;
   example: string;
+}
+
+export interface Expression extends ExpressionDraft {
+  id: number;
 }
 
 export interface Challenge {

@@ -5,7 +5,9 @@ import { LLMError } from '../core/llm/errors';
 import type { ProgressStage } from '../core/llm/structured';
 import { openDatabase, type DB } from './db/open';
 import { SqliteStudyStore } from './db/sqlite-store';
-import { createHandlers, type Handlers } from './ipc/handlers';
+import { createCheckHandlers } from './ipc/check-handlers';
+import { createHandlers, type HandlerDeps, type Handlers } from './ipc/handlers';
+import { createInFlight, type InFlight } from './ipc/in-flight';
 import { createSocialHandlers } from './ipc/social-handlers';
 import { createUnconfiguredBackend, type SocialBackend } from './social/backend';
 import { readSocialConfig, roomConnectTimeoutMs } from './social/config';
@@ -113,7 +115,9 @@ export function createAppContext(
   // Set once the community backend exists below; activity before that is counted on the first sync anyway.
   let practiceSync: PracticeSync | null = null;
 
-  const handlers = createHandlers({
+  // One set of dependencies and one registry of cancellable coach calls for every handler group.
+  const inFlight = createInFlight(emitProgress);
+  const handlerDeps: HandlerDeps & { inFlight: InFlight } = {
     store,
     vaults: vaultFor,
     clock: { now: () => new Date() },
@@ -121,6 +125,7 @@ export function createAppContext(
     templates: () => ({
       coach: readFileSync(join(promptsDir, 'coach.md'), 'utf8'),
       challenge: readFileSync(join(promptsDir, 'challenge.md'), 'utf8'),
+      check: readFileSync(join(promptsDir, 'check.md'), 'utf8'),
     }),
     makeProvider: (apiKey, profile) => {
       // Fixture mode still needs a key for cloud providers, so the no-key path can be tested.
@@ -144,7 +149,10 @@ export function createAppContext(
     rng: useFixtureLLM() ? () => 0 : undefined,
     emitProgress,
     onActivity: (kind, detail) => practiceSync?.notify(kind, detail),
-  });
+    inFlight,
+  };
+  const handlers = createHandlers(handlerDeps);
+  const checkHandlers = createCheckHandlers(handlerDeps);
 
   const config = readSocialConfig(import.meta.env);
   const fakeCommunity = fakeSocialBackend(userData);
@@ -221,7 +229,7 @@ export function createAppContext(
   const cancelSignIn = () => void socialHandlers['social:cancelSignIn']({});
 
   return {
-    handlers: { ...handlers, ...socialHandlers },
+    handlers: { ...handlers, ...checkHandlers, ...socialHandlers },
     startBackground: () => {
       void practiceSync?.start();
       void chatLive.start();
