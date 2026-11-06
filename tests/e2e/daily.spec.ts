@@ -8,6 +8,7 @@ const THEME = 'Stand-up update';
 /** The fixture coach's stand-up challenge: its summary, capitalised, is the title of the challenge. */
 const CHALLENGE_TITLE = 'Flaky payments integration test';
 const NO_KEY = 'Add your API key in Settings to use the coach.';
+const DONE_LINE = 'Done for today. Come back tomorrow.';
 
 const card = (page: Page) => page.getByRole('region', { name: "Today's challenge" });
 const writing = (page: Page) => page.getByRole('status').filter({ hasText: "The coach is writing today's challenge" });
@@ -38,6 +39,13 @@ async function turnOn(page: Page) {
   await openHome(page);
   await expect(card(page)).toBeVisible();
 }
+
+/** How many answers the history holds. */
+const historyLength = (page: Page) =>
+  page.evaluate(async () => {
+    const r = await window.devtalk.progress.history({ before: null });
+    return r.ok ? r.data.length : -1;
+  });
 
 /** The id of the challenge Practice would show now (the newest one with no answer). */
 const pendingId = (page: Page) =>
@@ -150,9 +158,11 @@ test('Start writes the challenge once: Start again, and a restart of the app on 
   }
 });
 
-test('one answer later the card says 1-day streak', async ({ page }) => {
+test('one answer later the card says 1-day streak and "Done for today", with no Start', async ({ page }) => {
   await turnOn(page);
   await expect(card(page).getByText('No streak yet')).toBeVisible();
+  // Before any practice the card offers Start and says nothing about being done.
+  await expect(card(page).getByText(DONE_LINE)).toHaveCount(0);
   await card(page).getByRole('link', { name: 'Start' }).click();
   await expect(page.getByRole('textbox', { name: 'Your answer' })).toBeVisible();
   await page.getByRole('textbox', { name: 'Your answer' }).fill(SAMPLE_ANSWER);
@@ -163,13 +173,48 @@ test('one answer later the card says 1-day streak', async ({ page }) => {
   await openHome(page);
   await expect(card(page).getByText('1-day streak')).toBeVisible();
   await expect(card(page).getByText(THEME)).toBeVisible();
+  // Done: the quiet line, and nothing left to press in the card (no Start, as a link or as a button).
+  await expect(card(page).getByText(DONE_LINE)).toBeVisible();
+  await expect(card(page).getByRole('link', { name: 'Start' })).toHaveCount(0);
+  await expect(card(page).getByRole('button', { name: 'Start' })).toHaveCount(0);
+  await expect(card(page).locator('a, button')).toHaveCount(0);
+  await expect(card(page).getByRole('heading', { level: 2, name: "Today's challenge" })).toBeVisible();
+  // The answer is on Home, right under the card.
+  await expect(page.getByRole('heading', { name: 'Your last answer, marked by the coach' })).toBeVisible();
   expect(await page.evaluate(() => window.devtalk.daily.today())).toMatchObject({ ok: true, data: { streak: 1, practisedToday: true } });
-  // Start still opens the day's challenge (it was written once; answering it did not make another).
+  // The day keeps its one challenge: it was written once, and answering it did not make another.
   const id = await page.evaluate(async () => { const r = await window.devtalk.daily.today(); return r.ok && r.data ? r.data.challengeId : null; });
   expect(id).not.toBeNull();
-  await card(page).getByRole('link', { name: 'Start' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: CHALLENGE_TITLE })).toBeVisible();
-  expect(await page.evaluate(async () => { const r = await window.devtalk.daily.today(); return r.ok && r.data ? r.data.challengeId : null; })).toBe(id);
+});
+
+test('a review is practice too: the card says done', async ({ page }) => {
+  await turnOn(page);
+  await expect(card(page).getByRole('link', { name: 'Start' })).toBeVisible();
+  // One expression in Review, rated once: a review, with no answer at all.
+  await page.evaluate(() => window.devtalk.review.keep({ text: 'track down', type: 'phrasal_verb', meaning: 'find', example: 'We track down bugs.' }));
+  const expressionId = await page.evaluate(async () => { const q = await window.devtalk.review.queue(); return q.ok ? (q.data.items[0]?.expression.id ?? null) : null; });
+  expect(expressionId).not.toBeNull();
+  await page.evaluate((id) => window.devtalk.review.rate({ expressionId: id!, rating: 'good' }), expressionId);
+  expect(await historyLength(page)).toBe(0);
+
+  await openSettings(page);
+  await openHome(page);
+  await expect(card(page).getByText('1-day streak')).toBeVisible();
+  await expect(card(page).getByText(THEME)).toBeVisible();
+  await expect(card(page).getByText(DONE_LINE)).toBeVisible();
+  await expect(card(page).locator('a, button')).toHaveCount(0);
+});
+
+test('a checked text is not practice: the card still offers Start', async ({ page }) => {
+  await turnOn(page);
+  const checked = await page.evaluate((text) => window.devtalk.check.run({ requestId: 'daily-check', type: 'slack', text }), SAMPLE_ANSWER);
+  expect(checked.ok).toBe(true);
+  await openSettings(page);
+  await openHome(page);
+  await expect(card(page).getByText('No streak yet')).toBeVisible();
+  await expect(card(page).getByRole('link', { name: 'Start' })).toBeVisible();
+  await expect(card(page).getByText(DONE_LINE)).toHaveCount(0);
+  expect(await page.evaluate(() => window.devtalk.daily.today())).toMatchObject({ ok: true, data: { streak: 0, practisedToday: false } });
 });
 
 test('no key → "Add your API key in Settings to use the coach." with Open Settings', async ({ page }) => {

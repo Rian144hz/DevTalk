@@ -57,13 +57,14 @@
 @media (max-width: 1180px) { .home { grid-template-columns: minmax(0, 1fr); } .side { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s8); } .watch { margin-top: 0; } }
 
 /* Home: today's challenge, a sheet above the two columns (it exists only while the daily challenge is on) */
-.daily-card { display: flex; justify-content: space-between; align-items: center; gap: var(--s6); margin-bottom: var(--s8); padding: var(--s4) var(--s5); background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r-sheet); }
+.daily-card { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--s3) var(--s6); margin-bottom: var(--s8); padding: var(--s4) var(--s5); background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r-sheet); }
 .daily-card-body { min-width: 0; }
 .daily-card .skeleton { background: var(--rule); } /* the placeholder sits on a sheet, so it takes the rule tone: the sheet fill would vanish on it */
 .daily-card .skeleton:first-child { margin-top: 0; }
 .daily-card .skeleton:last-child { margin-bottom: 0; }
 .daily-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s3); margin-top: var(--s1); color: var(--ink-2); }
 .daily-theme { color: var(--ink); font-weight: 600; }
+.daily-done { display: inline-flex; align-items: center; gap: var(--s2); color: var(--ink-2); font-size: var(--text-md); } /* in the place of Start: a status, nothing to press */
 /* The Start of today's challenge: the same column as the answer form */
 .daily-start { max-width: 860px; display: flex; flex-direction: column; gap: var(--s5); }
 
