@@ -24,8 +24,10 @@ const PATTERNS: readonly { kind: string; pattern: RegExp }[] = [
   { kind: 'aws-access-key', pattern: /\bAKIA[0-9A-Z]{16}/ },
   { kind: 'private-key', pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
   { kind: 'supabase-secret-key', pattern: /\bsb_secret_[\w-]{20,}/ },
-  // A JSON web token: three dot-separated parts, the first two start with `eyJ` (a base64 `{"`).
-  { kind: 'jwt', pattern: /eyJ[\w-]{7,}\.eyJ[\w-]{7,}\.[\w-]{10,}/ },
+  // A JSON web token: three dot-separated parts, the first two start with `eyJ` (a base64 `{"`). It starts where a run of
+  // word characters starts and each part has a length limit (a header, a payload and a signature are never longer), so a
+  // long run of `eyJ` is tried once and not again from every `eyJ` inside it: the search stays linear.
+  { kind: 'jwt', pattern: /(?<![\w-])eyJ[\w-]{7,500}\.eyJ[\w-]{7,2000}\.[\w-]{10,1000}/ },
 ];
 
 // Secrets found by what they are called: `password=hunter2`, `client_secret=…`, `db.password = '…'`, `"apiKey": "…"`,
@@ -86,25 +88,32 @@ function closingQuote(text: string, quote: string, from: number): number {
   return -1;
 }
 
+interface Value {
+  /** What was read, to judge it. */
+  text: string;
+  /** Where the passage ends. */
+  end: number;
+  quoted: boolean;
+}
+
 /**
- * The value that starts at `from`: a string in quotes on this line, or what runs up to a space or a quote. `text` is what
- * was read (to judge it), `end` is where the passage ends. A line break first means there is no value.
- * `before` is the character just before the name: a quote right after the sign that is the same as the one the name was
- * written in closes it ('password=') and does not open a value.
+ * The value that starts at `from`: a string in quotes on this line, or what runs up to a space or a quote. A line break
+ * first means there is no value. `before` is the character just before the name: a quote right after the sign that is
+ * the same as the one the name was written in closes it ('password=') and does not open a value.
  */
-function readValue(text: string, from: number, before: string | undefined): { text: string; end: number } | null {
+function readValue(text: string, from: number, before: string | undefined): Value | null {
   const first = text[from];
   if (first === undefined || first === '\n' || first === '\r') return null;
   let start = from;
   if (first === '"' || first === "'") {
     if (first === before) return null;
     const close = closingQuote(text, first, from + 1);
-    if (close >= 0) return { text: text.slice(from + 1, close), end: close + 1 };
+    if (close >= 0) return { text: text.slice(from + 1, close), end: close + 1, quoted: true };
     start = from + 1; // never closed on this line: read what follows the quote
   }
   BARE_VALUE.lastIndex = start;
   const run = BARE_VALUE.exec(text)?.[0].replace(SENTENCE_END, '');
-  return run ? { text: run, end: start + run.length } : null;
+  return run ? { text: run, end: start + run.length, quoted: false } : null;
 }
 
 /** After `=`, 4 characters (spaces apart) are enough. After `:`, which prose uses a lot, the value has to look like a credential. */
@@ -114,12 +123,40 @@ function looksLikeValue(value: string, sign: string): boolean {
   return trimmed.length >= 6 && CREDENTIAL_CHAR.test(trimmed);
 }
 
-/** The first name and value in the text that qualify. A name that does not, or a value that is too short, does not stop the search. */
+// A value that reads a secret from somewhere, or holds a flag, is code and not a secret: `const token = await getToken();`,
+// `password = process.env.DB_PASSWORD`, `require_password=true`, `api_key = os.environ["API_KEY"]`, `secret: ${{ secrets.TOKEN }}`.
+
+/** A flag, in any case. */
+const LITERAL = /^(?:true|false|null|none|undefined|nil)$/i;
+
+/** Code that fetches a value: `await …`, `new …`, the environment (`process.env`, `os.environ`, `env.X`, `ENV[…]`), `${VAR}`, `$VAR`, `$(command)`, a `{{ template }}`. */
+const CODE_START = /^(?:(?:await|new)\s|process\.env\b|os\.environ\b|env[.[]|\$[{(A-Za-z_]|\{\{)/i;
+
+/** A call: `getToken()`, `config.get("x")`, `os.getenv('X', 'dev')`. Its arguments are names, strings and numbers, so `Summer2024(!)` is not one. */
+const FUNCTION_CALL = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\([\w$.\s,"'[\]:/-]*\)/;
+
+/** A template in quotes, as config files have: `"${DB_PASSWORD}"`, `"{{ .Values.password }}"`. */
+const PLACEHOLDER = /^(?:\$[{(A-Za-z_]|\{\{)/;
+
+/** True when the value is a flag or code. Only the start of the rest of the line is read, so a long line costs no more than a short one. */
+function isCode(text: string, from: number, value: Value): boolean {
+  if (LITERAL.test(value.text.trim())) return true;
+  if (value.quoted) return PLACEHOLDER.test(value.text);
+  const rest = text.slice(from, from + 200).split(/[\r\n]/, 1)[0] ?? '';
+  return CODE_START.test(rest) || FUNCTION_CALL.test(rest);
+}
+
+/** The first name and value in the text that qualify. A name that does not, a value that is too short or one that is code does not stop the search. */
 function findNamedValue(text: string): FoundSecret | null {
   for (const match of text.matchAll(NAME_AND_SIGN)) {
     if (!isSecretName(match[2] ?? match[3] ?? '')) continue;
-    const value = readValue(text, match.index + match[0].length, text[match.index - 1]);
-    if (value && looksLikeValue(value.text, match[4]!)) return { kind: 'password', start: match.index, end: value.end };
+    // A name right after `${` is a variable being read ("${DB_PASSWORD:-changeme}"), not a key being given a value.
+    if (text[match.index - 1] === '{' && text[match.index - 2] === '$') continue;
+    const from = match.index + match[0].length;
+    const value = readValue(text, from, text[match.index - 1]);
+    if (value && looksLikeValue(value.text, match[4]!) && !isCode(text, from, value)) {
+      return { kind: 'password', start: match.index, end: value.end };
+    }
   }
   return null;
 }
@@ -134,4 +171,15 @@ export function findSecret(text: string): FoundSecret | null {
     }
   }
   return found;
+}
+
+/**
+ * What the window reads of the field while the person types: its first 4 000 characters. A text of more than 2 000
+ * characters cannot be sent anyway, and a pasted wall of text must not slow down every key.
+ */
+export const FIELD_SCAN_MAX = 4000;
+
+/** `findSecret` for the field: positions are the field's own, because the text is only cut at the end. */
+export function findSecretInField(text: string): FoundSecret | null {
+  return findSecret(text.slice(0, FIELD_SCAN_MAX));
 }

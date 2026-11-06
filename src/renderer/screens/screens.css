@@ -66,6 +66,7 @@
 .check-status { max-width: 860px; margin-top: var(--s6); }
 .check-result { display: flex; flex-direction: column; gap: var(--s6); margin-top: var(--s8); padding-top: var(--s6); border-top: 1px solid var(--rule); min-width: 0; }
 .check-result .expr-foot { margin-top: auto; } /* the Keep buttons line up along the bottom of the cards */
+.check-result .rewrite { white-space: pre-wrap; } /* the natural version keeps its line breaks: an e-mail's greeting, body and closing line */
 
 /* Feedback */
 .fb { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: var(--s10); align-items: start; }

@@ -1,6 +1,8 @@
 // Check text: a real text corrected with the fixture coach; the local secret detector; nothing is saved.
 import type { ElectronApplication, Page } from '@playwright/test';
-import { expect, historyCount, onboard, queueSize, SAMPLE_ANSWER, test, waitForStart } from './fixtures';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { expect, historyCount, launchApp, onboard, queueSize, SAMPLE_ANSWER, test, waitForStart } from './fixtures';
 
 const MAIN_NAV = (page: Page) => page.getByRole('navigation', { name: 'Main' });
 const typeSelect = (page: Page) => page.getByLabel('What are you writing?');
@@ -56,6 +58,24 @@ async function countChecks(app: ElectronApplication) {
     });
   });
   return () => app.evaluate(() => (globalThis as unknown as { __checkRuns: number }).__checkRuns);
+}
+
+/** Every file under `dir` (the study database and the browser's own stores) that holds `needle`, as UTF-8 or as UTF-16. */
+function filesHolding(dir: string, needle: string): string[] {
+  const needles = [Buffer.from(needle, 'utf8'), Buffer.from(needle, 'utf16le')];
+  const hits: string[] = [];
+  const walk = (folder: string) => {
+    for (const entry of readdirSync(folder, { withFileTypes: true })) {
+      const path = join(folder, entry.name);
+      if (entry.isDirectory()) walk(path);
+      else if (entry.isFile()) {
+        const bytes = readFileSync(path);
+        if (needles.some((n) => bytes.includes(n))) hits.push(path);
+      }
+    }
+  };
+  walk(dir);
+  return hits;
 }
 
 const selection = (page: Page) =>
@@ -143,29 +163,92 @@ test('Copy puts the natural version on the clipboard', async ({ app, page }) => 
   expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toBe(await rewrite.innerText());
 });
 
-test('nothing is saved: no history, no card, no expression, and the field is empty after a reload', async ({ page }) => {
+test('the natural version keeps its line breaks, and Copy puts exactly the same text on the clipboard', async ({ app, page }) => {
   await openCheck(page);
-  await check(page, 'Pull request description', TEXT);
+  await check(page, 'E-mail', TEXT);
+  const rewrite = page.locator('.rewrite');
+  await expect(rewrite).toBeVisible();
+  // The coach wrote a greeting, a body and a closing line on lines of their own; the screen shows them that way.
+  const shown = await rewrite.innerText();
+  expect(shown).toMatch(/^Hello Maya,\n\nYesterday .+ shared data\.\n\nKind regards,\nRian$/);
+  await page.getByRole('button', { name: 'Copy' }).click();
+  await expect(page.getByRole('button', { name: 'Copied' })).toBeVisible();
+  expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toBe(shown);
+  // A chat message has no line break to keep.
+  await check(page, 'Slack message', TEXT);
+  await expect(rewrite).toHaveText(/^Hey\b/);
+  expect(await rewrite.innerText()).not.toContain('\n');
+});
+
+test('nothing is saved: no history, no card, no expression; after a restart the field is empty and no file holds the text', async ({ app, page, dataDir }) => {
+  const marker = 'zq7-unique-4417';
+  const text = `${TEXT} ${marker}.`;
+  await openCheck(page);
+  await check(page, 'Pull request description', text);
   await expect(marks(page)).toHaveCount(2);
   expect(await historyCount(page)).toBe(0);
   expect(await queueSize(page)).toBe(0);
-  const summary = await page.evaluate(() => window.devtalk.progress.summary());
-  expect(summary).toMatchObject({ ok: true, data: { totalExpressions: 0, mistakes: [] } });
+  expect(await page.evaluate(() => window.devtalk.progress.summary())).toMatchObject({ ok: true, data: { totalExpressions: 0, mistakes: [] } });
+  // Not in the window's own storage either.
+  expect(await page.evaluate((m) => JSON.stringify([{ ...localStorage }, { ...sessionStorage }]).includes(m), marker)).toBe(false);
 
-  // Away and back: the text was only ever in the field.
+  await app.close();
+  // The control: the scan does reach the study database, which holds the profile. The text is in no file.
+  expect(filesHolding(dataDir, 'Portuguese').some((file) => /devtalk\.sqlite/.test(file))).toBe(true);
+  expect(filesHolding(dataDir, marker)).toEqual([]);
+
+  const again = await launchApp({ dataDir });
+  try {
+    const next = await again.firstWindow();
+    await next.waitForLoadState('domcontentloaded');
+    await waitForStart(next);
+    await expect(next.getByRole('heading', { level: 1, name: 'Today' })).toBeVisible();
+    await next.keyboard.press('Control+3');
+    await expect(next.getByRole('heading', { level: 1, name: 'Check' })).toBeVisible();
+    await expect(field(next)).toHaveValue('');
+    await expect(typeSelect(next)).toHaveValue('pull_request');
+    await expect(marks(next)).toHaveCount(0);
+    expect(await historyCount(next)).toBe(0);
+    expect(await queueSize(next)).toBe(0);
+    expect(await next.evaluate(() => window.devtalk.progress.summary())).toMatchObject({ ok: true, data: { totalExpressions: 0, mistakes: [] } });
+  } finally {
+    await again.close();
+  }
+  expect(filesHolding(dataDir, marker)).toEqual([]);
+});
+
+test('the text and the kind survive a trip to another screen (Ctrl+digit or the rail) and not a reload; a result does not', async ({ page }) => {
+  await openCheck(page);
+  await typeSelect(page).selectOption({ label: 'Commit message' });
+  await write(page, TEXT);
+  // Ctrl+digit away and back.
   await page.keyboard.press('Control+1');
   await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toBeVisible();
   await page.keyboard.press('Control+3');
-  await expect(field(page)).toHaveValue('');
+  await expect(field(page)).toHaveValue(TEXT);
+  await expect(typeSelect(page)).toHaveValue('commit_message');
+  // The rail.
+  await MAIN_NAV(page).getByRole('link', { name: 'Practice' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Practice' })).toBeVisible();
+  await MAIN_NAV(page).getByRole('link', { name: 'Check', exact: true }).click();
+  await expect(field(page)).toHaveValue(TEXT);
+  await expect(typeSelect(page)).toHaveValue('commit_message');
+  // A check does not clear it (the field still holds the text beside the result), and the next visit shows no result.
+  await checkButton(page).click();
+  await expect(marks(page)).toHaveCount(2);
+  await page.keyboard.press('Control+1');
+  await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toBeVisible();
+  await page.keyboard.press('Control+3');
+  await expect(field(page)).toHaveValue(TEXT);
   await expect(marks(page)).toHaveCount(0);
-
-  await field(page).fill(TEXT);
+  await expect(page.locator('.rewrite')).toHaveCount(0);
+  await expect(checkButton(page)).toBeVisible();
+  // A reload is the end of the window's memory.
   await page.reload();
   await waitForStart(page);
   await expect(page.getByRole('heading', { level: 1, name: 'Check' })).toBeVisible();
   await expect(field(page)).toHaveValue('');
-  expect(await historyCount(page)).toBe(0);
-  expect(await queueSize(page)).toBe(0);
+  await expect(typeSelect(page)).toHaveValue('pull_request');
 });
 
 test('Keep in Review adds one expression', async ({ page }) => {
@@ -263,7 +346,9 @@ test('ordinary prose is not stopped', async ({ page }) => {
   const prose = 'A risk-free, task-based plan for the desk-top and disk-bound jobs. Reset your password and rotate the token before Friday. ' +
     'Set password= the way the docs say, and use `token=` in the URL. My sk-learn notes say ghp_ is the prefix of a GitHub token. ' +
     'Password: please use the one I sent you. The token: we refresh it daily. Secret sauce, token-based auth, and the access token expired yesterday. ' +
-    'Set max_tokens=1000 for the model, and keep `token=` and `password=` out of the logs.';
+    'Set max_tokens=1000 for the model, and keep `token=` and `password=` out of the logs. ' +
+    'In the code the key is read, not held: const token = await getToken(); password = process.env.DB_PASSWORD; require_password=true; ' +
+    'api_key = os.environ["API_KEY"]; and in the workflow secret: ${{ secrets.TOKEN }}.';
   await field(page).fill(prose);
   await expect(page.getByRole('alert')).toHaveCount(0);
   await expect(field(page)).not.toHaveAttribute('aria-invalid', 'true');
@@ -284,6 +369,20 @@ test('2001 characters cannot be checked; 2000 can', async ({ page }) => {
   await expect(page.getByText('2000 / 2000 characters')).toBeVisible();
   await expect(page.getByRole('alert')).toHaveCount(0);
   await expect(checkButton(page)).toBeEnabled();
+});
+
+test('a huge paste does not freeze the window', async ({ page }) => {
+  test.setTimeout(40_000);
+  await openCheck(page);
+  // 200 001 characters of the shape that used to keep the secret check busy for half a minute on every key.
+  const started = Date.now();
+  await field(page).fill('eyJ'.repeat(66_667));
+  await expect(page.getByText('200001 / 2000 characters')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByRole('alert').filter({ hasText: 'Use 2000 characters or fewer (now 200001).' })).toBeVisible();
+  expect(Date.now() - started).toBeLessThan(5000);
+  // The window still answers: a key typed after the paste is counted at once.
+  await page.keyboard.type('x');
+  await expect(page.getByText('200002 / 2000 characters')).toBeVisible({ timeout: 2000 });
 });
 
 test('the Gemini sentence is gone with the Claude coach', async ({ page }) => {
@@ -307,6 +406,26 @@ test('no key sends you to Settings', async ({ page }) => {
   await expect(field(page)).toHaveValue(TEXT);
   await page.getByRole('button', { name: 'Open Settings' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Settings' })).toBeVisible();
+});
+
+test('no key, Open Settings and back: the text and the kind are still there, and the check goes through once the key is set', async ({ page }) => {
+  await openCheck(page);
+  await page.evaluate(() => window.devtalk.keys.clear('gemini'));
+  await check(page, 'E-mail', TEXT);
+  await expect(page.getByRole('alert').filter({ hasText: 'Add your API key in Settings' })).toBeVisible();
+  await expect(page.getByText('Your text is kept.')).toBeVisible();
+  await page.getByRole('button', { name: 'Open Settings' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Settings' })).toBeVisible();
+  await page.evaluate(() => window.devtalk.keys.set('test-key', 'gemini'));
+  await MAIN_NAV(page).getByRole('link', { name: 'Check', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Check' })).toBeVisible();
+  // What was written is kept; the error belongs to the visit that ended.
+  await expect(field(page)).toHaveValue(TEXT);
+  await expect(typeSelect(page)).toHaveValue('email');
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await checkButton(page).click();
+  await expect(marks(page)).toHaveCount(2);
+  await expect(page.locator('.rewrite')).toHaveText(/^Hello\b/);
 });
 
 test('a text that mentions the rate limit shows the usage-limit message and Try again, and the text is kept', async ({ page }) => {

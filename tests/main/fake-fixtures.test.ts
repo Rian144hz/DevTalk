@@ -42,6 +42,9 @@ test('the check reply passes CheckSchema, opens with "Hey" for Slack and "Hello"
   const email = await checker.check({ type: 'email', text, learner }, signal);
   expect(slack.naturalRewrite).toMatch(/^Hey\b/);
   expect(email.naturalRewrite).toMatch(/^Hello\b/);
+  // An e-mail has a greeting, a body and a closing line on lines of their own (the screen has to keep them); a chat message has none.
+  expect(email.naturalRewrite).toMatch(/^Hello Maya,\n\nYesterday .+\n\nKind regards,\nRian$/s);
+  expect(slack.naturalRewrite).not.toContain('\n');
   // Both marks land in the text (the screen shows two edits) and the coach offers two expressions.
   for (const result of [slack, email]) {
     expect(result.corrections.map((c) => c.original)).toEqual(['have fixed', 'discuss about']);

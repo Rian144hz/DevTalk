@@ -81,11 +81,15 @@ function challengeReply(req: LLMRequest): string {
   });
 }
 
-/** Opens the way the type of text does: a greeting in a chat, a letter in an e-mail, none elsewhere. */
-const CHECK_OPENINGS: Record<string, string> = {
-  [CHECK_TYPE_LABELS.slack]: 'Hey team, yesterday',
-  [CHECK_TYPE_LABELS.email]: 'Hello Maya, yesterday',
-};
+const CHECK_BODY =
+  'I tracked down the root cause of the flaky test: two tests were sharing the same database row. I fixed it by giving each test its own fixture, and we need to discuss the shared data.';
+
+/** The natural version in the register of the type: a greeting in a chat, a letter on lines of its own in an e-mail, a plain paragraph elsewhere. */
+function naturalVersion(type: string): string {
+  if (type === CHECK_TYPE_LABELS.slack) return `Hey team, yesterday ${CHECK_BODY}`;
+  if (type === CHECK_TYPE_LABELS.email) return `Hello Maya,\n\nYesterday ${CHECK_BODY}\n\nKind regards,\nRian`;
+  return `Yesterday ${CHECK_BODY}`;
+}
 
 function checkReply(req: LLMRequest, turn: number): string {
   const type = /^Text type: (.*)$/m.exec(req.user)?.[1] ?? '';
@@ -95,8 +99,7 @@ function checkReply(req: LLMRequest, turn: number): string {
       { original: 'have fixed', corrected: 'fixed', explanation: 'Com "yesterday" usamos o passado simples, não o present perfect.', category: 'verb_tense' },
       { original: 'discuss about', corrected: 'discuss', explanation: '"Discuss" não leva preposição.', category: 'prepositions' },
     ],
-    natural_rewrite:
-      `${CHECK_OPENINGS[type] ?? 'Yesterday'} I tracked down the root cause of the flaky test: two tests were sharing the same database row. I fixed it by giving each test its own fixture, and we need to discuss the shared data.`,
+    natural_rewrite: naturalVersion(type),
     new_expressions: [EXPRESSIONS[first]!, EXPRESSIONS[(first + 1) % EXPRESSIONS.length]!],
   });
 }

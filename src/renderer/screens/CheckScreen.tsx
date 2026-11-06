@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type Ref } from 'react';
-import { findSecret, SECRET_MESSAGE } from '../../core/check/secrets';
+import { findSecretInField, SECRET_MESSAGE } from '../../core/check/secrets';
 import {
   CHECK_TEXT_MAX, CHECK_TYPES, CHECK_TYPE_LABELS, checkPrivacyNote, checkText, checkToneHint, type CheckResult, type CheckType,
 } from '../../core/check/types';
@@ -9,6 +9,7 @@ import { DEFAULT_PROVIDER, type ProviderId } from '../../shared/providers';
 import { useAppData } from '../app/AppData';
 import { Icon } from '../app/icons';
 import { api } from '../lib/api';
+import { loadCheckDraft, saveCheckDraft } from '../lib/check-draft';
 import { selectPassage } from '../lib/field';
 import { useCoachRequest } from '../lib/useCoachRequest';
 import { Button, CoachProgress, ExpressionCard, Galley, Notice, Select, TextArea } from '../design-system';
@@ -19,14 +20,14 @@ const TYPE_OPTIONS = CHECK_TYPES.map((value) => ({ value, label: CHECK_TYPE_LABE
 
 /**
  * Check text: a real text (a pull request, a Slack message, an e-mail…) is corrected and rewritten in the same tone.
- * Nothing is saved. The text lives in this component only, so leaving the screen or reloading empties it. Only the
- * expressions the person keeps go to Review.
+ * Nothing is saved. The text and the kind are kept in the window's memory only (lib/check-draft.ts), so a trip to Settings
+ * does not lose them; a reload or quitting the app empties them. Only the expressions the person keeps go to Review.
  */
 export function CheckScreen() {
   const { profile } = useAppData();
   const provider = (profile?.provider ?? DEFAULT_PROVIDER) as ProviderId;
-  const [type, setType] = useState<CheckType>('pull_request');
-  const [text, setText] = useState('');
+  const [type, setType] = useState<CheckType>(() => loadCheckDraft().type);
+  const [text, setText] = useState(() => loadCheckDraft().text);
   /** What the last check was about: the result is shown against this text, even if the field changes after. */
   const [checked, setChecked] = useState<{ text: string; type: CheckType } | null>(null);
   const req = useCoachRequest<CheckResult>((id) => api().check.cancel(id));
@@ -35,8 +36,10 @@ export function CheckScreen() {
 
   const running = req.state.status === 'running';
   const done = req.state.status === 'done';
-  // The passage is found at once, as the person types, and it is a position in the field's own text.
-  const secret = useMemo(() => findSecret(text), [text]);
+  useEffect(() => saveCheckDraft({ type, text }), [type, text]);
+  // The passage is found at once, as the person types, and it is a position in the field's own text. Only the start of a
+  // very long paste is read (a text over 2 000 characters cannot be sent), so a paste does not slow down every key.
+  const secret = useMemo(() => findSecretInField(text), [text]);
   const length = text.trim().length;
   const tooLong = length > CHECK_TEXT_MAX;
   const error = secret ? SECRET_MESSAGE : tooLong ? `Use ${CHECK_TEXT_MAX} characters or fewer (now ${length}).` : undefined;
