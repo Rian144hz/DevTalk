@@ -3,12 +3,15 @@ import { join } from 'node:path';
 import { app, dialog, safeStorage, shell, type BrowserWindow } from 'electron';
 import { LLMError } from '../core/llm/errors';
 import type { ProgressStage } from '../core/llm/structured';
+import { createDailyStore } from './daily/store';
 import { openDatabase, type DB } from './db/open';
 import { SqliteStudyStore } from './db/sqlite-store';
 import { createCheckHandlers } from './ipc/check-handlers';
+import { createDailyHandlers } from './ipc/daily-handlers';
 import { createHandlers, type HandlerDeps, type Handlers } from './ipc/handlers';
 import { createInFlight, type InFlight } from './ipc/in-flight';
 import { createSocialHandlers } from './ipc/social-handlers';
+import { LOCAL_DATA_FILE } from './local-data';
 import { createUnconfiguredBackend, type SocialBackend } from './social/backend';
 import { readSocialConfig, roomConnectTimeoutMs } from './social/config';
 import type { SocialErrorKind } from './social/errors';
@@ -153,6 +156,10 @@ export function createAppContext(
   };
   const handlers = createHandlers(handlerDeps);
   const checkHandlers = createCheckHandlers(handlerDeps);
+  // The daily challenge's settings, its pick for the day and the day of its last notice: one small file in the data folder.
+  const dailyStore = createDailyStore({ filePath: join(userData, 'daily.json') });
+  // Nothing follows a change of the switch or the time yet: the reminder that does comes with the next step.
+  const dailyHandlers = createDailyHandlers({ ...handlerDeps, daily: { store: dailyStore, onChanged: () => {} } });
 
   const config = readSocialConfig(import.meta.env);
   const fakeCommunity = fakeSocialBackend(userData);
@@ -215,8 +222,7 @@ export function createAppContext(
     writeFile: (path, content) => writeFileSync(path, content, { mode: 0o600 }),
     deleteLocalData: () => {
       db.close();
-      const local = /^(devtalk\.sqlite(-wal|-shm)?|api-key.*\.bin|social-session\.bin|fake-social\.json|practice-sync\.json)$/;
-      for (const name of readdirSync(userData)) if (local.test(name)) rmSync(join(userData, name), { force: true });
+      for (const name of readdirSync(userData)) if (LOCAL_DATA_FILE.test(name)) rmSync(join(userData, name), { force: true });
       // Let the IPC reply reach the window before restarting.
       setTimeout(() => {
         app.relaunch();
@@ -229,7 +235,7 @@ export function createAppContext(
   const cancelSignIn = () => void socialHandlers['social:cancelSignIn']({});
 
   return {
-    handlers: { ...handlers, ...checkHandlers, ...socialHandlers },
+    handlers: { ...handlers, ...checkHandlers, ...dailyHandlers, ...socialHandlers },
     startBackground: () => {
       void practiceSync?.start();
       void chatLive.start();

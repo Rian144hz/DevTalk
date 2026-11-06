@@ -1,3 +1,4 @@
+import type { ChallengeCategory } from '../domain/categories';
 import { normalizeExpression } from '../domain/text';
 import type { Challenge, LearnerProfile } from '../domain/types';
 import { generateStructured, type ProgressStage } from '../llm/structured';
@@ -22,14 +23,25 @@ export class ChallengeGenerator {
     },
   ) {}
 
-  async next(learner: LearnerProfile, signal: AbortSignal, onProgress?: (s: ProgressStage) => void): Promise<Challenge> {
+  /**
+   * `opts.category` is a category that was chosen already (the daily challenge picks its theme before the coach is asked):
+   * it replaces `pickCategory`, and the reply must still be in it.
+   */
+  async next(
+    learner: LearnerProfile,
+    signal: AbortSignal,
+    onProgress?: (s: ProgressStage) => void,
+    opts: { category?: ChallengeCategory } = {},
+  ): Promise<Challenge> {
     const { provider, store, clock } = this.deps;
     const now = clock.now();
     const recent = store.recentChallenges(RECENT_SITUATIONS);
-    const category = pickCategory(
-      recent.slice(0, CATEGORY_WINDOW).map((c) => c.category),
-      this.deps.rng ?? Math.random,
-    );
+    const category =
+      opts.category ??
+      pickCategory(
+        recent.slice(0, CATEGORY_WINDOW).map((c) => c.category),
+        this.deps.rng ?? Math.random,
+      );
     // Only cards already reviewed at least once are required; brand-new ones wait for Review.
     const required = store.dueCards(now, { excludeNew: true, limit: MAX_REQUIRED }).map((d) => d.expression);
     const wanted = required.map((e) => normalizeExpression(e.text));

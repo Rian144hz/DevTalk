@@ -4,7 +4,7 @@ import { CHAT_EVENT, PROGRESS_EVENT, ROOM_EVENT } from '../../src/shared/ipc-con
 test('exposes exactly the spec groups', () => {
   const api = buildApi(async () => ({ ok: true, data: null }), () => () => {});
   expect(Object.keys(api).sort()).toEqual([
-    'challenges', 'chat', 'check', 'feedback', 'keys', 'llm', 'llmCheck', 'moderation', 'profile', 'progress', 'review', 'rooms', 'safety', 'settings', 'social',
+    'challenges', 'chat', 'check', 'daily', 'feedback', 'keys', 'llm', 'llmCheck', 'moderation', 'profile', 'progress', 'review', 'rooms', 'safety', 'settings', 'social',
   ]);
 });
 
@@ -51,6 +51,28 @@ test('check.run, check.cancel and review.keep call their channels', async () => 
     ['check:run', { requestId: 'k1', type: 'slack', text: 'Hi team' }],
     ['check:cancel', { requestId: 'k1' }],
     ['review:keep', { text: 'track down', type: 'phrasal_verb', meaning: 'find', example: 'We track down bugs.' }],
+  ]);
+});
+
+test('the daily group calls its channels', async () => {
+  const calls: [string, unknown][] = [];
+  const api = buildApi(async (channel, payload) => {
+    calls.push([channel, payload]);
+    return { ok: true, data: null };
+  }, () => () => {});
+  await api.daily.today();
+  await api.daily.start('d1');
+  await api.daily.settings();
+  await api.daily.setSettings({ enabled: true });
+  await api.daily.setSettings({ time: '08:30' });
+  await api.daily.setSettings({ enabled: false, time: '19:00' });
+  expect(calls).toEqual([
+    ['daily:today', {}],
+    ['daily:start', { requestId: 'd1' }],
+    ['daily:settings', {}],
+    ['daily:setSettings', { enabled: true }],
+    ['daily:setSettings', { time: '08:30' }],
+    ['daily:setSettings', { enabled: false, time: '19:00' }],
   ]);
 });
 

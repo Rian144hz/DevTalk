@@ -24,6 +24,8 @@ export interface Route {
 const SUB_PAGES: Partial<Record<RouteName, readonly string[]>> = {
   people: ['edit', 'me', 'following'],
   legal: ['terms', 'privacy', 'conduct'],
+  // Today's challenge: the coach writes it, then Practice shows it.
+  practice: ['daily'],
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

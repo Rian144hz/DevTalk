@@ -7,6 +7,7 @@ import { AppErrorException, api, unwrap } from '../lib/api';
 import { setPlayAnimations, usePlayAnimationsSetting } from '../lib/motion';
 import { Button, Notice, PasswordField, Segmented, Select, TextField } from '../design-system';
 import { AccountSection } from './AccountSection';
+import { DailySettings } from './DailySettings';
 import { CURRENT_LEVELS, KEY_LINKS, PROVIDER_OPTIONS, languageOptions, TARGET_ERROR, TARGET_LEVELS, isTargetAbove } from './forms';
 
 const message = (e: unknown) => (e instanceof AppErrorException ? e.message : 'Something went wrong. Try again.');
@@ -148,6 +149,8 @@ export function SettingsScreen({ profile }: { profile: StoredProfile }) {
         )}
         {coachError && <Notice tone="error" title={coachError} />}
       </section>
+
+      <DailySettings />
 
       <section aria-labelledby="set-look">
         <h2 id="set-look">Appearance</h2>

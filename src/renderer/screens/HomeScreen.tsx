@@ -9,6 +9,7 @@ import { formatRelativeDay } from '../lib/format';
 import { isTypingTarget } from '../lib/keys';
 import { CHALLENGE_CATEGORY_LABELS } from '../../core/domain/categories';
 import { Button, EmptyState, Galley, Notice, Skeleton, Tally, TypeBadge } from '../design-system';
+import { DailyCard } from './DailyCard';
 import { NextChallenge } from './NextChallenge';
 
 interface HomeData {
@@ -73,6 +74,7 @@ export function HomeScreen() {
       <header className="page-head">
         <div><h1>Today</h1><p className="lede">{todayLede(data.due.length, data.pending !== null)}</p></div>
       </header>
+      <DailyCard />
       <div className="home">
         <section aria-label="Your last answer and what is next">
           {data.last ? (

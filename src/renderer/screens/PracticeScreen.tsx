@@ -8,6 +8,7 @@ import { useCoachRequest } from '../lib/useCoachRequest';
 import { clearAnswer, loadAnswer, saveAnswer, takeRetryDraft } from '../lib/draft';
 import { Button, EmptyState, Notice, Skeleton, TextArea } from '../design-system';
 import { ChallengeBrief } from './ChallengeBrief';
+import { DailyStart } from './DailyStart';
 import { FeedbackScreen } from './FeedbackScreen';
 import { NextChallenge } from './NextChallenge';
 
@@ -19,7 +20,12 @@ export function sentenceHint(text: string): string {
   return `${n} ${n === 1 ? 'sentence' : 'sentences'}. Aim for 3 to 5.`;
 }
 
-export function PracticeScreen() {
+/**
+ * `daily`: the route is #/practice/daily, the Start of today's challenge. The daily start brings its own challenge, so the
+ * pending one is not read while it runs; once it has written the challenge, the route goes back to #/practice and this
+ * mounted screen keeps the challenge it was given.
+ */
+export function PracticeScreen({ daily = false }: { daily?: boolean }) {
   const { refresh } = useAppData();
   // "Write it again" hands over an answered challenge and its text.
   const [retry] = useState(takeRetryDraft);
@@ -41,7 +47,17 @@ export function PracticeScreen() {
       if (pending) setTextState(loadAnswer(pending.id));
     }, () => setFailed(true));
   }, [retry]);
-  useEffect(load, [load]);
+  // Read the pending challenge when the screen has none, and not while the daily start is about to give it one. Without a
+  // challenge (Start was cancelled, then the person went to Practice) it is read as soon as the route is plain Practice.
+  useEffect(() => {
+    if (!daily && challenge === undefined) load();
+    // `challenge` is read only to know whether the screen has one; a change of it must not read the pending challenge again.
+  }, [daily, load]);
+  const onDailyReady = useCallback((c: Challenge) => {
+    setChallenge(c);
+    setTextState(loadAnswer(c.id));
+    window.location.hash = '#/practice';
+  }, []);
 
   useEffect(() => {
     if (req.state.status !== 'done') return;
@@ -57,6 +73,7 @@ export function PracticeScreen() {
     req.run((requestId) => api().feedback.submit({ requestId, challengeId: challenge.id, text }));
   };
 
+  if (daily) return <DailyStart onReady={onDailyReady} />;
   if (failed) return <main className="page"><Notice tone="error" title="Could not load your challenge." action={<Button variant="secondary" onClick={load}>Try again</Button>} /></main>;
   if (challenge === undefined) return <main className="page" aria-busy="true"><Skeleton width="30%" /><Skeleton /><Skeleton width="60%" /></main>;
   if (challenge === null) {

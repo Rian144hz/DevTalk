@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { InvokeChannel } from '../../shared/ipc-contract';
 import { CHECK_TEXT_MAX, CHECK_TYPES, checkText } from '../../core/check/types';
+import { REMINDER_TIME } from '../../core/daily/daily';
 import { EXPRESSION_TYPES } from '../../core/domain/categories';
 import { LEVELS } from '../../core/domain/types';
 import { PROVIDERS } from '../../shared/providers';
@@ -41,6 +42,7 @@ const checkBody = z
   .string()
   .max(CHECK_TEXT_MAX * 2)
   .refine((s) => checkText(s) !== null, `Write 1 to ${CHECK_TEXT_MAX} characters.`);
+const reminderTime = z.string().regex(REMINDER_TIME, 'Use a time like 19:00.');
 const conversationId = z.string().min(1).max(64);
 const messageId = z.number().int().positive();
 const roomId = z.string().min(1).max(64);
@@ -109,6 +111,10 @@ export const INPUT_SCHEMAS = {
     .strict(),
   'check:run': z.object({ requestId: z.string().min(1).max(100), type: z.enum(CHECK_TYPES), text: checkBody }).strict(),
   'check:cancel': requestId,
+  'daily:today': empty,
+  'daily:start': requestId,
+  'daily:settings': empty,
+  'daily:setSettings': z.object({ enabled: z.boolean().optional(), time: reminderTime.optional() }).strict(),
   'progress:summary': empty,
   'progress:history': z.object({ before: z.string().nullable(), limit: z.number().int().min(1).max(100).default(20) }).strict(),
   'progress:graph': empty,

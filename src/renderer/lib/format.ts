@@ -27,6 +27,12 @@ export function formatRelativeDay(iso: string, now: Date): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
 
+/** "No streak yet", "1-day streak", "12-day streak": the run of days in a row with practice. */
+export function streakText(n: number): string {
+  const days = Math.floor(n);
+  return days >= 1 ? `${days}-day streak` : 'No streak yet';
+}
+
 /** "31 January 2099" in the viewer's time zone. */
 export function formatLongDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });

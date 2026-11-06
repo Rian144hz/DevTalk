@@ -1,4 +1,4 @@
-import { formatDueIn, formatRelativeDay, formatLongDate, formatSlot, halfHourTimes } from '../../src/renderer/lib/format';
+import { formatDueIn, formatRelativeDay, formatLongDate, formatSlot, halfHourTimes, streakText } from '../../src/renderer/lib/format';
 
 const t0 = new Date('2026-10-14T12:00:00');
 const plus = (ms: number) => new Date(t0.getTime() + ms);
@@ -37,4 +37,15 @@ test('halfHourTimes lists the day in 30-minute steps and keeps an odd saved valu
   const withOdd = halfHourTimes('19:15');
   expect(withOdd).toHaveLength(49);
   expect(withOdd.slice(38, 41)).toEqual(['19:00', '19:15', '19:30']);
+});
+
+test('streakText: no streak, one day, many days', () => {
+  expect(streakText(0)).toBe('No streak yet');
+  expect(streakText(1)).toBe('1-day streak');
+  expect(streakText(2)).toBe('2-day streak');
+  expect(streakText(12)).toBe('12-day streak');
+  expect(streakText(365)).toBe('365-day streak');
+  // A number that is not a count of days is no streak.
+  expect(streakText(-3)).toBe('No streak yet');
+  expect(streakText(Number.NaN)).toBe('No streak yet');
 });

@@ -15,6 +15,20 @@ test('#/check parses to { name: "check" }', () => {
   expect(parseHash(toHash({ name: 'check' }))).toEqual({ name: 'check' });
 });
 
+test('#/practice/daily is the daily start inside Practice', () => {
+  expect(parseHash('#/practice/daily')).toEqual({ name: 'practice', sub: 'daily' });
+  expect(toHash({ name: 'practice', sub: 'daily' })).toBe('#/practice/daily');
+  expect(parseHash(toHash({ name: 'practice', sub: 'daily' }))).toEqual({ name: 'practice', sub: 'daily' });
+  // Plain Practice is unchanged, and no other sub-page is made up.
+  expect(parseHash('#/practice')).toEqual({ name: 'practice' });
+  expect(parseHash('#/practice/weekly')).toEqual({ name: 'practice' });
+  expect(parseHash('#/practice/daily/extra')).toEqual({ name: 'practice', sub: 'daily' });
+  // The sub-page belongs to Practice only.
+  expect(parseHash('#/home/daily')).toEqual({ name: 'home' });
+  expect(parseHash('#/review/daily')).toEqual({ name: 'review' });
+  expect(parseHash('#/check/daily')).toEqual({ name: 'check' });
+});
+
 test('round-trips', () => {
   for (const r of [{ name: 'home' }, { name: 'feedback', id: 3 }, { name: 'settings' }] as const) {
     expect(parseHash(toHash(r))).toEqual(r);

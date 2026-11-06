@@ -112,3 +112,35 @@ test('category or expression mismatch → retry', async () => {
   const ok = await gen.next(learner, signal);
   expect(ok.required).toHaveLength(1);
 });
+
+describe('next() with a category override (the daily challenge)', () => {
+  test('next({ category }) uses it instead of pickCategory and still rejects a reply with another category', async () => {
+    // With an empty history and rng 0, pickCategory alone would choose daily_update.
+    const rng = vi.fn(() => 0);
+    const store = new MemoryStudyStore();
+    const provider = new FakeProvider([reply('tech_interview')]);
+    const gen = new ChallengeGenerator({ provider, store, clock, challengeTemplate, rng });
+    const ch = await gen.next(learner, signal, undefined, { category: 'tech_interview' });
+    expect(ch.category).toBe('tech_interview');
+    expect(provider.calls[0]!.system).toContain('for the category "tech_interview"');
+    // The override replaces the pick: the tie-breaker is not even asked.
+    expect(rng).not.toHaveBeenCalled();
+    expect(store.recentChallenges(5)).toEqual([{ category: 'tech_interview', summary: 'nightly build broke after bump' }]);
+
+    // The model must still return it: the category pickCategory would have chosen is refused, twice, and nothing is saved.
+    const other = new MemoryStudyStore();
+    const wrong = new FakeProvider([reply('daily_update'), reply('daily_update')]);
+    const strict = new ChallengeGenerator({ provider: wrong, store: other, clock, challengeTemplate, rng: () => 0 });
+    await expect(strict.next(learner, signal, undefined, { category: 'tech_interview' })).rejects.toMatchObject({ kind: 'invalid_output' });
+    expect(wrong.calls[1]!.user).toContain('category must be "tech_interview"');
+    expect(other.recentChallenges(5)).toEqual([]);
+  });
+
+  test('without an override nothing changes: pickCategory still chooses', async () => {
+    const rng = vi.fn(() => 0.99);
+    const provider = new FakeProvider([reply('tech_interview')]);
+    const gen = new ChallengeGenerator({ provider, store: new MemoryStudyStore(), clock, challengeTemplate, rng });
+    expect((await gen.next(learner, signal)).category).toBe('tech_interview');
+    expect(rng).toHaveBeenCalledTimes(1);
+  });
+});

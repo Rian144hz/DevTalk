@@ -28,6 +28,12 @@ export function buildApi(invoke: Invoke, subscribe: Subscribe): DevtalkApi {
     llm: { onProgress: (cb) => subscribe(PROGRESS_EVENT, cb) },
     review: { queue: () => call('review:queue'), rate: (input) => call('review:rate', input), keep: (draft) => call('review:keep', draft) },
     check: { run: (input) => call('check:run', input), cancel: (requestId) => call('check:cancel', { requestId }) },
+    daily: {
+      today: () => call('daily:today'),
+      start: (requestId) => call('daily:start', { requestId }),
+      settings: () => call('daily:settings'),
+      setSettings: (patch) => call('daily:setSettings', patch),
+    },
     progress: { summary: () => call('progress:summary'), history: (input) => call('progress:history', input), graph: () => call('progress:graph') },
     settings: { get: () => call('settings:get'), set: (partial) => call('settings:set', partial) },
     llmCheck: () => call('llm:check'),

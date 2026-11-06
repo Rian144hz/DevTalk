@@ -5,7 +5,7 @@ import { LEVELS } from '../../core/domain/types';
 import type { LLMProvider } from '../../core/llm/provider';
 import type { ProgressStage } from '../../core/llm/structured';
 import type { Clock, StoredProfile, StudyStore } from '../../core/ports';
-import { addDays, bucketByDay, localDay, streaks } from '../../core/progress/practice';
+import { addDays, bucketByDay, localDay, streaks, type DayActivity } from '../../core/progress/practice';
 import { buildProgressSummary } from '../../core/progress/summary';
 import { newCard, previewDue, rate, REVIEW_RATINGS } from '../../core/srs/srs';
 import type { InvokeChannel, Settings } from '../../shared/ipc-contract';
@@ -47,7 +47,7 @@ export type SocialChannel = Exclude<
   Extract<InvokeChannel, `social:${string}` | `safety:${string}` | `moderation:${string}` | `chat:${string}` | `rooms:${string}`>,
   'chat:check'
 >;
-/** Each feature's own channels, served by its own handler group (the daily and simulate groups come with their features). */
+/** Each feature's own channels, served by its own handler group (the simulate group comes with its feature). */
 export type CheckChannel = Extract<InvokeChannel, `check:${string}`>;
 export type DailyChannel = Extract<InvokeChannel, `daily:${string}`>;
 export type SimulateChannel = Extract<InvokeChannel, `simulate:${string}`>;
@@ -55,6 +55,22 @@ export type CoreChannel = Exclude<InvokeChannel, SocialChannel | CheckChannel | 
 export type Handlers = HandlerMap<InvokeChannel>;
 
 const GRAPH_DAYS = 53 * 7;
+
+/** The time zone of this machine: a practice day is a local day of it. */
+const zoneOf = (deps: Pick<HandlerDeps, 'timeZone'>): string => deps.timeZone?.() ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+/** Today's date (YYYY-MM-DD) in this machine's time zone. */
+export const localToday = (deps: Pick<HandlerDeps, 'clock' | 'timeZone'>): string => localDay(deps.clock.now(), zoneOf(deps));
+
+/**
+ * All the practice there is (answers and reviews) grouped in local days, with today's date in the same zone. The graph and the
+ * daily challenge's streak read the same days, so they cannot disagree.
+ */
+export function practiceDays(deps: Pick<HandlerDeps, 'store' | 'clock' | 'timeZone'>): { days: DayActivity[]; today: string } {
+  const timeZone = zoneOf(deps);
+  const { answers, reviews } = deps.store.activityTimestamps(new Date(0));
+  return { days: bucketByDay(answers, reviews, timeZone), today: localDay(deps.clock.now(), timeZone) };
+}
 
 const settingsOf = (p: StoredProfile): Settings => ({ provider: p.provider as ProviderId, model: p.model, theme: p.theme });
 
@@ -163,10 +179,7 @@ export function createHandlers(deps: HandlerDeps): HandlerMap<CoreChannel> {
     'progress:summary': handle('progress:summary', () => buildProgressSummary(store, clock.now())),
     'progress:history': handle('progress:history', ({ before, limit }) => store.history({ before, limit })),
     'progress:graph': handle('progress:graph', () => {
-      const timeZone = deps.timeZone?.() ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const today = localDay(clock.now(), timeZone);
-      const { answers, reviews } = store.activityTimestamps(new Date(0));
-      const all = bucketByDay(answers, reviews, timeZone);
+      const { days: all, today } = practiceDays(deps);
       // The graph shows 53 weeks; the longest streak counts the whole history.
       const first = addDays(today, -GRAPH_DAYS);
       return { days: all.filter((d) => d.day > first && d.day <= today), ...streaks(all, today) };

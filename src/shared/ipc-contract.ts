@@ -1,6 +1,7 @@
 // Types and channel names shared by main, preload and renderer. No runtime dependencies:
 // the sandboxed preload bundles this file and cannot load node_modules.
 import type { CheckResult, CheckType } from '../core/check/types';
+import type { DailyToday } from '../core/daily/daily';
 import type { Challenge, Expression, ExpressionDraft } from '../core/domain/types';
 import type { LLMErrorKind } from '../core/llm/errors';
 import type { ProgressStage } from '../core/llm/structured';
@@ -81,6 +82,12 @@ export interface ProgressEvent {
   stage: ProgressStage;
 }
 
+/** The daily challenge's switch and its reminder time (HH:MM, local). */
+export interface DailySettings {
+  enabled: boolean;
+  time: string;
+}
+
 /** Input and output of every invoke channel. */
 export interface Channels {
   'profile:get': { in: Record<string, never>; out: StoredProfile | null };
@@ -101,6 +108,13 @@ export interface Channels {
   /** The coach checks a real text and keeps its tone; the text and the result are not stored. */
   'check:run': { in: { requestId: string; type: CheckType; text: string }; out: CheckResult };
   'check:cancel': { in: { requestId: string }; out: null };
+  /** The Home card: today's theme and streak. Null while the daily challenge is off. The first call of a local day stores the day's category. */
+  'daily:today': { in: Record<string, never>; out: DailyToday | null };
+  /** The coach writes today's challenge once and it is linked to the day; asking again gives the same challenge. Cancel it with `challenges:cancel`. */
+  'daily:start': { in: { requestId: string }; out: Challenge };
+  'daily:settings': { in: Record<string, never>; out: DailySettings };
+  /** `time` must be HH:MM (00:00 to 23:59). */
+  'daily:setSettings': { in: { enabled?: boolean; time?: string }; out: DailySettings };
   'progress:summary': { in: Record<string, never>; out: ProgressSummary };
   'progress:history': { in: { before: string | null; limit?: number }; out: HistoryItem[] };
   /** The local practice graph (this machine's time zone), shown even without a community account. */
@@ -203,7 +217,7 @@ export type InvokeChannel = keyof Channels;
 export const INVOKE_CHANNELS = [
   'profile:get', 'profile:save', 'keys:status', 'keys:set', 'keys:clear', 'challenges:next', 'challenges:cancel',
   'challenges:pending', 'feedback:submit', 'feedback:cancel', 'feedback:get', 'review:queue', 'review:rate', 'review:keep',
-  'check:run', 'check:cancel', 'progress:summary', 'progress:history',
+  'check:run', 'check:cancel', 'daily:today', 'daily:start', 'daily:settings', 'daily:setSettings', 'progress:summary', 'progress:history',
   'progress:graph', 'settings:get', 'settings:set', 'llm:check',
   'social:status', 'social:sendCode', 'social:verifyCode', 'social:acceptDocuments', 'social:getProfile', 'social:saveProfile',
   'social:setAvatar', 'social:removeAvatar', 'social:avatar', 'social:notices', 'social:readNotice', 'social:signOut',
@@ -253,6 +267,13 @@ export interface DevtalkApi {
   };
   /** Check text: nothing is stored; only the expressions the person keeps go to Review. */
   check: { run(input: Channels['check:run']['in']): R<'check:run'>; cancel(requestId: string): R<'check:cancel'> };
+  /** The daily challenge: the Home card, the day's challenge (cancel it with `challenges.cancel`) and its settings. */
+  daily: {
+    today(): R<'daily:today'>;
+    start(requestId: string): R<'daily:start'>;
+    settings(): R<'daily:settings'>;
+    setSettings(patch: Channels['daily:setSettings']['in']): R<'daily:setSettings'>;
+  };
   progress: {
     summary(): R<'progress:summary'>;
     history(input: Channels['progress:history']['in']): R<'progress:history'>;

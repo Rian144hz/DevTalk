@@ -149,7 +149,7 @@ function Shell({ started }: { started: boolean }) {
         moderator={moderator} room={room} onOpenPalette={() => setPaletteOpen(true)} />
       {name === 'components' && GALLERY ? <ComponentsScreen />
         : name === 'home' ? <HomeScreen key={route.id ?? 0} />
-        : name === 'practice' ? <PracticeScreen />
+        : name === 'practice' ? <PracticeScreen daily={route.sub === 'daily'} />
         : name === 'check' ? <CheckScreen />
         : name === 'feedback' && route.id ? <FeedbackRoute id={route.id} onNext={() => { window.location.hash = '#/practice'; }} />
         : name === 'review' ? <ReviewScreen />
