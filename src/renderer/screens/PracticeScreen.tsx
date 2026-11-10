@@ -56,7 +56,9 @@ export function PracticeScreen({ daily = false }: { daily?: boolean }) {
   const onDailyReady = useCallback((c: Challenge) => {
     setChallenge(c);
     setTextState(loadAnswer(c.id));
-    window.location.hash = '#/practice';
+    // Replace the Start's place in the history, do not add to it: with the Start kept, Back from the challenge would land on
+    // it, which asks again at once and brings the person straight back, so there would be no way out by Back.
+    window.location.replace('#/practice');
   }, []);
 
   useEffect(() => {

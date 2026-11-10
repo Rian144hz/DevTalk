@@ -99,14 +99,15 @@ test('Check opens from the rail and with Ctrl+3, in the menu order the spec give
   await expect(page.getByText(GEMINI_NOTE)).toBeVisible();
   await expect(checkButton(page)).toBeDisabled();
 
-  // Ctrl+1 goes home, Ctrl+3 comes back; the digits follow the rail (Ctrl+4 is Review, Ctrl+9 is Settings).
+  // Ctrl+1 goes home, Ctrl+3 comes back; the digits follow the rail (Ctrl+4 is Review). Settings is opened from the rail:
+  // its digit moves when the menu grows.
   await page.keyboard.press('Control+1');
   await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toBeVisible();
   await page.keyboard.press('Control+3');
   await expect(page.getByRole('heading', { level: 1, name: 'Check' })).toBeVisible();
   await page.keyboard.press('Control+4');
   await expect(page.getByRole('heading', { level: 1, name: 'Review' })).toBeVisible();
-  await page.keyboard.press('Control+9');
+  await rail.getByRole('link', { name: 'Settings' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Settings' })).toBeVisible();
 });
 
@@ -388,7 +389,7 @@ test('a huge paste does not freeze the window', async ({ page }) => {
 test('the Gemini sentence is gone with the Claude coach', async ({ page }) => {
   await openCheck(page);
   await expect(page.getByText('On the free Gemini plan, Google may use what you send to improve its models.')).toBeVisible();
-  await page.keyboard.press('Control+9');
+  await MAIN_NAV(page).getByRole('link', { name: 'Settings' }).click();
   await page.getByRole('radiogroup', { name: 'Provider' }).getByRole('radio', { name: 'Claude' }).click();
   await expect(page.getByText('Coach: Anthropic Claude')).toBeVisible();
   await page.keyboard.press('Control+3');

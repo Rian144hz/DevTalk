@@ -20,7 +20,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 async function openSettings(page: Page) {
-  await page.keyboard.press('Control+9');
+  // By the rail, not by a Ctrl+digit: the digits follow the menu, and the menu grows.
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Settings' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Settings' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'Daily challenge' })).toBeVisible();
 }
@@ -38,6 +39,31 @@ async function turnOn(page: Page) {
   await expect.poll(() => page.evaluate(async () => { const r = await window.devtalk.daily.settings(); return r.ok && r.data.enabled; })).toBe(true);
   await openHome(page);
   await expect(card(page)).toBeVisible();
+}
+
+/**
+ * The next morning, for a window that stayed open: the main process's clock (`new Date()` and `Date.now()`) runs `ms` ahead
+ * from now on. Nothing tells the window. Only in the test's own app, which closes with the test.
+ */
+async function advanceMainClock(app: ElectronApplication, ms: number) {
+  await app.evaluate((_, offset) => {
+    const RealDate = Date;
+    globalThis.Date = new Proxy(RealDate, {
+      construct: (target, args, newTarget) => (args.length === 0 ? new target(RealDate.now() + offset) : Reflect.construct(target, args, newTarget)),
+      get: (target, prop, receiver) => (prop === 'now' ? () => RealDate.now() + offset : Reflect.get(target, prop, receiver)),
+    });
+  }, ms);
+}
+
+/** Starts the day's challenge, answers it and comes back to Home, where the card says the day is done. */
+async function practiseToday(page: Page) {
+  await card(page).getByRole('link', { name: 'Start' }).click();
+  await expect(page.getByRole('textbox', { name: 'Your answer' })).toBeVisible();
+  await page.getByRole('textbox', { name: 'Your answer' }).fill(SAMPLE_ANSWER);
+  await page.keyboard.press('Control+Enter');
+  await expect(page.locator('.galley .line-text .mark-n').first()).toBeVisible();
+  await openHome(page);
+  await expect(card(page).getByText(DONE_LINE)).toBeVisible();
 }
 
 /** How many answers the history holds. */
@@ -67,7 +93,7 @@ async function countCalls(app: ElectronApplication, channel: string) {
       return real(event, ...args);
     });
   }, channel);
-  return () => app.evaluate((_, name) => ((globalThis as Record<string, unknown>)['__calls'] as Record<string, number>)[name], channel);
+  return () => app.evaluate((_, name) => ((globalThis as Record<string, unknown>)['__calls'] as Record<string, number>)[name] ?? 0, channel);
 }
 
 test('off by default: no card on Home; Settings shows 19:00', async ({ page }) => {
@@ -215,6 +241,84 @@ test('a checked text is not practice: the card still offers Start', async ({ pag
   await expect(card(page).getByRole('link', { name: 'Start' })).toBeVisible();
   await expect(card(page).getByText(DONE_LINE)).toHaveCount(0);
   expect(await page.evaluate(() => window.devtalk.daily.today())).toMatchObject({ ok: true, data: { streak: 0, practisedToday: false } });
+});
+
+test('the card is read again when the window gets the focus: after a night it is a new day', async ({ app, page }) => {
+  await turnOn(page);
+  await practiseToday(page);
+  await expect(card(page).getByText(THEME)).toBeVisible();
+
+  // The window stays open on Home overnight: the next morning is a new day for the main process, and nothing tells the window.
+  await advanceMainClock(app, 24 * 3_600_000);
+  expect(await page.evaluate(() => window.devtalk.daily.today())).toMatchObject({ ok: true, data: { practisedToday: false, streak: 1 } });
+  // The person comes back to the window: the card is read again. A new day has no practice yet, a new theme, and Start.
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(card(page).getByText(DONE_LINE)).toHaveCount(0);
+  await expect(card(page).getByRole('link', { name: 'Start' })).toBeVisible();
+  await expect(card(page).getByText('1-day streak')).toBeVisible();
+  await expect(card(page).getByText('Code review')).toBeVisible();
+  await expect(card(page).getByText(THEME)).toHaveCount(0);
+  // Nothing flashed away on the way: it is the same card, and Start leads to the new day's challenge.
+  await card(page).getByRole('link', { name: 'Start' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Disagree with redis cache in PR' })).toBeVisible();
+});
+
+test('the card is read again when the window is shown again', async ({ page }) => {
+  await turnOn(page);
+  await expect(card(page).getByRole('link', { name: 'Start' })).toBeVisible();
+  // The stored state changes behind the window's back (the challenge is turned off elsewhere).
+  await page.evaluate(() => window.devtalk.daily.setSettings({ enabled: false }));
+  await expect(card(page).getByText(THEME)).toBeVisible();
+  // A window that is hidden reads nothing; shown again, it reads.
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect(card(page)).toHaveCount(0);
+  await expect(page.getByText('Your first answer will appear here')).toBeVisible();
+});
+
+test('a window left open across midnight reads the card again by itself', async ({ app, page }) => {
+  await turnOn(page);
+  await practiseToday(page);
+  const calls = await countCalls(app, 'daily:today');
+  // The window's own clock says 23:59:50; Home is opened afresh on it, so the card arms its timer for midnight.
+  const lateAtNight = new Date();
+  lateAtNight.setHours(23, 59, 50, 0);
+  await page.clock.install({ time: lateAtNight });
+  await openSettings(page);
+  await openHome(page);
+  await expect(card(page).getByText(DONE_LINE)).toBeVisible();
+  const before = await calls();
+  // Main agrees it is the next morning, but nothing has told the window and midnight is ten seconds away on its clock.
+  await advanceMainClock(app, 24 * 3_600_000);
+  await page.waitForTimeout(500);
+  expect(await calls()).toBe(before);
+  await expect(card(page).getByText(DONE_LINE)).toBeVisible();
+  // Midnight passes with the window open and focused (the computer's lid was closed for a minute): the timer fires, once.
+  await page.clock.fastForward('01:00');
+  await expect.poll(calls).toBeGreaterThan(before);
+  await expect(card(page).getByText(DONE_LINE)).toHaveCount(0);
+  await expect(card(page).getByRole('link', { name: 'Start' })).toBeVisible();
+  await expect(card(page).getByText('Code review')).toBeVisible();
+});
+
+test('Back from the challenge goes to Home, not into the Start again', async ({ page }) => {
+  await turnOn(page);
+  await card(page).getByRole('link', { name: 'Start' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: CHALLENGE_TITLE })).toBeVisible();
+  await expect(page).toHaveURL(/#\/practice$/);
+  // The Start page took the place of the challenge's in the history, so Back is the page before it.
+  await page.goBack();
+  await expect(page).toHaveURL(/#\/home$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Today' })).toBeVisible();
+  await expect(card(page)).toBeVisible();
+  // Forward is the challenge, the one that was written (nothing was written again).
+  const id = await pendingId(page);
+  await page.goForward();
+  await expect(page).toHaveURL(/#\/practice$/);
+  await expect(page.getByRole('heading', { level: 1, name: CHALLENGE_TITLE })).toBeVisible();
+  expect(await pendingId(page)).toBe(id);
 });
 
 test('no key → "Add your API key in Settings to use the coach." with Open Settings', async ({ page }) => {
